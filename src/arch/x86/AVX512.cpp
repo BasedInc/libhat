@@ -2,11 +2,10 @@
 #ifdef LIBHAT_X86
 
 #include <libhat/Scanner.hpp>
-#include <libhat/ScanMode.hpp>
 
 #include <immintrin.h>
 
-namespace hat {
+namespace hat::detail {
 
     template<>
     scan_result find_pattern<scan_mode::AVX512>(std::byte* begin, std::byte* end, signature_view signature) {

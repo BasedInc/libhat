@@ -1,11 +1,9 @@
 #include <libhat/Scanner.hpp>
 
 #include <map>
-#include <execution>
 
 #include <libhat/Defines.hpp>
 #include <libhat/System.hpp>
-#include <libhat/ScanMode.hpp>
 
 namespace hat {
 
@@ -90,6 +88,9 @@ namespace hat {
         }
         return find_pattern(std::to_address(data.begin()), std::to_address(data.end()), signature);
     }
+}
+
+namespace hat::detail {
 
     template<>
     [[deprecated]] scan_result find_pattern<scan_mode::Search>(std::byte* begin, std::byte* end, signature_view signature) {
@@ -103,28 +104,7 @@ namespace hat {
     }
 
     template<>
-    scan_result find_pattern<scan_mode::FastFirst>(std::byte* begin, std::byte* end, signature_view signature) {
-        const auto firstByte = *signature[0];
-        const auto scanEnd = end - signature.size() + 1;
-
-        for (auto i = begin; i != scanEnd; i++) {
-            // Use std::find to efficiently find the first byte
-            i = std::find(std::execution::unseq, i, scanEnd, firstByte);
-            if (i == scanEnd) {
-                break;
-            }
-            // Compare everything after the first byte
-            auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
-                return !opt.has_value() || *opt == byte;
-            });
-            if (match) {
-                return i;
-            }
-        }
-        return nullptr;
-    }
-
-    scan_result find_pattern(std::byte* begin, std::byte* end, signature_view signature) {
+    scan_result find_pattern<scan_mode::Auto>(std::byte* begin, std::byte* end, signature_view signature) {
         const auto size = signature.size();
 #if defined(LIBHAT_X86)
         const auto& ext = get_system().extensions;

@@ -30,3 +30,9 @@
         #define LIBHAT_BLSR64(num) num & (num - 1)
     #endif
 #endif
+
+#if __cpp_if_consteval >= 202106L
+    #define LIBHAT_IF_CONSTEVAL consteval
+#else
+    #define LIBHAT_IF_CONSTEVAL (std::is_constant_evaluated())
+#endif

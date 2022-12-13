@@ -2,8 +2,10 @@
 
 #include <algorithm>
 #include <array>
+#include <execution>
 #include <utility>
 
+#include "Defines.hpp"
 #include "Process.hpp"
 #include "Signature.hpp"
 
@@ -47,6 +49,46 @@ namespace hat {
         std::byte* result;
     };
 
+    namespace detail {
+
+        enum class scan_mode {
+            Auto,
+            Search,
+            FastFirst,
+            AVX2,
+            AVX512,
+            Neon
+        };
+
+        template<scan_mode>
+        scan_result find_pattern(std::byte* begin, std::byte* end, signature_view signature);
+
+        template<>
+        scan_result find_pattern<scan_mode::Auto>(std::byte* begin, std::byte* end, signature_view signature);
+
+        template<>
+        constexpr scan_result find_pattern<scan_mode::FastFirst>(std::byte* begin, std::byte* end, signature_view signature) {
+            const auto firstByte = *signature[0];
+            const auto scanEnd = end - signature.size() + 1;
+
+            for (auto i = begin; i != scanEnd; i++) {
+                // Use std::find to efficiently find the first byte
+                i = std::find(std::execution::unseq, i, scanEnd, firstByte);
+                if (i == scanEnd) {
+                    break;
+                }
+                // Compare everything after the first byte
+                auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
+                    return !opt.has_value() || *opt == byte;
+                });
+                if (match) {
+                    return i;
+                }
+            }
+            return nullptr;
+        }
+    }
+
     enum class compiler_type {
         MSVC,
         MinGW
@@ -73,9 +115,15 @@ namespace hat {
     );
 
     /// Root implementation of FindPattern
-    scan_result find_pattern(
+    constexpr scan_result find_pattern(
         std::byte*      begin,
         std::byte*      end,
         signature_view  signature
-    );
+    ) {
+        if LIBHAT_IF_CONSTEVAL {
+            return detail::find_pattern<detail::scan_mode::FastFirst>(begin, end, signature);
+        } else {
+            return detail::find_pattern<detail::scan_mode::Auto>(begin, end, signature);
+        }
+    }
 }

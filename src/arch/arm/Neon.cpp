@@ -2,9 +2,8 @@
 #ifdef LIBHAT_ARM
 
 #include <libhat/Scanner.hpp>
-#include <libhat/ScanMode.hpp>
 
-namespace hat {
+namespace hat::detail {
 
     template<>
     scan_result find_pattern<scan_mode::Neon>(std::byte* begin, std::byte* end, signature_view signature) {
