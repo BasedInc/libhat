@@ -27,7 +27,7 @@ set(LIBHAT_SRC
     src/arch/arm/Neon.cpp
     src/arch/arm/System.cpp)
 
-add_library(libhat ${LIBHAT_SRC})
+add_library(libhat STATIC ${LIBHAT_SRC})
 
 target_include_directories(libhat PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
