@@ -4,6 +4,12 @@
 #include <string>
 #include <stdexcept>
 
+namespace hat::detail {
+
+    template<typename T>
+    concept char_iterator = std::is_same_v<std::iter_value_t<T>, char>;
+}
+
 namespace hat {
 
     template<size_t N>
@@ -16,10 +22,19 @@ namespace hat {
             return (const char*) &this->value[0];
         }
 
+        [[nodiscard]] constexpr const char* begin() const {
+            return this->c_str();
+        }
+
+        [[nodiscard]] constexpr const char* end() const {
+            return this->begin() + N;
+        }
+
         char value[N];
     };
 
-    static constexpr int atoi(std::string_view str, int base = 10) {
+    template<detail::char_iterator Iter>
+    static constexpr int atoi(Iter begin, Iter end, int base = 10) {
         if (base < 2 || base > 36) {
             throw std::invalid_argument("Invalid base specified");
         }
@@ -28,7 +43,8 @@ namespace hat {
         auto digits = base < 10 ? base : 10;
         auto letters = base > 10 ? base - 10 : 0;
 
-        for (char ch : str) {
+        for (auto iter = begin; iter != end; iter++) {
+            char ch = *iter;
             value *= base;
             if (ch >= '0' && ch < '0' + digits) {
                 value += (ch - '0');
@@ -42,5 +58,9 @@ namespace hat {
             }
         }
         return value;
+    }
+
+    static constexpr int atoi(std::string_view str, int base = 10) {
+        return atoi(str.cbegin(), str.cend(), base);
     }
 }
