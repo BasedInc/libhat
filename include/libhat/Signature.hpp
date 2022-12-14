@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bit>
 #include <optional>
 #include <ranges>
 #include <string_view>
@@ -17,9 +18,9 @@ namespace hat {
     using fixed_signature = std::array<signature_element, N>;
 
     template<typename T>
-    inline signature object_to_signature(const T& value) {
-        auto bytes = reinterpret_cast<const std::byte*>(&value);
-        return {bytes, bytes + sizeof(T)};
+    constexpr signature object_to_signature(const T& value) {
+        const auto bytes = std::bit_cast<std::array<std::byte, sizeof(T)>>(value);
+        return {bytes.begin(), bytes.end()};
     }
 
     /// Convert raw byte storage into a signature
