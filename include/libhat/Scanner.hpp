@@ -15,12 +15,12 @@ namespace hat {
         using rel_t = int32_t;
     public:
         constexpr scan_result() : result(nullptr) {}
-        constexpr scan_result(std::byte* result) : result(result) {} // NOLINT(google-explicit-constructor)
+        constexpr scan_result(const std::byte* result) : result(result) {} // NOLINT(google-explicit-constructor)
 
         /// Reads an integer of the specified type located at an offset from the signature result
         template<std::integral Int>
         [[nodiscard]] constexpr Int read(size_t offset) const {
-            return *reinterpret_cast<Int*>(this->result + offset);
+            return *reinterpret_cast<const Int*>(this->result + offset);
         }
 
         /// Reads an integer of the specified type which represents an index into an array with the given element type
@@ -30,7 +30,7 @@ namespace hat {
         }
 
         /// Resolve the relative address located at an offset from the signature result
-        [[nodiscard]] constexpr std::byte* rel(size_t offset) const {
+        [[nodiscard]] constexpr const std::byte* rel(size_t offset) const {
             return this->has_result() ? this->result + this->read<rel_t>(offset) + offset + sizeof(rel_t) : nullptr;
         }
 
@@ -38,18 +38,23 @@ namespace hat {
             return this->result != nullptr;
         }
 
-        [[nodiscard]] constexpr std::byte* operator*() const {
+        [[nodiscard]] constexpr const std::byte* operator*() const {
             return this->result;
         }
 
-        [[nodiscard]] constexpr std::byte* get() const {
+        [[nodiscard]] constexpr const std::byte* get() const {
             return this->result;
         }
     private:
-        std::byte* result;
+        const std::byte* result;
     };
 
     namespace detail {
+
+        template<typename T>
+        concept byte_iterator = std::forward_iterator<T>
+            && std::contiguous_iterator<T>
+            && std::same_as<std::iter_value_t<T>, std::byte>;
 
         enum class scan_mode {
             Auto,      // Automatically choose the mode to use
@@ -64,19 +69,23 @@ namespace hat {
         };
 
         template<scan_mode>
-        scan_result find_pattern(std::byte* begin, std::byte* end, signature_view signature);
+        scan_result find_pattern(const std::byte* begin, const std::byte* end, signature_view signature);
 
         template<>
-        scan_result find_pattern<scan_mode::Auto>(std::byte* begin, std::byte* end, signature_view signature);
+        scan_result find_pattern<scan_mode::Auto>(const std::byte* begin, const std::byte* end, signature_view signature);
 
         template<>
-        constexpr scan_result find_pattern<scan_mode::FastFirst>(std::byte* begin, std::byte* end, signature_view signature) {
+        constexpr scan_result find_pattern<scan_mode::FastFirst>(const std::byte* begin, const std::byte* end, signature_view signature) {
             const auto firstByte = *signature[0];
             const auto scanEnd = end - signature.size() + 1;
 
             for (auto i = begin; i != scanEnd; i++) {
                 // Use std::find to efficiently find the first byte
-                i = std::find(std::execution::unseq, i, scanEnd, firstByte);
+                if LIBHAT_IF_CONSTEVAL {
+                    i = std::find(i, scanEnd, firstByte);
+                } else {
+                    i = std::find(std::execution::unseq, i, scanEnd, firstByte);
+                }
                 if (i == scanEnd) {
                     break;
                 }
@@ -118,15 +127,16 @@ namespace hat {
     );
 
     /// Root implementation of FindPattern
+    template<detail::byte_iterator Iter>
     constexpr scan_result find_pattern(
-        std::byte*      begin,
-        std::byte*      end,
+        Iter            begin,
+        Iter            end,
         signature_view  signature
     ) {
         if LIBHAT_IF_CONSTEVAL {
-            return detail::find_pattern<detail::scan_mode::Single>(begin, end, signature);
+            return detail::find_pattern<detail::scan_mode::Single>(std::to_address(begin), std::to_address(end), signature);
         } else {
-            return detail::find_pattern<detail::scan_mode::Auto>(begin, end, signature);
+            return detail::find_pattern<detail::scan_mode::Auto>(std::to_address(begin), std::to_address(end), signature);
         }
     }
 }

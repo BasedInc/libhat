@@ -78,7 +78,7 @@ namespace hat {
         if (data.empty()) {
             return nullptr;
         }
-        return find_pattern(std::to_address(data.begin()), std::to_address(data.end()), signature);
+        return find_pattern(data.begin(), data.end(), signature);
     }
 
     scan_result find_pattern(signature_view signature, std::string_view section, module_t module) {
@@ -86,14 +86,14 @@ namespace hat {
         if (data.empty()) {
             return nullptr;
         }
-        return find_pattern(std::to_address(data.begin()), std::to_address(data.end()), signature);
+        return find_pattern(data.begin(), data.end(), signature);
     }
 }
 
 namespace hat::detail {
 
     template<>
-    [[deprecated]] scan_result find_pattern<scan_mode::Search>(std::byte* begin, std::byte* end, signature_view signature) {
+    [[deprecated]] scan_result find_pattern<scan_mode::Search>(const std::byte* begin, const std::byte* end, signature_view signature) {
         auto it = std::search(
             begin, end,
             signature.begin(), signature.end(),
@@ -104,7 +104,7 @@ namespace hat::detail {
     }
 
     template<>
-    scan_result find_pattern<scan_mode::Auto>(std::byte* begin, std::byte* end, signature_view signature) {
+    scan_result find_pattern<scan_mode::Auto>(const std::byte* begin, const std::byte* end, signature_view signature) {
         const auto size = signature.size();
 #if defined(LIBHAT_X86)
         const auto& ext = get_system().extensions;

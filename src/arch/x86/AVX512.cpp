@@ -8,7 +8,7 @@
 namespace hat::detail {
 
     template<>
-    scan_result find_pattern<scan_mode::AVX512>(std::byte* begin, std::byte* end, signature_view signature) {
+    scan_result find_pattern<scan_mode::AVX512>(const std::byte* begin, const std::byte* end, signature_view signature) {
         // 512 bit vector containing first signature byte repeated
         const auto firstByte = _mm512_set1_epi8(static_cast<int8_t>(*signature[0]));
 
@@ -25,7 +25,7 @@ namespace hat::detail {
         const auto signatureBytes = _mm512_loadu_si512(&byteBuffer);
         const auto signatureMask = _cvtu64_mask64(maskBuffer);
 
-        auto vec = reinterpret_cast<__m512i*>(begin);
+        auto vec = reinterpret_cast<const __m512i*>(begin);
         const auto n = static_cast<size_t>(end - signature.size() - begin) / sizeof(__m512i);
         const auto e = vec + n;
 
@@ -33,7 +33,7 @@ namespace hat::detail {
             auto mask = _mm512_cmpeq_epi8_mask(firstByte, *vec);
             while (mask) {
                 const auto offset = LIBHAT_TZCNT64(mask);
-                const auto i = reinterpret_cast<std::byte*>(vec) + offset;
+                const auto i = reinterpret_cast<const std::byte*>(vec) + offset;
                 const auto data = _mm512_loadu_si512(i + 1);
                 const auto invalid = _mm512_mask_cmpneq_epi8_mask(signatureMask, signatureBytes, data);
                 if (!invalid) {
@@ -44,7 +44,7 @@ namespace hat::detail {
         }
 
         // Look in remaining bytes that couldn't be grouped into 512 bits
-        begin = reinterpret_cast<std::byte*>(vec);
+        begin = reinterpret_cast<const std::byte*>(vec);
         return find_pattern<scan_mode::Single>(begin, end, signature);
     }
 }
