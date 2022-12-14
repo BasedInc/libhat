@@ -17,22 +17,27 @@ namespace hat {
     template<size_t N>
     using fixed_signature = std::array<signature_element, N>;
 
-    template<typename T>
-    constexpr signature object_to_signature(const T& value) {
-        const auto bytes = std::bit_cast<std::array<std::byte, sizeof(T)>>(value);
-        return {bytes.begin(), bytes.end()};
-    }
-
     /// Convert raw byte storage into a signature
-    constexpr signature bytes_to_signature(std::span<const std::byte> bytes) {
+    [[nodiscard]] constexpr signature bytes_to_signature(std::span<const std::byte> bytes) {
         return {bytes.begin(), bytes.end()};
     }
 
-    inline signature string_to_signature(std::string_view str) {
-        return bytes_to_signature({reinterpret_cast<const std::byte*>(str.data()), str.size()});
+    template<typename T>
+    [[nodiscard]] constexpr signature object_to_signature(const T& value) {
+        using bytes = std::array<std::byte, sizeof(T)>;
+        return bytes_to_signature(std::bit_cast<bytes>(value));
     }
 
-    constexpr signature parse_signature(std::string_view str) {
+    [[nodiscard]] constexpr signature string_to_signature(std::string_view str) {
+        signature sig{};
+        sig.reserve(str.size());
+        for (char ch : str) {
+            sig.emplace_back(static_cast<std::byte>(ch));
+        }
+        return sig;
+    }
+
+    [[nodiscard]] constexpr signature parse_signature(std::string_view str) {
         signature sig{};
         for (const auto& word : str | std::views::split(' ')) {
             if (word.empty()) {
@@ -52,7 +57,7 @@ namespace hat {
 
     /// Parses a signature string at compile time, and provides a signature_view which exists for the program's lifetime
     template<string_literal str>
-    inline signature_view compile_signature() {
+    [[nodiscard]] inline signature_view compile_signature() {
         static constexpr auto compiled = ([]() consteval -> auto {
             const auto sig = parse_signature(str.c_str());
             constexpr auto N = parse_signature(str.c_str()).size();
