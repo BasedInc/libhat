@@ -21,8 +21,8 @@ namespace hat::process {
     auto module_at(std::byte* address) -> module_t;
 
     /// Returns the complete memory region for the given module. This may include portions which are uncommitted.
-    auto get_module_data(module_t module) -> std::span<std::byte>;
+    auto get_module_data(module_t mod) -> std::span<std::byte>;
 
     /// Returns the memory region for a named section in the given module
-    auto get_section_data(module_t module, std::string_view name) -> std::span<std::byte>;
+    auto get_section_data(module_t mod, std::string_view name) -> std::span<std::byte>;
 }

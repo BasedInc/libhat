@@ -35,9 +35,9 @@ namespace hat {
 namespace hat::process {
 
     namespace {
-        PIMAGE_NT_HEADERS GetNTHeaders(module_t module) {
-            auto* const scanBytes = reinterpret_cast<std::byte*>(module);
-            auto* const dosHeader = reinterpret_cast<PIMAGE_DOS_HEADER>(module);
+        PIMAGE_NT_HEADERS GetNTHeaders(module_t mod) {
+            auto* const scanBytes = reinterpret_cast<std::byte*>(mod);
+            auto* const dosHeader = reinterpret_cast<PIMAGE_DOS_HEADER>(mod);
             if (dosHeader->e_magic != IMAGE_DOS_SIGNATURE)
                 return nullptr;
 
@@ -53,9 +53,9 @@ namespace hat::process {
         return module_t{reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr))};
     }
 
-    std::span<std::byte> get_module_data(module_t module) {
-        auto* const scanBytes = reinterpret_cast<std::byte*>(module);
-        auto* const ntHeaders = GetNTHeaders(module);
+    std::span<std::byte> get_module_data(module_t mod) {
+        auto* const scanBytes = reinterpret_cast<std::byte*>(mod);
+        auto* const ntHeaders = GetNTHeaders(mod);
         if (!ntHeaders)
             return {};
 
@@ -63,9 +63,9 @@ namespace hat::process {
         return {scanBytes, sizeOfImage};
     }
 
-    std::span<std::byte> get_section_data(module_t module, std::string_view name) {
-        auto* const scanBytes = reinterpret_cast<std::byte*>(module);
-        auto* const ntHeaders = GetNTHeaders(module);
+    std::span<std::byte> get_section_data(module_t mod, std::string_view name) {
+        auto* const scanBytes = reinterpret_cast<std::byte*>(mod);
+        auto* const ntHeaders = GetNTHeaders(mod);
         if (!ntHeaders)
             return {};
 

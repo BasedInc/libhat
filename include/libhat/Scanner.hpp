@@ -110,20 +110,20 @@ namespace hat {
     template<compiler_type compiler>
     scan_result find_vtable(
         const std::string&  className,
-        process::module_t   module = process::get_process_module()
+        process::module_t   mod = process::get_process_module()
     );
 
     /// Perform a signature scan on the entirety of the process module or a specified module
     scan_result find_pattern(
         signature_view      signature,
-        process::module_t   module = process::get_process_module()
+        process::module_t   mod = process::get_process_module()
     );
 
     /// Perform a signature scan on a specific section of the process module or a specified module
     scan_result find_pattern(
         signature_view      signature,
         std::string_view    section,
-        process::module_t   module = process::get_process_module()
+        process::module_t   mod = process::get_process_module()
     );
 
     /// Root implementation of FindPattern
