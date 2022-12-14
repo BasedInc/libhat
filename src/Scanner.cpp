@@ -121,6 +121,6 @@ namespace hat::detail {
         }
 #endif
         // If none of the vectorized implementations are available/supported, then fallback to scanning per-byte
-        return find_pattern<scan_mode::FastFirst>(begin, end, signature);
+        return find_pattern<scan_mode::Single>(begin, end, signature);
     }
 }

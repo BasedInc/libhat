@@ -52,12 +52,15 @@ namespace hat {
     namespace detail {
 
         enum class scan_mode {
-            Auto,
-            Search,
-            FastFirst,
-            AVX2,
-            AVX512,
-            Neon
+            Auto,      // Automatically choose the mode to use
+            Search,    // std::search
+            FastFirst, // std::find + std::equal
+            AVX2,      // x86 AVX2
+            AVX512,    // x86 AVX512
+            Neon,      // ARM Neon
+
+            // Fallback mode to use for SIMD remaining bytes
+            Single = FastFirst
         };
 
         template<scan_mode>
@@ -121,7 +124,7 @@ namespace hat {
         signature_view  signature
     ) {
         if LIBHAT_IF_CONSTEVAL {
-            return detail::find_pattern<detail::scan_mode::FastFirst>(begin, end, signature);
+            return detail::find_pattern<detail::scan_mode::Single>(begin, end, signature);
         } else {
             return detail::find_pattern<detail::scan_mode::Auto>(begin, end, signature);
         }

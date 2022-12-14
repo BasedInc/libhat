@@ -48,7 +48,7 @@ namespace hat::detail {
 
         // Look in remaining bytes that couldn't be grouped into 256 bits
         begin = reinterpret_cast<std::byte*>(vec);
-        return find_pattern<scan_mode::FastFirst>(begin, end, signature);
+        return find_pattern<scan_mode::Single>(begin, end, signature);
     }
 }
 #endif

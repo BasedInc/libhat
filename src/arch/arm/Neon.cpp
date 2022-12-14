@@ -22,7 +22,7 @@ namespace hat::detail {
             }
         }
 
-        return find_pattern<scan_mode::FastFirst>(begin, end, signature);
+        return find_pattern<scan_mode::Single>(begin, end, signature);
     }
 }
 #endif
