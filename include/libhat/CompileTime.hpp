@@ -14,20 +14,54 @@ namespace hat {
 
     template<typename Char, size_t N>
     struct basic_string_literal {
+        using const_reference   = const Char&;
+        using const_pointer     = const Char*;
+        using const_iterator    = const_pointer;
+
         constexpr basic_string_literal(const Char (&str)[N]) {
             std::copy_n(str, N, value);
+            if (str[N-1] != '\0') {
+                throw std::invalid_argument("str must be null-terminated");
+            }
         }
 
-        [[nodiscard]] constexpr const Char* c_str() const {
-            return (const Char*) &this->value[0];
-        }
-
-        [[nodiscard]] constexpr const Char* begin() const {
+        constexpr const_iterator begin() const {
             return this->c_str();
         }
 
-        [[nodiscard]] constexpr const Char* end() const {
-            return this->begin() + N;
+        constexpr const_iterator end() const {
+            return this->begin() + size();
+        }
+
+        constexpr const_reference operator[](size_t pos) const {
+            return this->value[pos];
+        }
+
+        constexpr const_reference at(size_t pos) const {
+            if (pos >= this->size()) {
+                throw std::range_error("pos out of bounds");
+            }
+            return this->value[pos];
+        }
+
+        constexpr const_reference front() const {
+            return this->value[0];
+        }
+
+        constexpr const_reference back() const {
+            return this->value[size() - 1];
+        }
+
+        constexpr const_pointer c_str() const {
+            return (const Char*) &this->value[0];
+        }
+
+        [[nodiscard]] constexpr size_t size() const {
+            return N - 1;
+        }
+
+        [[nodiscard]] constexpr bool empty() const {
+            return this->size() == 0;
         }
 
         Char value[N];
