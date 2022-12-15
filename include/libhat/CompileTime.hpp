@@ -12,26 +12,32 @@ namespace hat::detail {
 
 namespace hat {
 
-    template<size_t N>
-    struct string_literal {
-        constexpr string_literal(const char (&str)[N]) {
+    template<typename Char, size_t N>
+    struct basic_string_literal {
+        constexpr basic_string_literal(const Char (&str)[N]) {
             std::copy_n(str, N, value);
         }
 
-        [[nodiscard]] constexpr const char* c_str() const {
-            return (const char*) &this->value[0];
+        [[nodiscard]] constexpr const Char* c_str() const {
+            return (const Char*) &this->value[0];
         }
 
-        [[nodiscard]] constexpr const char* begin() const {
+        [[nodiscard]] constexpr const Char* begin() const {
             return this->c_str();
         }
 
-        [[nodiscard]] constexpr const char* end() const {
+        [[nodiscard]] constexpr const Char* end() const {
             return this->begin() + N;
         }
 
-        char value[N];
+        Char value[N];
     };
+
+    template<size_t N> using string_literal = basic_string_literal<char, N>;
+    template<size_t N> using wstring_literal = basic_string_literal<wchar_t, N>;
+    template<size_t N> using u8string_literal = basic_string_literal<char8_t, N>;
+    template<size_t N> using u16string_literal = basic_string_literal<char16_t, N>;
+    template<size_t N> using u32string_literal = basic_string_literal<char32_t, N>;
 
     template<detail::char_iterator Iter>
     static constexpr int atoi(Iter begin, Iter end, int base = 10) {
