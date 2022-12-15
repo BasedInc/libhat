@@ -33,11 +33,21 @@ namespace hat {
         Char value[N];
     };
 
-    template<size_t N> using string_literal = basic_string_literal<char, N>;
-    template<size_t N> using wstring_literal = basic_string_literal<wchar_t, N>;
-    template<size_t N> using u8string_literal = basic_string_literal<char8_t, N>;
-    template<size_t N> using u16string_literal = basic_string_literal<char16_t, N>;
-    template<size_t N> using u32string_literal = basic_string_literal<char32_t, N>;
+    #define LIBHAT_DEFINE_STRING_LITERAL(name, type)                \
+    template<size_t N>                                              \
+    struct name : basic_string_literal<type, N> {                   \
+        using basic_string_literal<type, N>::basic_string_literal;  \
+    };                                                              \
+    template<size_t N>                                              \
+    name(const type(&str)[N]) -> name<N>;
+
+    LIBHAT_DEFINE_STRING_LITERAL(string_literal,    char)
+    LIBHAT_DEFINE_STRING_LITERAL(wstring_literal,   wchar_t)
+    LIBHAT_DEFINE_STRING_LITERAL(u8string_literal,  char8_t)
+    LIBHAT_DEFINE_STRING_LITERAL(u16string_literal, char16_t)
+    LIBHAT_DEFINE_STRING_LITERAL(u32string_literal, char32_t)
+
+    #undef LIBHAT_DEFINE_STRING_LITERAL
 
     template<detail::char_iterator Iter>
     static constexpr int atoi(Iter begin, Iter end, int base = 10) {
