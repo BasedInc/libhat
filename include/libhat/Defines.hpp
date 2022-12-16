@@ -34,5 +34,6 @@
 #if __cpp_if_consteval >= 202106L
     #define LIBHAT_IF_CONSTEVAL consteval
 #else
+    #include <type_traits>
     #define LIBHAT_IF_CONSTEVAL (std::is_constant_evaluated())
 #endif
