@@ -1,5 +1,6 @@
 #pragma once
 
+#include <libhat/Callable.hpp>
 #include <libhat/CompileTime.hpp>
 #include <libhat/MemoryProtector.hpp>
 #include <libhat/Process.hpp>
