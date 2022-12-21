@@ -42,9 +42,10 @@ namespace hat::detail {
         template<typename Wrapper, auto get_original>
         struct caller {
             static Ret invoke(Args... args) {
+                const auto original = get_original();
                 const context ctx{
-                    get_original(),
-                    [&]() { return get_original()(std::forward<decltype(args)>(args)...); }
+                    original,
+                    [&]() { return original(std::forward<decltype(args)>(args)...); }
                 };
                 using ctx_t = decltype(ctx);
 
