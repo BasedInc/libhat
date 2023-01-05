@@ -103,7 +103,7 @@ namespace hat {
             return wrapped();
         };
 
-        using storage = util_t::template provider_storage<decltype(provider)>;
+        using storage = typename util_t::template provider_storage<decltype(provider)>;
         storage::set_provider(std::move(provider));
 
         return util_t::template caller<Wrapper{}, storage::get_original>::invoke;
