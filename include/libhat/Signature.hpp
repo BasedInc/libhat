@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <bit>
 #include <optional>
 #include <ranges>
@@ -57,14 +58,11 @@ namespace hat {
 
     /// Parses a signature string at compile time, and provides a signature_view which exists for the program's lifetime
     template<string_literal str>
-    [[nodiscard]] inline signature_view compile_signature() {
-        static constexpr auto compiled = ([]() consteval -> auto {
-            const auto sig = parse_signature(str.c_str());
-            constexpr auto N = parse_signature(str.c_str()).size();
-            fixed_signature<N> arr{};
-            std::ranges::move(sig, arr.begin());
-            return arr;
-        })();
-        return compiled;
+    [[nodiscard]] consteval auto compile_signature() {
+        const auto sig = parse_signature(str.c_str());
+        constexpr auto N = parse_signature(str.c_str()).size();
+        fixed_signature<N> arr{};
+        std::ranges::move(sig, arr.begin());
+        return arr;
     }
 }
