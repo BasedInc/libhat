@@ -88,7 +88,7 @@ namespace hat {
         std::default_initializable Wrapper,
         detail::supplier<Fn*>      Wrapped
     > requires std::default_initializable<Wrapped>
-    constexpr auto make_dynamic_wrapper(Wrapper, Wrapped) -> Fn* {
+    constexpr auto make_dynamic_wrapper(Wrapper&&, Wrapped&&) -> Fn* {
         return detail::wrapper_util<Fn>::template caller<Wrapper{}, Wrapped{}>::invoke;
     }
 
@@ -97,7 +97,7 @@ namespace hat {
         std::default_initializable Wrapper,
         detail::supplier<Fn*>      Wrapped
     > requires (!std::default_initializable<Wrapped>)
-    auto make_dynamic_wrapper(Wrapper, Wrapped wrapped) -> Fn* {
+    auto make_dynamic_wrapper(Wrapper&&, Wrapped&& wrapped) -> Fn* {
         using util_t = detail::wrapper_util<Fn>;
         const auto provider = [wrapped = std::move(wrapped)]() -> Fn* {
             return wrapped();
@@ -110,17 +110,17 @@ namespace hat {
     }
 
     template<auto wrapped, detail::function Fn = std::remove_pointer_t<decltype(wrapped)>>
-    constexpr auto make_static_wrapper(std::default_initializable auto wrapper) {
-        return make_dynamic_wrapper<Fn>(wrapper, []() { return wrapped; });
+    constexpr auto make_static_wrapper(std::default_initializable auto&& wrapper) {
+        return make_dynamic_wrapper<Fn>(std::move(wrapper), []() { return wrapped; });
     }
 
     template<detail::function Fn>
-    auto make_static_wrapper(std::default_initializable auto wrapper, Fn* wrapped) {
-        return make_dynamic_wrapper<Fn>(wrapper, [=]() { return wrapped; });
+    auto make_static_wrapper(std::default_initializable auto&& wrapper, Fn* wrapped) {
+        return make_dynamic_wrapper<Fn>(std::move(wrapper), [=]() { return wrapped; });
     }
 
     template<typename Ret, typename... Args>
-    auto make_static_wrapper(std::default_initializable auto wrapper, Ret(*wrapped)(Args...)) {
-        return make_static_wrapper<Ret(Args...)>(wrapper, wrapped);
+    auto make_static_wrapper(std::default_initializable auto&& wrapper, Ret(*wrapped)(Args...)) {
+        return make_static_wrapper<Ret(Args...)>(std::move(wrapper), wrapped);
     }
 }
