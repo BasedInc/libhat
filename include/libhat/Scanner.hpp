@@ -100,7 +100,7 @@ namespace hat {
 
     enum class compiler_type {
         MSVC,
-        MinGW
+        GNU
     };
 
     /// Gets the VTable address for a class by its mangled name
