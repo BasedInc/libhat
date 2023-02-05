@@ -1,18 +1,11 @@
 #pragma once
 
-#include <concepts>
 #include <new>
 #include <utility>
 
+#include "Concepts.hpp"
+
 namespace hat::detail {
-
-    template<typename Fn, typename Ret>
-    concept supplier = requires(Fn&& fn) {
-        { fn() } -> std::same_as<Ret>;
-    };
-
-    template<typename Fn>
-    concept function = std::is_function_v<Fn>;
 
     template<typename Func>
     struct wrapper_util;
