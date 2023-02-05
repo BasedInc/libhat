@@ -4,11 +4,7 @@
 #include <string>
 #include <stdexcept>
 
-namespace hat::detail {
-
-    template<typename T>
-    concept char_iterator = std::is_same_v<std::iter_value_t<T>, char>;
-}
+#include "Concepts.hpp"
 
 namespace hat {
 
@@ -18,41 +14,43 @@ namespace hat {
         using const_pointer     = const Char*;
         using const_iterator    = const_pointer;
 
+        static constexpr auto npos = static_cast<size_t>(-1);
+
         constexpr basic_string_literal(const Char (&str)[N]) {
             std::copy_n(str, N, value);
-            if (str[N-1] != '\0') {
+            if (str[N - 1] != '\0') {
                 throw std::invalid_argument("str must be null-terminated");
             }
         }
 
-        constexpr const_iterator begin() const {
+        [[nodiscard]] constexpr const_iterator begin() const {
             return this->c_str();
         }
 
-        constexpr const_iterator end() const {
+        [[nodiscard]] constexpr const_iterator end() const {
             return this->begin() + size();
         }
 
-        constexpr const_reference operator[](size_t pos) const {
+        [[nodiscard]] constexpr const_reference operator[](size_t pos) const {
             return this->value[pos];
         }
 
-        constexpr const_reference at(size_t pos) const {
+        [[nodiscard]] constexpr const_reference at(size_t pos) const {
             if (pos >= this->size()) {
                 throw std::range_error("pos out of bounds");
             }
             return this->value[pos];
         }
 
-        constexpr const_reference front() const {
+        [[nodiscard]] constexpr const_reference front() const {
             return this->value[0];
         }
 
-        constexpr const_reference back() const {
+        [[nodiscard]] constexpr const_reference back() const {
             return this->value[size() - 1];
         }
 
-        constexpr const_pointer c_str() const {
+        [[nodiscard]] constexpr const_pointer c_str() const {
             return (const Char*) &this->value[0];
         }
 
@@ -62,6 +60,43 @@ namespace hat {
 
         [[nodiscard]] constexpr bool empty() const {
             return this->size() == 0;
+        }
+
+        template<
+            size_t Pos = 0,
+            size_t Count = npos,
+            size_t M = (Count == npos ? N - Pos : Count + 1)
+        >
+        [[nodiscard]] constexpr auto substr() const -> basic_string_literal<Char, M> {
+            static_assert(Pos + M - 1 < N);
+            Char buf[M]{};
+            std::copy_n(this->value + Pos, M - 1, buf);
+            return buf;
+        }
+
+        template<size_t M, size_t K = N + M - 1>
+        constexpr auto operator+(const basic_string_literal<Char, M>& str) const -> basic_string_literal<Char, K> {
+            Char buf[K]{};
+            std::copy_n(this->value, this->size(), buf);
+            std::copy_n(str.value, str.size(), buf + this->size());
+            return buf;
+        }
+
+        template<size_t M>
+        constexpr auto operator+(const Char (&str)[M]) const {
+            return *this + basic_string_literal<Char, M>{str};
+        }
+
+        constexpr bool operator==(const basic_string_literal<Char, N>& str) const {
+            return std::equal(this->begin(), this->end(), str.begin());
+        }
+
+        constexpr bool operator==(std::basic_string<Char> str) const {
+            return std::equal(this->begin(), this->end(), str.begin());
+        }
+
+        constexpr bool operator==(const Char* str) const {
+            return std::equal(this->begin(), this->end(), str);
         }
 
         Char value[N];
