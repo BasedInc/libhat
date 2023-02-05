@@ -14,7 +14,7 @@ namespace hat::detail {
         const auto firstByte = _mm256_set1_epi8(static_cast<int8_t>(*signature[0]));
 
         std::byte byteBuffer[32]{}; // The remaining signature bytes
-        std::byte maskBuffer[32]{};  // A bitmask for the signature bytes we care about
+        std::byte maskBuffer[32]{}; // A bitmask for the signature bytes we care about
         for (size_t i = 1; i < signature.size(); i++) {
             auto e = signature[i];
             if (e.has_value()) {

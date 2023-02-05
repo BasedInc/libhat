@@ -1,4 +1,5 @@
 #include <libhat/Defines.hpp>
+
 #ifdef LIBHAT_X86
 
 #include <libhat/Scanner.hpp>
