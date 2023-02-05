@@ -113,6 +113,8 @@ namespace hat::detail {
                 return find_pattern<scan_mode::AVX512>(begin, end, signature);
             } else if (size <= 33 && ext.avx2) {
                 return find_pattern<scan_mode::AVX2>(begin, end, signature);
+            } else if (size <= 17 && ext.sse41) {
+                return find_pattern<scan_mode::SSE>(begin, end, signature);
             }
         }
 #elif defined(LIBHAT_ARM)

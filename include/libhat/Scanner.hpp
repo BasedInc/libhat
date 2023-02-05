@@ -5,6 +5,7 @@
 #include <execution>
 #include <utility>
 
+#include "Concepts.hpp"
 #include "Defines.hpp"
 #include "Process.hpp"
 #include "Signature.hpp"
@@ -51,15 +52,11 @@ namespace hat {
 
     namespace detail {
 
-        template<typename T>
-        concept byte_iterator = std::forward_iterator<T>
-            && std::contiguous_iterator<T>
-            && std::same_as<std::iter_value_t<T>, std::byte>;
-
         enum class scan_mode {
             Auto,      // Automatically choose the mode to use
             Search,    // std::search
             FastFirst, // std::find + std::equal
+            SSE,       // x86 SSE 4.1
             AVX2,      // x86 AVX2
             AVX512,    // x86 AVX512
             Neon,      // ARM Neon
