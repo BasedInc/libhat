@@ -31,6 +31,13 @@
     #endif
 #endif
 
+#ifdef _MSC_VER
+    #include <intrin.h>
+    #define LIBHAT_RETURN_ADDRESS() _ReturnAddress()
+#else
+    #define LIBHAT_RETURN_ADDRESS() __builtin_extract_return_addr(__builtin_return_address(0))
+#endif
+
 #if __cpp_if_consteval >= 202106L
     #define LIBHAT_IF_CONSTEVAL consteval
 #else

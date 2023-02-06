@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "Concepts.hpp"
+#include "Defines.hpp"
 
 namespace hat::detail {
 
@@ -24,14 +25,20 @@ namespace hat::detail {
                 return captured();
             }
 
-            context(function_type* original, Capture&& captured) : original(original), captured(captured) {}
+            void* return_address() const {
+                return ret_addr;
+            }
+
+            context(function_type* original, Capture&& captured, void* ret_addr)
+                : original(original), captured(captured), ret_addr(ret_addr) {}
         private:
-            function_type* original;
-            Capture captured;
+            function_type*  original;
+            Capture         captured;
+            void*           ret_addr;
         };
 
         template<typename T>
-        context(function_type*, T&&) -> context<T>;
+        context(function_type*, T&&, void*) -> context<T>;
 
         template<auto wrapper, auto get_original>
         struct caller {
@@ -41,7 +48,8 @@ namespace hat::detail {
                 const auto original = get_original();
                 const context ctx{
                     original,
-                    [&]() { return original(std::forward<decltype(args)>(args)...); }
+                    [&]() { return original(std::forward<Args>(args)...); },
+                    LIBHAT_RETURN_ADDRESS()
                 };
                 using ctx_t = decltype(ctx);
 
@@ -50,7 +58,7 @@ namespace hat::detail {
                 if constexpr (invoke_with_args) {
                     // If the wrapper wants to receive the function arguments
                     static_assert(std::is_same_v<Ret, std::invoke_result_t<wrapper_type, const ctx_t&, Args&&...>>);
-                    return wrapper(ctx, std::forward<decltype(args)>(args)...);
+                    return wrapper(ctx, std::forward<Args>(args)...);
                 } else {
                     // Otherwise don't bother
                     static_assert(std::is_same_v<Ret, std::invoke_result_t<wrapper_type, const ctx_t&>>);
