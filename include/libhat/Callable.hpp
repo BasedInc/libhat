@@ -31,6 +31,9 @@ namespace hat::detail {
 
             context(function_type* original, Capture&& captured, void* ret_addr)
                 : original(original), captured(captured), ret_addr(ret_addr) {}
+
+            context(const context&) = delete;
+            context(context&&) = delete;
         private:
             function_type*  original;
             Capture         captured;
