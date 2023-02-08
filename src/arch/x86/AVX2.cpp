@@ -5,14 +5,11 @@
 #include <libhat/Scanner.hpp>
 
 #include <immintrin.h>
+#include <tuple>
 
 namespace hat::detail {
 
-    template<>
-    scan_result find_pattern<scan_mode::AVX2>(const std::byte* begin, const std::byte* end, signature_view signature) {
-        // 256 bit vector containing first signature byte repeated
-        const auto firstByte = _mm256_set1_epi8(static_cast<int8_t>(*signature[0]));
-
+    inline auto load_signature_256(signature_view signature) {
         std::byte byteBuffer[32]{}; // The remaining signature bytes
         std::byte maskBuffer[32]{}; // A bitmask for the signature bytes we care about
         for (size_t i = 1; i < signature.size(); i++) {
@@ -22,9 +19,17 @@ namespace hat::detail {
                 maskBuffer[i - 1] = std::byte{0xFFu};
             }
         }
+        return std::make_tuple(
+            _mm256_loadu_si256(reinterpret_cast<__m256i*>(&byteBuffer)),
+            _mm256_loadu_si256(reinterpret_cast<__m256i*>(&maskBuffer))
+        );
+    }
 
-        const auto signatureBytes = _mm256_loadu_si256(reinterpret_cast<__m256i*>(&byteBuffer));
-        const auto signatureMask = _mm256_loadu_si256(reinterpret_cast<__m256i*>(&maskBuffer));
+    template<>
+    scan_result find_pattern<scan_mode::AVX2>(const std::byte* begin, const std::byte* end, signature_view signature) {
+        // 256 bit vector containing first signature byte repeated
+        const auto firstByte = _mm256_set1_epi8(static_cast<int8_t>(*signature[0]));
+        const auto [signatureBytes, signatureMask] = load_signature_256(signature);
 
         auto vec = reinterpret_cast<const __m256i*>(begin);
         const auto n = static_cast<size_t>(end - signature.size() - begin) / sizeof(__m256i);

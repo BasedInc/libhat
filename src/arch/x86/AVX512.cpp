@@ -5,14 +5,11 @@
 #include <libhat/Scanner.hpp>
 
 #include <immintrin.h>
+#include <tuple>
 
 namespace hat::detail {
 
-    template<>
-    scan_result find_pattern<scan_mode::AVX512>(const std::byte* begin, const std::byte* end, signature_view signature) {
-        // 512 bit vector containing first signature byte repeated
-        const auto firstByte = _mm512_set1_epi8(static_cast<int8_t>(*signature[0]));
-
+    inline auto load_signature_512(signature_view signature) {
         std::byte byteBuffer[64]{}; // The remaining signature bytes
         uint64_t maskBuffer{}; // A bitmask for the signature bytes we care about
         for (size_t i = 1; i < signature.size(); i++) {
@@ -22,9 +19,17 @@ namespace hat::detail {
                 maskBuffer |= (1ull << (i - 1));
             }
         }
+        return std::make_tuple(
+            _mm512_loadu_si512(&byteBuffer),
+            _cvtu64_mask64(maskBuffer)
+        );
+    }
 
-        const auto signatureBytes = _mm512_loadu_si512(&byteBuffer);
-        const auto signatureMask = _cvtu64_mask64(maskBuffer);
+    template<>
+    scan_result find_pattern<scan_mode::AVX512>(const std::byte* begin, const std::byte* end, signature_view signature) {
+        // 512 bit vector containing first signature byte repeated
+        const auto firstByte = _mm512_set1_epi8(static_cast<int8_t>(*signature[0]));
+        const auto [signatureBytes, signatureMask] = load_signature_512(signature);
 
         auto vec = reinterpret_cast<const __m512i*>(begin);
         const auto n = static_cast<size_t>(end - signature.size() - begin) / sizeof(__m512i);
