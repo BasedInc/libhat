@@ -31,7 +31,7 @@ namespace hat::detail {
         const auto e = vec + n;
 
         for (; vec != e; vec++) {
-            const auto cmp = _mm256_cmpeq_epi8(firstByte, *vec);
+            const auto cmp = _mm256_cmpeq_epi8(firstByte, _mm256_loadu_si256(vec));
             auto mask = static_cast<uint32_t>(_mm256_movemask_epi8(cmp));
             while (mask) {
                 const auto offset = _tzcnt_u32(mask);

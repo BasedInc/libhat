@@ -31,7 +31,7 @@ namespace hat::detail {
         const auto e = vec + n;
 
         for (; vec != e; vec++) {
-            const auto cmp = _mm_cmpeq_epi8(firstByte, *vec);
+            const auto cmp = _mm_cmpeq_epi8(firstByte, _mm_loadu_si128(vec));
             auto mask = static_cast<uint32_t>(_mm_movemask_epi8(cmp));
             while (mask) {
                 const auto offset = LIBHAT_BSF32(mask);

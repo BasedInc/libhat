@@ -31,7 +31,7 @@ namespace hat::detail {
         const auto e = vec + n;
 
         for (; vec != e; vec++) {
-            auto mask = _mm512_cmpeq_epi8_mask(firstByte, *vec);
+            auto mask = _mm512_cmpeq_epi8_mask(firstByte, _mm512_loadu_si512(vec));
             while (mask) {
                 const auto offset = LIBHAT_TZCNT64(mask);
                 const auto i = reinterpret_cast<const std::byte*>(vec) + offset;
