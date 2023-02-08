@@ -69,8 +69,9 @@ namespace hat {
         // Check OS capabilities
         bool avxsupport = false;
         bool avx512support = false;
+        bool xsave = f_1_ECX_[26];
         bool osxsave = f_1_ECX_[27];
-        if (osxsave) {
+        if (xsave && osxsave) {
             // https://cdrdv2-public.intel.com/671190/253668-sdm-vol-3a.pdf (Page 2-20)
             const std::bitset<64> xcr = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
             avxsupport = xcr[1] && xcr[2]; // xmm and ymm
