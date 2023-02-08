@@ -34,7 +34,7 @@ namespace hat::detail {
             const auto cmp = _mm_cmpeq_epi8(firstByte, *vec);
             auto mask = static_cast<uint32_t>(_mm_movemask_epi8(cmp));
             while (mask) {
-                const auto offset = _tzcnt_u32(mask);
+                const auto offset = LIBHAT_BSF32(mask);
                 const auto i = reinterpret_cast<const std::byte*>(vec) + offset;
                 const auto data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(i + 1));
                 const auto cmpToSig = _mm_cmpeq_epi8(signatureBytes, data);
@@ -42,7 +42,7 @@ namespace hat::detail {
                 if (matched) {
                     return i;
                 }
-                mask = _blsr_u32(mask);
+                mask &= (mask - 1);
             }
         }
 

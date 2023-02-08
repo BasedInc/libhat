@@ -33,9 +33,26 @@
 
 #ifdef _MSC_VER
     #include <intrin.h>
+
+    namespace hat::detail {
+        inline unsigned long bsf(unsigned long num) {
+            unsigned long offset;
+            _BitScanForward(&offset, num);
+            return offset;
+        }
+    }
+
     #define LIBHAT_RETURN_ADDRESS() _ReturnAddress()
+    #define LIBHAT_BSF32(num) hat::detail::bsf(num)
 #else
+    #if defined(__clang__)
+        #include <x86intrin.h>
+    #elif defined(__GNUC__)
+        #include <x86gprintrin.h>
+    #endif
+
     #define LIBHAT_RETURN_ADDRESS() __builtin_extract_return_addr(__builtin_return_address(0))
+    #define LIBHAT_BSF32(num) _bit_scan_forward(num)
 #endif
 
 #if __cpp_if_consteval >= 202106L
