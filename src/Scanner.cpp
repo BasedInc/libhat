@@ -44,14 +44,15 @@ namespace hat::detail {
         const auto size = signature.size();
 #if defined(LIBHAT_X86)
         const auto& ext = get_system().extensions;
-        if (ext.bmi1 && ext.popcnt) {
+        if (ext.bmi1) {
             if (size <= 65 && ext.avx512) {
                 return find_pattern<scan_mode::AVX512>(begin, end, signature);
             } else if (size <= 33 && ext.avx2) {
                 return find_pattern<scan_mode::AVX2>(begin, end, signature);
-            } else if (size <= 17 && ext.sse41) {
-                return find_pattern<scan_mode::SSE>(begin, end, signature);
             }
+        }
+        if (size <= 17 && ext.sse41) {
+            return find_pattern<scan_mode::SSE>(begin, end, signature);
         }
 #elif defined(LIBHAT_ARM)
         if (size <= 17) {
