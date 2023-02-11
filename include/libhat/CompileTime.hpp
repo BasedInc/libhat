@@ -16,11 +16,8 @@ namespace hat {
 
         static constexpr auto npos = static_cast<size_t>(-1);
 
-        constexpr basic_string_literal(const Char (&str)[N]) {
+        constexpr basic_string_literal(const Char (&str)[N + 1]) {
             std::copy_n(str, N, value);
-            if (str[N - 1] != '\0') {
-                throw std::invalid_argument("str must be null-terminated");
-            }
         }
 
         [[nodiscard]] constexpr const_iterator begin() const {
@@ -28,7 +25,7 @@ namespace hat {
         }
 
         [[nodiscard]] constexpr const_iterator end() const {
-            return this->begin() + size();
+            return this->begin() + this->size();
         }
 
         [[nodiscard]] constexpr const_reference operator[](size_t pos) const {
@@ -55,7 +52,7 @@ namespace hat {
         }
 
         [[nodiscard]] constexpr size_t size() const {
-            return N - 1;
+            return N;
         }
 
         [[nodiscard]] constexpr bool empty() const {
@@ -65,18 +62,18 @@ namespace hat {
         template<
             size_t Pos = 0,
             size_t Count = npos,
-            size_t M = (Count == npos ? N - Pos : Count + 1)
+            size_t M = (Count == npos ? N - Pos : Count)
         >
         [[nodiscard]] constexpr auto substr() const -> basic_string_literal<Char, M> {
-            static_assert(Pos + M - 1 < N);
-            Char buf[M]{};
-            std::copy_n(this->value + Pos, M - 1, buf);
+            static_assert(Pos + M <= N);
+            Char buf[M + 1]{};
+            std::copy_n(this->value + Pos, M, buf);
             return buf;
         }
 
-        template<size_t M, size_t K = N + M - 1>
+        template<size_t M, size_t K = N + M>
         constexpr auto operator+(const basic_string_literal<Char, M>& str) const -> basic_string_literal<Char, K> {
-            Char buf[K]{};
+            Char buf[K + 1]{};
             std::copy_n(this->value, this->size(), buf);
             std::copy_n(str.value, str.size(), buf + this->size());
             return buf;
@@ -84,7 +81,7 @@ namespace hat {
 
         template<size_t M>
         constexpr auto operator+(const Char (&str)[M]) const {
-            return *this + basic_string_literal<Char, M>{str};
+            return *this + basic_string_literal<Char, M - 1>{str};
         }
 
         constexpr bool operator==(const basic_string_literal<Char, N>& str) const {
@@ -99,7 +96,7 @@ namespace hat {
             return std::equal(this->begin(), this->end(), str);
         }
 
-        Char value[N];
+        Char value[N + 1]{};
     };
 
     #define LIBHAT_DEFINE_STRING_LITERAL(name, type)                \
@@ -108,7 +105,7 @@ namespace hat {
         using basic_string_literal<type, N>::basic_string_literal;  \
     };                                                              \
     template<size_t N>                                              \
-    name(const type(&str)[N]) -> name<N>;
+    name(const type(&str)[N]) -> name<N - 1>;
 
     LIBHAT_DEFINE_STRING_LITERAL(string_literal,    char)
     LIBHAT_DEFINE_STRING_LITERAL(wstring_literal,   wchar_t)
