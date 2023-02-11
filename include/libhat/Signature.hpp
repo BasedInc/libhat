@@ -56,7 +56,7 @@ namespace hat {
         return sig;
     }
 
-    /// Parses a signature string at compile time, and provides a signature_view which exists for the program's lifetime
+    /// Parses a signature string at compile time and returns the result as a fixed_signature
     template<string_literal str>
     [[nodiscard]] consteval auto compile_signature() {
         const auto sig = parse_signature(str.c_str());
