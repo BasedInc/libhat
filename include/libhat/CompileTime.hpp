@@ -84,16 +84,17 @@ namespace hat {
             return *this + basic_string_literal<Char, M - 1>{str};
         }
 
-        constexpr bool operator==(const basic_string_literal<Char, N>& str) const {
-            return std::equal(this->begin(), this->end(), str.begin());
+        template<size_t M>
+        constexpr bool operator==(const basic_string_literal<Char, M>& str) const {
+            return std::equal(this->begin(), this->end(), str.begin(), str.end());
         }
 
         constexpr bool operator==(std::basic_string<Char> str) const {
-            return std::equal(this->begin(), this->end(), str.begin());
+            return std::equal(this->begin(), this->end(), str.begin(), str.end());
         }
 
         constexpr bool operator==(const Char* str) const {
-            return std::equal(this->begin(), this->end(), str);
+            return std::equal(this->begin(), this->end(), str, str + std::char_traits<Char>::length(str));
         }
 
         Char value[N + 1]{};
