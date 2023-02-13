@@ -48,7 +48,7 @@ namespace hat {
         }
 
         [[nodiscard]] constexpr const_pointer c_str() const {
-            return (const Char*) &this->value[0];
+            return static_cast<const Char*>(this->value);
         }
 
         [[nodiscard]] constexpr size_t size() const {
