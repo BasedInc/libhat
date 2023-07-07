@@ -16,6 +16,10 @@ namespace hat {
 
         static constexpr auto npos = static_cast<size_t>(-1);
 
+        constexpr basic_string_literal(std::basic_string_view<Char> str) {
+            std::copy_n(str.data(), N, value);
+        }
+
         constexpr basic_string_literal(const Char (&str)[N + 1]) {
             std::copy_n(str, N, value);
         }
