@@ -107,7 +107,7 @@ namespace hat {
     #define LIBHAT_DEFINE_STRING_LITERAL(name, type)                        \
     template<size_t N>                                                      \
     struct name : public basic_string_literal<type, N, name> {              \
-        using basic_string_literal<type, N, name>::basic_string_literal; \
+        using basic_string_literal<type, N, name>::basic_string_literal;    \
     };                                                                      \
     template<size_t N>                                                      \
     name(const type(&str)[N]) -> name<N - 1>;
