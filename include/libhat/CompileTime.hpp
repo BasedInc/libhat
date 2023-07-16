@@ -8,7 +8,7 @@
 
 namespace hat {
 
-    template<typename Char, size_t N>
+    template<typename Char, size_t N, template<size_t> typename Derived>
     struct basic_string_literal {
         using const_reference   = const Char&;
         using const_pointer     = const Char*;
@@ -68,7 +68,7 @@ namespace hat {
             size_t Count = npos,
             size_t M = (Count == npos ? N - Pos : Count)
         >
-        [[nodiscard]] constexpr auto substr() const -> basic_string_literal<Char, M> {
+        [[nodiscard]] constexpr auto substr() const -> Derived<M> {
             static_assert(Pos + M <= N);
             Char buf[M + 1]{};
             std::copy_n(this->value + Pos, M, buf);
@@ -76,7 +76,7 @@ namespace hat {
         }
 
         template<size_t M, size_t K = N + M>
-        constexpr auto operator+(const basic_string_literal<Char, M>& str) const -> basic_string_literal<Char, K> {
+        constexpr auto operator+(const basic_string_literal<Char, M, Derived>& str) const -> Derived<K> {
             Char buf[K + 1]{};
             std::copy_n(this->value, this->size(), buf);
             std::copy_n(str.value, str.size(), buf + this->size());
@@ -85,11 +85,11 @@ namespace hat {
 
         template<size_t M>
         constexpr auto operator+(const Char (&str)[M]) const {
-            return *this + basic_string_literal<Char, M - 1>{str};
+            return *this + basic_string_literal<Char, M - 1, Derived>{str};
         }
 
         template<size_t M>
-        constexpr bool operator==(const basic_string_literal<Char, M>& str) const {
+        constexpr bool operator==(const basic_string_literal<Char, M, Derived>& str) const {
             return std::equal(this->begin(), this->end(), str.begin(), str.end());
         }
 
@@ -104,12 +104,12 @@ namespace hat {
         Char value[N + 1]{};
     };
 
-    #define LIBHAT_DEFINE_STRING_LITERAL(name, type)                \
-    template<size_t N>                                              \
-    struct name : public basic_string_literal<type, N> {            \
-        using basic_string_literal<type, N>::basic_string_literal;  \
-    };                                                              \
-    template<size_t N>                                              \
+    #define LIBHAT_DEFINE_STRING_LITERAL(name, type)                        \
+    template<size_t N>                                                      \
+    struct name : public basic_string_literal<type, N, name> {              \
+        using basic_string_literal<type, N, name>::basic_string_literal; \
+    };                                                                      \
+    template<size_t N>                                                      \
     name(const type(&str)[N]) -> name<N - 1>;
 
     LIBHAT_DEFINE_STRING_LITERAL(string_literal,    char)
