@@ -85,7 +85,7 @@ namespace hat {
 
         template<size_t M>
         constexpr auto operator+(const Char (&str)[M]) const {
-            return *this + basic_string_literal<Char, M - 1, Derived>{str};
+            return *this + Derived<M - 1>{str};
         }
 
         template<size_t M>
