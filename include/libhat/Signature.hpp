@@ -50,7 +50,7 @@ namespace hat {
                 sig.emplace_back(std::nullopt);
             } else {
                 const auto sv = std::string_view{word.begin(), word.end()};
-                sig.emplace_back(static_cast<std::byte>(atoi(sv, 16) & 0xFF));
+                sig.emplace_back(static_cast<std::byte>(parse_int<uint8_t>(sv, 16)));
             }
         }
         return sig;

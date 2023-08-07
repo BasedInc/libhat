@@ -120,13 +120,13 @@ namespace hat {
 
     #undef LIBHAT_DEFINE_STRING_LITERAL
 
-    template<detail::char_iterator Iter>
-    static constexpr int atoi(Iter begin, Iter end, int base = 10) {
+    template<typename Integer, detail::char_iterator Iter>
+    static constexpr Integer parse_int(Iter begin, Iter end, int base = 10) {
         if (base < 2 || base > 36) {
             throw std::invalid_argument("Invalid base specified");
         }
 
-        int value = 0;
+        Integer value = 0;
         auto digits = base < 10 ? base : 10;
         auto letters = base > 10 ? base - 10 : 0;
 
@@ -147,7 +147,8 @@ namespace hat {
         return value;
     }
 
-    static constexpr int atoi(std::string_view str, int base = 10) {
-        return atoi(str.cbegin(), str.cend(), base);
+    template<typename Integer>
+    static constexpr Integer parse_int(std::string_view str, int base = 10) {
+        return parse_int<Integer>(str.cbegin(), str.cend(), base);
     }
 }
