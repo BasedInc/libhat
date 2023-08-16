@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ranges>
+#include <span>
 #include <string_view>
 
 namespace hat::process {
@@ -8,11 +8,11 @@ namespace hat::process {
     // TODO: Consider using a typedef or class instead? idk
     enum class module_t : uintptr_t {};
 
-    /// Returns the module for the curent process's base executable
+    /// Returns the module for the current process's base executable
     auto get_process_module() -> module_t;
 
     /// Returns a module by its given name in the current process
-    auto get_module(std::string_view name) -> module_t;
+    auto get_module(const std::string& name) -> module_t;
 
     /// Returns the module located at the specified base address
     auto module_at(uintptr_t address) -> module_t;

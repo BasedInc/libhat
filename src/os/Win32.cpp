@@ -118,6 +118,10 @@ namespace hat::process {
         return module_t{reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr))};
     }
 
+    module_t get_module(const std::string& name) {
+        return module_at(reinterpret_cast<uintptr_t>(GetModuleHandleA(name.c_str())));
+    }
+
     std::span<std::byte> get_module_data(module_t mod) {
         auto* const scanBytes = reinterpret_cast<std::byte*>(mod);
         auto* const ntHeaders = GetNTHeaders(mod);
