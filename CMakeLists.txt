@@ -28,7 +28,6 @@ set(LIBHAT_SRC
     src/arch/x86/AVX512.cpp
     src/arch/x86/System.cpp
 
-    src/arch/arm/Neon.cpp
     src/arch/arm/System.cpp)
 
 add_library(libhat STATIC ${LIBHAT_SRC})

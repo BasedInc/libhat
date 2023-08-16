@@ -26,7 +26,7 @@ namespace hat::detail {
     }
 
     template<>
-    scan_result find_pattern<scan_mode::AVX512>(const std::byte* begin, const std::byte* end, signature_view signature) {
+    scan_result find_pattern<scan_mode::AVX512, scan_alignment::X1>(const std::byte* begin, const std::byte* end, signature_view signature) {
         // 512 bit vector containing first signature byte repeated
         const auto firstByte = _mm512_set1_epi8(static_cast<int8_t>(*signature[0]));
         const auto [signatureBytes, signatureMask] = load_signature_512(signature);
@@ -51,7 +51,7 @@ namespace hat::detail {
 
         // Look in remaining bytes that couldn't be grouped into 512 bits
         begin = reinterpret_cast<const std::byte*>(vec);
-        return find_pattern<scan_mode::Single>(begin, end, signature);
+        return find_pattern<scan_mode::Single, scan_alignment::X1>(begin, end, signature);
     }
 }
 #endif

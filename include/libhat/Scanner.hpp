@@ -16,7 +16,8 @@ namespace hat {
         using rel_t = int32_t;
     public:
         constexpr scan_result() : result(nullptr) {}
-        constexpr scan_result(const std::byte* result) : result(result) {} // NOLINT(google-explicit-constructor)
+        constexpr scan_result(std::nullptr_t) : result(nullptr) {}          // NOLINT(google-explicit-constructor)
+        constexpr scan_result(const std::byte* result) : result(result) {}  // NOLINT(google-explicit-constructor)
 
         /// Reads an integer of the specified type located at an offset from the signature result
         template<std::integral Int>
@@ -50,29 +51,30 @@ namespace hat {
         const std::byte* result;
     };
 
+    enum class scan_alignment {
+        X1
+    };
+
     namespace detail {
 
         enum class scan_mode {
-            Auto,      // Automatically choose the mode to use
-            Search,    // std::search
             FastFirst, // std::find + std::equal
             SSE,       // x86 SSE 4.1
             AVX2,      // x86 AVX2
             AVX512,    // x86 AVX512
-            Neon,      // ARM Neon
 
             // Fallback mode to use for SIMD remaining bytes
             Single = FastFirst
         };
 
-        template<scan_mode>
+        template<scan_mode, scan_alignment>
+        scan_result find_pattern(const std::byte* begin, const std::byte* end, signature_view signature);
+
+        template<scan_alignment alignment>
         scan_result find_pattern(const std::byte* begin, const std::byte* end, signature_view signature);
 
         template<>
-        scan_result find_pattern<scan_mode::Auto>(const std::byte* begin, const std::byte* end, signature_view signature);
-
-        template<>
-        constexpr scan_result find_pattern<scan_mode::FastFirst>(const std::byte* begin, const std::byte* end, signature_view signature) {
+        constexpr scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X1>(const std::byte* begin, const std::byte* end, signature_view signature) {
             const auto firstByte = *signature[0];
             const auto scanEnd = end - signature.size() + 1;
 
@@ -111,29 +113,31 @@ namespace hat {
     );
 
     /// Perform a signature scan on the entirety of the process module or a specified module
+    template<scan_alignment alignment = scan_alignment::X1>
     scan_result find_pattern(
         signature_view      signature,
         process::module_t   mod = process::get_process_module()
     );
 
     /// Perform a signature scan on a specific section of the process module or a specified module
+    template<scan_alignment alignment = scan_alignment::X1>
     scan_result find_pattern(
         signature_view      signature,
         std::string_view    section,
         process::module_t   mod = process::get_process_module()
     );
 
-    /// Root implementation of FindPattern
-    template<detail::byte_iterator Iter>
+    /// Root implementation of find_pattern
+    template<detail::byte_iterator Iter, scan_alignment alignment = scan_alignment::X1>
     constexpr scan_result find_pattern(
         Iter            begin,
         Iter            end,
         signature_view  signature
     ) {
         if LIBHAT_IF_CONSTEVAL {
-            return detail::find_pattern<detail::scan_mode::Single>(std::to_address(begin), std::to_address(end), signature);
+            return detail::find_pattern<detail::scan_mode::Single, alignment>(std::to_address(begin), std::to_address(end), signature);
         } else {
-            return detail::find_pattern<detail::scan_mode::Auto>(std::to_address(begin), std::to_address(end), signature);
+            return detail::find_pattern<alignment>(std::to_address(begin), std::to_address(end), signature);
         }
     }
 }
