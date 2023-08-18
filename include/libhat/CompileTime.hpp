@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include "Concepts.hpp"
+#include "Result.hpp"
 
 namespace hat {
 
@@ -120,18 +121,36 @@ namespace hat {
 
     #undef LIBHAT_DEFINE_STRING_LITERAL
 
+    enum class parse_int_error {
+        invalid_base,
+        illegal_char
+    };
+
     template<typename Integer, detail::char_iterator Iter>
-    static constexpr Integer parse_int(Iter begin, Iter end, int base = 10) {
+    inline constexpr result<Integer, parse_int_error> parse_int(Iter begin, Iter end, int base = 10) noexcept {
         if (base < 2 || base > 36) {
-            throw std::invalid_argument("Invalid base specified");
+            return result_error{parse_int_error::invalid_base};
         }
 
+        Integer sign = 1;
         Integer value = 0;
         auto digits = base < 10 ? base : 10;
         auto letters = base > 10 ? base - 10 : 0;
 
         for (auto iter = begin; iter != end; iter++) {
             char ch = *iter;
+
+            if constexpr (std::is_signed_v<Integer>) {
+                if (iter == begin) {
+                    if (ch == '+') {
+                        continue;
+                    } else if (ch == '-') {
+                        sign = -1;
+                        continue;
+                    }
+                }
+            }
+
             value *= base;
             if (ch >= '0' && ch < '0' + digits) {
                 value += (ch - '0');
@@ -141,14 +160,14 @@ namespace hat {
                 value += (ch - 'a' + 10);
             } else {
                 // Throws an exception at runtime AND prevents constexpr evaluation
-                throw std::invalid_argument("Unexpected character in integer string");
+                return result_error{parse_int_error::illegal_char};
             }
         }
-        return value;
+        return sign * value;
     }
 
     template<typename Integer>
-    static constexpr Integer parse_int(std::string_view str, int base = 10) {
+    inline constexpr result<Integer, parse_int_error> parse_int(std::string_view str, int base = 10) noexcept {
         return parse_int<Integer>(str.cbegin(), str.cend(), base);
     }
 }

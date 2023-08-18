@@ -38,19 +38,29 @@ namespace hat {
         return sig;
     }
 
-    [[nodiscard]] constexpr signature parse_signature(std::string_view str) {
+    enum class signature_parse_error {
+        illegal_wildcard,
+        parse_error,
+    };
+
+    [[nodiscard]] constexpr result<signature, signature_parse_error> parse_signature(std::string_view str) {
         signature sig{};
         for (const auto& word : str | std::views::split(' ')) {
             if (word.empty()) {
                 continue;
             } else if (word[0] == '?') {
                 if (sig.empty()) {
-                    throw std::invalid_argument("First byte cannot be a wildcard");
+                    return result_error{signature_parse_error::illegal_wildcard};
                 }
                 sig.emplace_back(std::nullopt);
             } else {
                 const auto sv = std::string_view{word.begin(), word.end()};
-                sig.emplace_back(static_cast<std::byte>(parse_int<uint8_t>(sv, 16)));
+                auto parsed = parse_int<uint8_t>(sv, 16);
+                if (parsed.has_value()) {
+                    sig.emplace_back(static_cast<std::byte>(parsed.value()));
+                } else {
+                    return result_error{signature_parse_error::parse_error};
+                }
             }
         }
         return sig;
@@ -59,8 +69,8 @@ namespace hat {
     /// Parses a signature string at compile time and returns the result as a fixed_signature
     template<string_literal str>
     [[nodiscard]] consteval auto compile_signature() {
-        const auto sig = parse_signature(str.c_str());
-        constexpr auto N = parse_signature(str.c_str()).size();
+        const auto sig = parse_signature(str.c_str()).value();
+        constexpr auto N = parse_signature(str.c_str()).value().size();
         fixed_signature<N> arr{};
         std::ranges::move(sig, arr.begin());
         return arr;
