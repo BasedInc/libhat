@@ -126,7 +126,7 @@ namespace hat {
         illegal_char
     };
 
-    template<typename Integer, detail::char_iterator Iter>
+    template<std::integral Integer, detail::char_iterator Iter>
     inline constexpr result<Integer, parse_int_error> parse_int(Iter begin, Iter end, int base = 10) noexcept {
         if (base < 2 || base > 36) {
             return result_error{parse_int_error::invalid_base};
