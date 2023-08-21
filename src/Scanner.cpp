@@ -25,8 +25,10 @@ namespace hat {
         return find_pattern<alignment>(data.begin(), data.end(), signature);
     }
 
-    template scan_result find_pattern<scan_alignment::X1>(signature_view signature, module_t mod);
-    template scan_result find_pattern<scan_alignment::X1>(signature_view signature, std::string_view section, module_t mod);
+    template scan_result find_pattern<scan_alignment::X1>(signature_view, module_t);
+    template scan_result find_pattern<scan_alignment::X1>(signature_view, std::string_view, module_t);
+    template scan_result find_pattern<scan_alignment::X16>(signature_view, module_t);
+    template scan_result find_pattern<scan_alignment::X16>(signature_view, std::string_view, module_t);
 }
 
 namespace hat::detail {
@@ -51,5 +53,6 @@ namespace hat::detail {
         return find_pattern<scan_mode::Single, alignment>(begin, end, signature);
     }
 
-    template scan_result find_pattern<scan_alignment::X1>(const std::byte* begin, const std::byte* end, signature_view signature);
+    template scan_result find_pattern<scan_alignment::X1>(const std::byte*, const std::byte*, signature_view);
+    template scan_result find_pattern<scan_alignment::X16>(const std::byte*, const std::byte*, signature_view);
 }

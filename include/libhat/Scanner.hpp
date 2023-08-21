@@ -52,7 +52,8 @@ namespace hat {
     };
 
     enum class scan_alignment {
-        X1
+        X1 = 1,
+        X16 = 16
     };
 
     namespace detail {
@@ -67,6 +68,37 @@ namespace hat {
             Single = FastFirst
         };
 
+        template<scan_alignment alignment>
+        inline constexpr auto alignment_stride = static_cast<std::underlying_type_t<scan_alignment>>(alignment);
+
+        template<std::integral type, scan_alignment alignment, auto stride = alignment_stride<alignment>>
+        inline consteval auto create_alignment_mask() {
+            type mask{};
+            for (size_t i = 0; i < sizeof(type) * 8; i += stride) {
+                mask |= (type(1) << i);
+            }
+            return mask;
+        }
+
+        template<scan_alignment alignment, auto stride = alignment_stride<alignment>>
+        inline const std::byte* next_boundary_align(const std::byte* ptr) {
+            if constexpr (stride == 1) {
+                return ptr;
+            }
+            uintptr_t mod = reinterpret_cast<uintptr_t>(ptr) % stride;
+            ptr += mod ? stride - mod : 0;
+            return ptr;
+        }
+
+        template<scan_alignment alignment, auto stride = alignment_stride<alignment>>
+        inline const std::byte* prev_boundary_align(const std::byte* ptr) {
+            if constexpr (stride == 1) {
+                return ptr;
+            }
+            uintptr_t mod = reinterpret_cast<uintptr_t>(ptr) % stride;
+            return ptr - mod;
+        }
+
         template<scan_mode, scan_alignment>
         scan_result find_pattern(const std::byte* begin, const std::byte* end, signature_view signature);
 
@@ -74,7 +106,7 @@ namespace hat {
         scan_result find_pattern(const std::byte* begin, const std::byte* end, signature_view signature);
 
         template<>
-        constexpr scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X1>(const std::byte* begin, const std::byte* end, signature_view signature) {
+        inline constexpr scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X1>(const std::byte* begin, const std::byte* end, signature_view signature) {
             const auto firstByte = *signature[0];
             const auto scanEnd = end - signature.size() + 1;
 
@@ -94,6 +126,30 @@ namespace hat {
                 });
                 if (match) {
                     return i;
+                }
+            }
+            return nullptr;
+        }
+
+        template<>
+        inline scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X16>(const std::byte* begin, const std::byte* end, signature_view signature) {
+            const auto firstByte = *signature[0];
+
+            const auto scanBegin = next_boundary_align<scan_alignment::X16>(begin);
+            const auto scanEnd = prev_boundary_align<scan_alignment::X16>(end - signature.size() + 1);
+            if (scanBegin >= scanEnd) {
+                return {};
+            }
+
+            for (auto i = scanBegin; i != scanEnd; i += 16) {
+                if (*i == firstByte) {
+                    // Compare everything after the first byte
+                    auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
+                        return !opt.has_value() || *opt == byte;
+                    });
+                    if (match) {
+                        return i;
+                    }
                 }
             }
             return nullptr;

@@ -25,11 +25,16 @@ namespace hat::detail {
         );
     }
 
-    template<>
-    scan_result find_pattern<scan_mode::AVX2, scan_alignment::X1>(const std::byte* begin, const std::byte* end, signature_view signature) {
+    template<scan_alignment alignment>
+    scan_result find_pattern_avx2(const std::byte* begin, const std::byte* end, signature_view signature) {
         // 256 bit vector containing first signature byte repeated
         const auto firstByte = _mm256_set1_epi8(static_cast<int8_t>(*signature[0]));
         const auto [signatureBytes, signatureMask] = load_signature_256(signature);
+
+        begin = next_boundary_align<alignment>(begin);
+        if (begin >= end) {
+            return {};
+        }
 
         auto vec = reinterpret_cast<const __m256i*>(begin);
         const auto n = static_cast<size_t>(end - signature.size() - begin) / sizeof(__m256i);
@@ -38,6 +43,7 @@ namespace hat::detail {
         for (; vec != e; vec++) {
             const auto cmp = _mm256_cmpeq_epi8(firstByte, _mm256_loadu_si256(vec));
             auto mask = static_cast<uint32_t>(_mm256_movemask_epi8(cmp));
+            mask &= create_alignment_mask<uint32_t, alignment>();
             while (mask) {
                 const auto offset = _tzcnt_u32(mask);
                 const auto i = reinterpret_cast<const std::byte*>(vec) + offset;
@@ -53,7 +59,17 @@ namespace hat::detail {
 
         // Look in remaining bytes that couldn't be grouped into 256 bits
         begin = reinterpret_cast<const std::byte*>(vec);
-        return find_pattern<scan_mode::Single, scan_alignment::X1>(begin, end, signature);
+        return find_pattern<scan_mode::Single, alignment>(begin, end, signature);
+    }
+
+    template<>
+    scan_result find_pattern<scan_mode::AVX2, scan_alignment::X1>(const std::byte* begin, const std::byte* end, signature_view signature) {
+        return find_pattern_avx2<scan_alignment::X1>(begin, end, signature);
+    }
+
+    template<>
+    scan_result find_pattern<scan_mode::AVX2, scan_alignment::X16>(const std::byte* begin, const std::byte* end, signature_view signature) {
+        return find_pattern_avx2<scan_alignment::X16>(begin, end, signature);
     }
 }
 #endif
