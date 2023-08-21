@@ -24,6 +24,9 @@ namespace hat {
         }
         return find_pattern<alignment>(data.begin(), data.end(), signature);
     }
+
+    template scan_result find_pattern<scan_alignment::X1>(signature_view signature, module_t mod);
+    template scan_result find_pattern<scan_alignment::X1>(signature_view signature, std::string_view section, module_t mod);
 }
 
 namespace hat::detail {
@@ -47,4 +50,6 @@ namespace hat::detail {
         // If none of the vectorized implementations are available/supported, then fallback to scanning per-byte
         return find_pattern<scan_mode::Single, alignment>(begin, end, signature);
     }
+
+    template scan_result find_pattern<scan_alignment::X1>(const std::byte* begin, const std::byte* end, signature_view signature);
 }

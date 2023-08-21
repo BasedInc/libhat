@@ -128,7 +128,7 @@ namespace hat {
     );
 
     /// Root implementation of find_pattern
-    template<detail::byte_iterator Iter, scan_alignment alignment = scan_alignment::X1>
+    template<scan_alignment alignment = scan_alignment::X1, detail::byte_iterator Iter>
     constexpr scan_result find_pattern(
         Iter            begin,
         Iter            end,
