@@ -40,7 +40,7 @@ namespace hat::detail {
             if (size <= 65 && ext.avx512) {
                 return find_pattern<scan_mode::AVX512, alignment>(begin, end, signature);
             } else if (size <= 33 && ext.avx2) {
-                return find_pattern<scan_mode::AVX512, alignment>(begin, end, signature);
+                return find_pattern<scan_mode::AVX2, alignment>(begin, end, signature);
             }
         }
         if (size <= 17 && ext.sse41) {
