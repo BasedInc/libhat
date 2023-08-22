@@ -106,6 +106,14 @@ namespace hat {
             return std::equal(this->begin(), this->end(), str, str + std::char_traits<Char>::length(str));
         }
 
+        constexpr std::basic_string<Char> str() const {
+            return {this->begin(), this->end()};
+        }
+
+        constexpr std::basic_string_view<Char> to_view() const {
+            return {this->begin(), this->end()};
+        }
+
         Char value[N + 1]{};
     };
 
