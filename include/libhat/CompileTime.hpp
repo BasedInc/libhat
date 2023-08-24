@@ -117,13 +117,17 @@ namespace hat {
         Char value[N + 1]{};
     };
 
-    #define LIBHAT_DEFINE_STRING_LITERAL(name, type)                        \
-    template<size_t N>                                                      \
-    struct name : public basic_string_literal<type, N, name> {              \
-        using basic_string_literal<type, N, name>::basic_string_literal;    \
-    };                                                                      \
-    template<size_t N>                                                      \
-    name(const type(&str)[N]) -> name<N - 1>;
+    #define LIBHAT_DEFINE_STRING_LITERAL(name, type)                                                            \
+    template<size_t N>                                                                                          \
+    struct name : public basic_string_literal<type, N, name> {                                                  \
+        using basic_string_literal<type, N, name>::basic_string_literal;                                        \
+    };                                                                                                          \
+    template<size_t N>                                                                                          \
+    name(const type(&str)[N]) -> name<N - 1>;                                                                   \
+    template<size_t N, size_t M>                                                                                \
+    constexpr inline auto operator+(const type (&cstr)[N], const basic_string_literal<type, M, name>& lstr) {   \
+        return name{cstr} + lstr;                                                                               \
+    }
 
     LIBHAT_DEFINE_STRING_LITERAL(string_literal,    char)
     LIBHAT_DEFINE_STRING_LITERAL(wstring_literal,   wchar_t)
