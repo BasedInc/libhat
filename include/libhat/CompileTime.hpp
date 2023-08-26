@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <string>
-#include <stdexcept>
 
 #include "Concepts.hpp"
 #include "Result.hpp"
