@@ -38,9 +38,6 @@ namespace hat {
         }
 
         [[nodiscard]] constexpr const_reference at(size_t pos) const {
-            if (pos >= this->size()) {
-                throw std::range_error("pos out of bounds");
-            }
             return this->value[pos];
         }
 
