@@ -35,3 +35,10 @@ add_library(libhat STATIC ${LIBHAT_SRC})
 target_include_directories(libhat PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
     $<INSTALL_INTERFACE:include>)
+
+install(TARGETS libhat
+        EXPORT libhat-targets
+        RUNTIME DESTINATION "bin"
+        ARCHIVE DESTINATION "lib"
+        LIBRARY DESTINATION "lib"
+)
