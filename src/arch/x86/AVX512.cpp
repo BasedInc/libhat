@@ -29,7 +29,7 @@ namespace hat::detail {
     scan_result find_pattern_avx512(const std::byte* begin, const std::byte* end, signature_view signature) {
         // 512 bit vector containing first signature byte repeated
         const auto firstByte = _mm512_set1_epi8(static_cast<int8_t>(*signature[0]));
-        const auto [signatureBytes, signatureMask] = load_signature_512(signature);
+        alignas(__m512i) const auto [signatureBytes, signatureMask] = load_signature_512(signature);
 
         begin = next_boundary_align<alignment>(begin);
         if (begin >= end) {

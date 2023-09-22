@@ -29,7 +29,7 @@ namespace hat::detail {
     scan_result find_pattern_avx2(const std::byte* begin, const std::byte* end, signature_view signature) {
         // 256 bit vector containing first signature byte repeated
         const auto firstByte = _mm256_set1_epi8(static_cast<int8_t>(*signature[0]));
-        const auto [signatureBytes, signatureMask] = load_signature_256(signature);
+        alignas(__m256i) const auto [signatureBytes, signatureMask] = load_signature_256(signature);
 
         begin = next_boundary_align<alignment>(begin);
         if (begin >= end) {
