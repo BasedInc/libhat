@@ -85,7 +85,7 @@ namespace hat::detail {
     };
 }
 
-namespace hat {
+namespace hat::experimental {
 
     template<
         detail::function           Fn,
