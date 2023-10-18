@@ -25,7 +25,7 @@ namespace hat::detail {
         );
     }
 
-    template<scan_alignment alignment, bool cmpeq2>
+    template<scan_alignment alignment, bool cmpeq2, bool veccmp>
     scan_result find_pattern_avx2(const std::byte* begin, const std::byte* end, signature_view signature) {
         // 256 bit vector containing first signature byte repeated
         const auto firstByte = _mm256_set1_epi8(static_cast<int8_t>(*signature[0]));
@@ -62,11 +62,20 @@ namespace hat::detail {
             while (mask) {
                 const auto offset = _tzcnt_u32(mask);
                 const auto i = reinterpret_cast<const std::byte*>(vec) + offset;
-                const auto data = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(i + 1));
-                const auto cmpToSig = _mm256_cmpeq_epi8(signatureBytes, data);
-                const auto matched = _mm256_testc_si256(cmpToSig, signatureMask);
-                if (matched) {
-                    return i;
+                if constexpr (veccmp) {
+                    const auto data = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(i + 1));
+                    const auto cmpToSig = _mm256_cmpeq_epi8(signatureBytes, data);
+                    const auto matched = _mm256_testc_si256(cmpToSig, signatureMask);
+                    if (matched) {
+                        return i;
+                    }
+                } else {
+                    auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
+                        return !opt.has_value() || *opt == byte;
+                    });
+                    if (match) {
+                        return i;
+                    }
                 }
                 mask = _blsr_u32(mask);
             }
@@ -79,10 +88,17 @@ namespace hat::detail {
 
     template<scan_alignment alignment>
     scan_result find_pattern_avx2(const std::byte* begin, const std::byte* end, signature_view signature) {
-        if (signature.size() > 1 && signature[1].has_value()) {
-            return find_pattern_avx2<alignment, true>(begin, end, signature);
+        const bool cmpeq2 = signature.size() > 1 && signature[1].has_value();
+        const bool veccmp = signature.size() <= 33;
+
+        if (cmpeq2 && veccmp) {
+            return find_pattern_avx2<alignment, true, true>(begin, end, signature);
+        } else if (cmpeq2) {
+            return find_pattern_avx2<alignment, true, false>(begin, end, signature);
+        } else if (veccmp) {
+            return find_pattern_avx2<alignment, false, true>(begin, end, signature);
         } else {
-            return find_pattern_avx2<alignment, false>(begin, end, signature);
+            return find_pattern_avx2<alignment, false, false>(begin, end, signature);
         }
     }
 

@@ -25,7 +25,7 @@ namespace hat::detail {
         );
     }
 
-    template<scan_alignment alignment, bool cmpeq2>
+    template<scan_alignment alignment, bool cmpeq2, bool veccmp>
     scan_result find_pattern_avx512(const std::byte* begin, const std::byte* end, signature_view signature) {
         // 512 bit vector containing first signature byte repeated
         const auto firstByte = _mm512_set1_epi8(static_cast<int8_t>(*signature[0]));
@@ -58,10 +58,19 @@ namespace hat::detail {
             while (mask) {
                 const auto offset = LIBHAT_TZCNT64(mask);
                 const auto i = reinterpret_cast<const std::byte*>(vec) + offset;
-                const auto data = _mm512_loadu_si512(i + 1);
-                const auto invalid = _mm512_mask_cmpneq_epi8_mask(signatureMask, signatureBytes, data);
-                if (!invalid) {
-                    return i;
+                if constexpr (veccmp) {
+                    const auto data = _mm512_loadu_si512(i + 1);
+                    const auto invalid = _mm512_mask_cmpneq_epi8_mask(signatureMask, signatureBytes, data);
+                    if (!invalid) {
+                        return i;
+                    }
+                } else {
+                    auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
+                        return !opt.has_value() || *opt == byte;
+                    });
+                    if (match) {
+                        return i;
+                    }
                 }
                 mask = LIBHAT_BLSR64(mask);
             }
@@ -74,10 +83,17 @@ namespace hat::detail {
 
     template<scan_alignment alignment>
     scan_result find_pattern_avx512(const std::byte* begin, const std::byte* end, signature_view signature) {
-        if (signature.size() > 1 && signature[1].has_value()) {
-            return find_pattern_avx512<alignment, true>(begin, end, signature);
+        const bool cmpeq2 = signature.size() > 1 && signature[1].has_value();
+        const bool veccmp = signature.size() <= 65;
+
+        if (cmpeq2 && veccmp) {
+            return find_pattern_avx512<alignment, true, true>(begin, end, signature);
+        } else if (cmpeq2) {
+            return find_pattern_avx512<alignment, true, false>(begin, end, signature);
+        } else if (veccmp) {
+            return find_pattern_avx512<alignment, false, true>(begin, end, signature);
         } else {
-            return find_pattern_avx512<alignment, false>(begin, end, signature);
+            return find_pattern_avx512<alignment, false, false>(begin, end, signature);
         }
     }
 

@@ -35,17 +35,16 @@ namespace hat::detail {
 
     template<scan_alignment alignment>
     scan_result find_pattern(const std::byte* begin, const std::byte* end, signature_view signature) {
-        const auto size = signature.size();
 #if defined(LIBHAT_X86)
         const auto& ext = get_system().extensions;
         if (ext.bmi1) {
-            if (size <= 65 && ext.avx512) {
+            if (ext.avx512) {
                 return find_pattern<scan_mode::AVX512, alignment>(begin, end, signature);
-            } else if (size <= 33 && ext.avx2) {
+            } else if (ext.avx2) {
                 return find_pattern<scan_mode::AVX2, alignment>(begin, end, signature);
             }
         }
-        if (size <= 17 && ext.sse41) {
+        if (ext.sse41) {
             return find_pattern<scan_mode::SSE, alignment>(begin, end, signature);
         }
 #endif
