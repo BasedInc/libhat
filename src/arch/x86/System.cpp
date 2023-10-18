@@ -4,6 +4,7 @@
 #include "System.hpp"
 
 #include <array>
+#include <cstdint>
 #include <bitset>
 #include <vector>
 #include <immintrin.h>
