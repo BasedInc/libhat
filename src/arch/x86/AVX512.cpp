@@ -78,7 +78,7 @@ namespace hat::detail {
 
         // Look in remaining bytes that couldn't be grouped into 512 bits
         begin = reinterpret_cast<const std::byte*>(vec);
-        return find_pattern<scan_mode::Single, scan_alignment::X1>(begin, end, signature);
+        return find_pattern<scan_mode::Single, alignment>(begin, end, signature);
     }
 
     template<scan_alignment alignment>
