@@ -25,10 +25,16 @@ namespace hat::detail {
         );
     }
 
-    template<scan_alignment alignment>
+    template<scan_alignment alignment, bool cmpeq2>
     scan_result find_pattern_sse(const std::byte* begin, const std::byte* end, signature_view signature) {
         // 256 bit vector containing first signature byte repeated
         const auto firstByte = _mm_set1_epi8(static_cast<int8_t>(*signature[0]));
+
+        __m128i secondByte;
+        if constexpr (cmpeq2) {
+            secondByte = _mm_set1_epi8(static_cast<int8_t>(*signature[1]));
+        }
+
         alignas(__m128i) const auto [signatureBytes, signatureMask] = load_signature_128(signature);
 
         begin = next_boundary_align<alignment>(begin);
@@ -43,6 +49,13 @@ namespace hat::detail {
         for (; vec != e; vec++) {
             const auto cmp = _mm_cmpeq_epi8(firstByte, _mm_loadu_si128(vec));
             auto mask = static_cast<uint16_t>(_mm_movemask_epi8(cmp));
+
+            if constexpr (cmpeq2) {
+                const auto cmp2 = _mm_cmpeq_epi8(secondByte, _mm_loadu_si128(vec));
+                auto mask2 = static_cast<uint16_t>(_mm_movemask_epi8(cmp2));
+                mask &= (mask2 >> 1) | (0b1u << 15);
+            }
+
             mask &= create_alignment_mask<uint16_t, alignment>();
             while (mask) {
                 const auto offset = LIBHAT_BSF32(mask);
@@ -60,6 +73,15 @@ namespace hat::detail {
         // Look in remaining bytes that couldn't be grouped into 128 bits
         begin = reinterpret_cast<const std::byte*>(vec);
         return find_pattern<scan_mode::Single, alignment>(begin, end, signature);
+    }
+
+    template<scan_alignment alignment>
+    scan_result find_pattern_sse(const std::byte* begin, const std::byte* end, signature_view signature) {
+        if (signature.size() > 1 && signature[1].has_value()) {
+            return find_pattern_sse<alignment, true>(begin, end, signature);
+        } else {
+            return find_pattern_sse<alignment, false>(begin, end, signature);
+        }
     }
 
     template<>

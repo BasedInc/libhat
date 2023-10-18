@@ -25,10 +25,16 @@ namespace hat::detail {
         );
     }
 
-    template<scan_alignment alignment>
+    template<scan_alignment alignment, bool cmpeq2>
     scan_result find_pattern_avx512(const std::byte* begin, const std::byte* end, signature_view signature) {
         // 512 bit vector containing first signature byte repeated
         const auto firstByte = _mm512_set1_epi8(static_cast<int8_t>(*signature[0]));
+
+        __m512i secondByte;
+        if constexpr (cmpeq2) {
+            secondByte = _mm512_set1_epi8(static_cast<int8_t>(*signature[1]));
+        }
+
         alignas(__m512i) const auto [signatureBytes, signatureMask] = load_signature_512(signature);
 
         begin = next_boundary_align<alignment>(begin);
@@ -42,6 +48,12 @@ namespace hat::detail {
 
         for (; vec != e; vec++) {
             auto mask = _mm512_cmpeq_epi8_mask(firstByte, _mm512_loadu_si512(vec));
+
+            if constexpr (cmpeq2) {
+                const auto mask2 = _mm512_cmpeq_epi8_mask(secondByte, _mm512_loadu_si512(vec));
+                mask &= (mask2 >> 1) | (0b1ull << 63);
+            }
+
             mask &= create_alignment_mask<uint64_t, alignment>();
             while (mask) {
                 const auto offset = LIBHAT_TZCNT64(mask);
@@ -58,6 +70,15 @@ namespace hat::detail {
         // Look in remaining bytes that couldn't be grouped into 512 bits
         begin = reinterpret_cast<const std::byte*>(vec);
         return find_pattern<scan_mode::Single, scan_alignment::X1>(begin, end, signature);
+    }
+
+    template<scan_alignment alignment>
+    scan_result find_pattern_avx512(const std::byte* begin, const std::byte* end, signature_view signature) {
+        if (signature.size() > 1 && signature[1].has_value()) {
+            return find_pattern_avx512<alignment, true>(begin, end, signature);
+        } else {
+            return find_pattern_avx512<alignment, false>(begin, end, signature);
+        }
     }
 
     template<>
