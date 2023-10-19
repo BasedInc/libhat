@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Defines.hpp"
+#include <libhat/Defines.hpp>
 
 #if defined(LIBHAT_X86)
-#include "../../src/arch/x86/System.hpp"
+#include "arch/x86/System.hpp"
 #elif defined(LIBHAT_ARM)
-#include "../../src/arch/arm/System.hpp"
+#include "arch/arm/System.hpp"
 #endif
 
 namespace hat {
