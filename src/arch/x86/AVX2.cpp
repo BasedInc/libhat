@@ -35,7 +35,10 @@ namespace hat::detail {
             secondByte = _mm256_set1_epi8(static_cast<int8_t>(*signature[1]));
         }
 
-        alignas(__m256i) const auto [signatureBytes, signatureMask] = load_signature_256(signature);
+        __m256i signatureBytes, signatureMask;
+        if constexpr (veccmp) {
+            std::tie(signatureBytes, signatureMask) = load_signature_256(signature);
+        }
 
         begin = next_boundary_align<alignment>(begin);
         if (begin >= end) {
