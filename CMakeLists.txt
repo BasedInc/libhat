@@ -23,7 +23,9 @@ set(LIBHAT_SRC
     src/Scanner.cpp
     src/System.cpp
 
-    src/os/Win32.cpp
+    src/os/win32/MemoryProtector.cpp
+    src/os/win32/Process.cpp
+    src/os/win32/Scanner.cpp
 
     src/arch/x86/SSE.cpp
     src/arch/x86/AVX2.cpp
