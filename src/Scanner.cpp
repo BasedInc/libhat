@@ -38,9 +38,12 @@ namespace hat::detail {
 #if defined(LIBHAT_X86)
         const auto& ext = get_system().extensions;
         if (ext.bmi1) {
+#if !defined(LIBHAT_DISABLE_AVX512)
             if (ext.avx512) {
                 return find_pattern<scan_mode::AVX512, alignment>(begin, end, signature);
-            } else if (ext.avx2) {
+            }
+#endif
+            if (ext.avx2) {
                 return find_pattern<scan_mode::AVX2, alignment>(begin, end, signature);
             }
         }

@@ -6,6 +6,8 @@ endif()
 
 project(libhat)
 
+option(LIBHAT_DISABLE_AVX512 "Disables AVX512 scanning" OFF)
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set_source_files_properties(src/arch/x86/AVX2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
     set_source_files_properties(src/arch/x86/AVX512.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX512")
@@ -34,7 +36,12 @@ add_library(libhat STATIC ${LIBHAT_SRC})
 
 target_include_directories(libhat PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
-    $<INSTALL_INTERFACE:include>)
+    $<INSTALL_INTERFACE:include>
+)
+
+target_compile_definitions(libhat PUBLIC
+    "$<$<BOOL:${LIBHAT_DISABLE_AVX512}>:LIBHAT_DISABLE_AVX512>"
+)
 
 install(TARGETS libhat
         EXPORT libhat-targets
