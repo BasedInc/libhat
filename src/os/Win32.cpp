@@ -31,6 +31,9 @@ namespace hat {
         DWORD temp;
         VirtualProtect(reinterpret_cast<LPVOID>(this->address), this->size, this->oldProtection, &temp);
     }
+}
+
+namespace hat::experimental {
 
     template<>
     scan_result find_vtable<compiler_type::MSVC>(const std::string& className, hat::process::module_t mod) {

@@ -156,18 +156,6 @@ namespace hat {
         }
     }
 
-    enum class compiler_type {
-        MSVC,
-        GNU
-    };
-
-    /// Gets the VTable address for a class by its mangled name
-    template<compiler_type compiler>
-    scan_result find_vtable(
-        const std::string&  className,
-        process::module_t   mod = process::get_process_module()
-    );
-
     /// Perform a signature scan on the entirety of the process module or a specified module
     template<scan_alignment alignment = scan_alignment::X1>
     scan_result find_pattern(
@@ -196,4 +184,19 @@ namespace hat {
             return detail::find_pattern<alignment>(std::to_address(begin), std::to_address(end), signature);
         }
     }
+}
+
+namespace hat::experimental {
+
+    enum class compiler_type {
+        MSVC,
+        GNU
+    };
+
+    /// Gets the VTable address for a class by its mangled name
+    template<compiler_type compiler>
+    scan_result find_vtable(
+        const std::string&  className,
+        process::module_t   mod = process::get_process_module()
+    );
 }
