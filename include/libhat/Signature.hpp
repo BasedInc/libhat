@@ -41,6 +41,7 @@ namespace hat {
     enum class signature_parse_error {
         illegal_wildcard,
         parse_error,
+        empty_signature,
     };
 
     [[nodiscard]] constexpr result<signature, signature_parse_error> parse_signature(std::string_view str) {
@@ -62,6 +63,9 @@ namespace hat {
                     return result_error{signature_parse_error::parse_error};
                 }
             }
+        }
+        if (sig.empty()) {
+            return result_error{signature_parse_error::empty_signature};
         }
         return sig;
     }
