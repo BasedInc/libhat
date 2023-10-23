@@ -52,6 +52,10 @@ namespace hat {
             return static_cast<const Char*>(this->value);
         }
 
+        [[nodiscard]] constexpr const_pointer data() const {
+            return this->c_str();
+        }
+
         [[nodiscard]] constexpr size_t size() const {
             return N;
         }
