@@ -80,3 +80,12 @@ namespace hat {
         return arr;
     }
 }
+
+#ifdef LIBHAT_ENABLE_SIGNATURE_LITERALS
+namespace hat::literals::signature_literals {
+    template<typename CharT, CharT... Chars>
+    consteval auto operator""_sig() noexcept {
+        return hat::compile_signature<(CharT[sizeof...(Chars)]){Chars...}>();
+    }
+}
+#endif
