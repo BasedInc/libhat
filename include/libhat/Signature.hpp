@@ -81,11 +81,9 @@ namespace hat {
     }
 }
 
-#ifdef LIBHAT_ENABLE_SIGNATURE_LITERALS
 namespace hat::literals::signature_literals {
-    template<typename CharT, CharT... Chars>
+    template<hat::string_literal str>
     consteval auto operator""_sig() noexcept {
-        return hat::compile_signature<(CharT[sizeof...(Chars)]){Chars...}>();
+        return hat::compile_signature<str>();
     }
 }
-#endif
