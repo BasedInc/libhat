@@ -1,4 +1,4 @@
-#pragma once
+module;
 
 #include <algorithm>
 #include <array>
@@ -7,10 +7,12 @@
 
 #include "Concepts.hpp"
 #include "Defines.hpp"
-#include "Process.hpp"
-#include "Signature.hpp"
 
-namespace hat {
+export module libhat.scanner;
+export import libhat.signature;
+import libhat.process;
+
+export namespace hat {
 
     class scan_result {
         using rel_t = int32_t;
@@ -186,7 +188,7 @@ namespace hat {
     }
 }
 
-namespace hat::experimental {
+export namespace hat::experimental {
 
     enum class compiler_type {
         MSVC,

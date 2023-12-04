@@ -1,9 +1,11 @@
-#pragma once
+module;
 
 #include <span>
 #include <string_view>
 
-namespace hat::process {
+export module libhat.process;
+
+export namespace hat::process {
 
     // TODO: Consider using a typedef or class instead? idk
     enum class module_t : uintptr_t {};

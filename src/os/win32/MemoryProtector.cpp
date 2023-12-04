@@ -1,9 +1,11 @@
+module;
+
 #include <libhat/Defines.hpp>
 #ifdef LIBHAT_WINDOWS
 
-#include <libhat/MemoryProtector.hpp>
-
 #include <Windows.h>
+
+module libhat.memory_protector;
 
 namespace hat {
     static DWORD ToWinProt(protection flags) {

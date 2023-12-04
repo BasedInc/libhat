@@ -1,12 +1,14 @@
-#pragma once
+module;
 
 #include <algorithm>
 #include <string>
 
 #include "Concepts.hpp"
-#include "Result.hpp"
 
-namespace hat {
+export module libhat.compile_time;
+import libhat.result;
+
+export namespace hat {
 
     template<typename Char, size_t N, template<size_t> typename Derived>
     struct basic_string_literal {

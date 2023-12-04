@@ -1,4 +1,6 @@
-#include <libhat/Process.hpp>
+module;
+
+module libhat.process;
 
 namespace hat::process {
 

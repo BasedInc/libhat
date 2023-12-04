@@ -1,11 +1,14 @@
+module;
+
 #include <libhat/Defines.hpp>
 
 #if defined(LIBHAT_X86) && !defined(LIBHAT_DISABLE_AVX512)
 
-#include <libhat/Scanner.hpp>
-
+#include <algorithm>
 #include <immintrin.h>
 #include <tuple>
+
+module libhat.scanner;
 
 namespace hat::detail {
 

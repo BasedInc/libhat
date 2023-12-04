@@ -1,7 +1,11 @@
+module;
+
 #include <libhat/Defines.hpp>
 #ifdef LIBHAT_WINDOWS
 
-#include <libhat/Scanner.hpp>
+#include <string>
+
+module libhat.scanner;
 
 namespace hat::experimental {
 

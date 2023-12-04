@@ -1,11 +1,14 @@
+module;
+
 #include <libhat/Defines.hpp>
 
 #ifdef LIBHAT_X86
 
-#include <libhat/Scanner.hpp>
-
+#include <algorithm>
 #include <immintrin.h>
 #include <tuple>
+
+module libhat.scanner;
 
 namespace hat::detail {
 

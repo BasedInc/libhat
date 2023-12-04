@@ -1,9 +1,11 @@
-#pragma once
+module;
 
 #include <cstdint>
 #include <type_traits>
 
-namespace hat {
+export module libhat.memory_protector;
+
+export namespace hat {
 
     enum class protection : uint8_t {
         Read    = 0b001,

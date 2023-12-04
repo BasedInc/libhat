@@ -1,8 +1,10 @@
-#pragma once
+module;
 
 #include <variant>
 
-namespace hat {
+export module libhat.result;
+
+export namespace hat {
 
     template<class E>
     class result_error {

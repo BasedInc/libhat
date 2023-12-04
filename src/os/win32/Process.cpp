@@ -1,11 +1,13 @@
+module;
+
 #include <libhat/Defines.hpp>
 #ifdef LIBHAT_WINDOWS
-
-#include <libhat/Process.hpp>
 
 #include <Windows.h>
 #include <string>
 #include <span>
+
+module libhat.process;
 
 namespace hat::process {
 

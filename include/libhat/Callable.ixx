@@ -1,10 +1,12 @@
-#pragma once
+module;
 
 #include <new>
 #include <utility>
 
 #include "Concepts.hpp"
 #include "Defines.hpp"
+
+export module libhat.callable;
 
 namespace hat::detail {
 
@@ -85,7 +87,7 @@ namespace hat::detail {
     };
 }
 
-namespace hat::experimental {
+export namespace hat::experimental {
 
     template<
         detail::function           Fn,

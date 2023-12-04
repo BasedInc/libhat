@@ -1,5 +1,6 @@
-#pragma once
+module;
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <optional>
@@ -7,9 +8,11 @@
 #include <string_view>
 #include <vector>
 
-#include "CompileTime.hpp"
+export module libhat.signature;
+import libhat.result;
+import libhat.compile_time;
 
-namespace hat {
+export namespace hat {
 
     using signature_element = std::optional<std::byte>;
     using signature         = std::vector<signature_element>;
@@ -46,7 +49,10 @@ namespace hat {
 
     [[nodiscard]] constexpr result<signature, signature_parse_error> parse_signature(std::string_view str) {
         signature sig{};
-        for (const auto& word : str | std::views::split(' ')) {
+        // modules buggin
+        // for (const auto& word : str | std::views::split(' ')) {
+        auto view = str | std::views::split(' ');
+        for (auto word : view) {
             if (word.empty()) {
                 continue;
             } else if (word[0] == '?') {
@@ -81,7 +87,7 @@ namespace hat {
     }
 }
 
-namespace hat::literals::signature_literals {
+export namespace hat::literals::signature_literals {
     template<hat::string_literal str>
     consteval auto operator""_sig() noexcept {
         return hat::compile_signature<str>();
