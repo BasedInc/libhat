@@ -39,29 +39,36 @@ namespace hat {
     }
 
     enum class signature_parse_error {
+        missing_byte,
         parse_error,
         empty_signature,
     };
 
     [[nodiscard]] constexpr result<signature, signature_parse_error> parse_signature(std::string_view str) {
         signature sig{};
+        bool containsByte = false;
         for (const auto& word : str | std::views::split(' ')) {
             if (word.empty()) {
                 continue;
-            } else if (word[0] == '?') {
+            }
+            if (word[0] == '?') {
                 sig.emplace_back(std::nullopt);
             } else {
                 const auto sv = std::string_view{word.begin(), word.end()};
-                auto parsed = parse_int<uint8_t>(sv, 16);
+                const auto parsed = parse_int<uint8_t>(sv, 16);
                 if (parsed.has_value()) {
                     sig.emplace_back(static_cast<std::byte>(parsed.value()));
                 } else {
                     return result_error{signature_parse_error::parse_error};
                 }
+                containsByte = true;
             }
         }
         if (sig.empty()) {
             return result_error{signature_parse_error::empty_signature};
+        }
+        if (!containsByte) {
+            return result_error{signature_parse_error::missing_byte};
         }
         return sig;
     }
