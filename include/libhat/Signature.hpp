@@ -39,7 +39,6 @@ namespace hat {
     }
 
     enum class signature_parse_error {
-        illegal_wildcard,
         parse_error,
         empty_signature,
     };
@@ -50,9 +49,6 @@ namespace hat {
             if (word.empty()) {
                 continue;
             } else if (word[0] == '?') {
-                if (sig.empty()) {
-                    return result_error{signature_parse_error::illegal_wildcard};
-                }
                 sig.emplace_back(std::nullopt);
             } else {
                 const auto sv = std::string_view{word.begin(), word.end()};
