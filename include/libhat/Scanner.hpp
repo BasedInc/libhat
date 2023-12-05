@@ -178,12 +178,12 @@ namespace hat {
         Iter            end,
         signature_view  signature
     ) {
-        //Truncate the signature if the start is a wildcard
+        // Truncate the signature if the start is a wildcard
 		size_t offset = 0;
-		for (const auto& elem : signature)
-		{
-			if (elem.has_value())
-				break;
+		for (const auto& elem : signature) {
+			if (elem.has_value()) {
+			    break;
+			}
 			offset++;
 		}
 		signature = signature.subspan(offset);
