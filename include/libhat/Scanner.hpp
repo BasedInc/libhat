@@ -178,10 +178,20 @@ namespace hat {
         Iter            end,
         signature_view  signature
     ) {
+        //Truncate the signature if the start is a wildcard
+		size_t offset = 0;
+		for(const auto& elem : signature)
+		{
+			if(elem.has_value())
+				break;
+			offset++;
+		}
+		signature = signature.subspan(offset);
+
         if LIBHAT_IF_CONSTEVAL {
-            return detail::find_pattern<detail::scan_mode::Single, alignment>(std::to_address(begin), std::to_address(end), signature);
+            return detail::find_pattern<detail::scan_mode::Single, alignment>(std::to_address(begin), std::to_address(end), signature).get() - offset;
         } else {
-            return detail::find_pattern<alignment>(std::to_address(begin), std::to_address(end), signature);
+            return detail::find_pattern<alignment>(std::to_address(begin), std::to_address(end), signature).get() - offset;
         }
     }
 }
