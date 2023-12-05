@@ -180,9 +180,9 @@ namespace hat {
     ) {
         //Truncate the signature if the start is a wildcard
 		size_t offset = 0;
-		for(const auto& elem : signature)
+		for (const auto& elem : signature)
 		{
-			if(elem.has_value())
+			if (elem.has_value())
 				break;
 			offset++;
 		}

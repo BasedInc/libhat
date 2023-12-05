@@ -39,7 +39,6 @@ namespace hat {
     }
 
     enum class signature_parse_error {
-        illegal_wildcard,
         parse_error,
         empty_signature,
     };
