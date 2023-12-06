@@ -11,7 +11,45 @@
 
 namespace hat {
 
-    using signature_element = std::optional<std::byte>;
+    /// Effectively std::optional<std::byte>, but with the added flexibility of being able to use std::bit_cast on
+    /// instances of the class in constant expressions.
+    struct signature_element {
+        constexpr signature_element() noexcept {}
+        constexpr signature_element(std::nullopt_t) noexcept {}
+        constexpr signature_element(const std::byte valueIn) noexcept : val(valueIn), present(true) {}
+
+        constexpr signature_element& operator=(std::nullopt_t) noexcept {
+            return *this = signature_element{};
+        }
+
+        constexpr signature_element& operator=(const std::byte valueIn) noexcept {
+            return *this = signature_element{valueIn};
+        }
+
+        constexpr void reset(std::nullopt_t) noexcept {
+            *this = std::nullopt;
+        }
+
+        [[nodiscard]] constexpr bool has_value() const noexcept {
+            return this->present;
+        }
+
+        [[nodiscard]] constexpr std::byte value() const noexcept {
+            return this->val;
+        }
+
+        [[nodiscard]] constexpr operator bool() const noexcept {
+            return this->has_value();
+        }
+
+        [[nodiscard]] constexpr std::byte operator*() const noexcept {
+            return this->value();
+        }
+    private:
+        std::byte val{};
+        bool present = false;
+    };
+
     using signature         = std::vector<signature_element>;
     using signature_view    = std::span<const signature_element>;
 
