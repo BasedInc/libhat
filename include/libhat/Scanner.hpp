@@ -188,11 +188,13 @@ namespace hat {
 		}
 		signature = signature.subspan(offset);
 
+        hat::scan_result result;
         if LIBHAT_IF_CONSTEVAL {
-            return detail::find_pattern<detail::scan_mode::Single, alignment>(std::to_address(begin), std::to_address(end), signature).get() - offset;
+            result = detail::find_pattern<detail::scan_mode::Single, alignment>(std::to_address(begin), std::to_address(end), signature);
         } else {
-            return detail::find_pattern<alignment>(std::to_address(begin), std::to_address(end), signature).get() - offset;
+            result = detail::find_pattern<alignment>(std::to_address(begin), std::to_address(end), signature);
         }
+        return result.has_result() ? result.get() - offset : nullptr;
     }
 }
 
