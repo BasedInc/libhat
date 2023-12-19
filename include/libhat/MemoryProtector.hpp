@@ -29,6 +29,6 @@ namespace hat {
     private:
         uintptr_t address;
         size_t size;
-        uint32_t oldProtection; // Memory protection flags native to Operating System
+        uint32_t oldProtection{}; // Memory protection flags native to Operating System
     };
 }
