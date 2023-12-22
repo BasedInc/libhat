@@ -174,11 +174,11 @@ namespace hat {
     /// Root implementation of find_pattern
     template<scan_alignment alignment = scan_alignment::X1, detail::byte_iterator Iter>
     constexpr scan_result find_pattern(
-        Iter            begin,
-        Iter            end,
+        Iter            beginIt,
+        Iter            endIt,
         signature_view  signature
     ) {
-        // Truncate the signature if the start is a wildcard
+        // Truncate the leading wildcards from the signature
 		size_t offset = 0;
 		for (const auto& elem : signature) {
 			if (elem.has_value()) {
@@ -188,11 +188,17 @@ namespace hat {
 		}
 		signature = signature.subspan(offset);
 
+        const auto begin = std::to_address(beginIt) + offset;
+        const auto end = std::to_address(endIt);
+        if (begin >= end) {
+            return nullptr;
+        }
+
         hat::scan_result result;
         if LIBHAT_IF_CONSTEVAL {
-            result = detail::find_pattern<detail::scan_mode::Single, alignment>(std::to_address(begin), std::to_address(end), signature);
+            result = detail::find_pattern<detail::scan_mode::Single, alignment>(begin, end, signature);
         } else {
-            result = detail::find_pattern<alignment>(std::to_address(begin), std::to_address(end), signature);
+            result = detail::find_pattern<alignment>(begin, end, signature);
         }
         return result.has_result() ? result.get() - offset : nullptr;
     }
