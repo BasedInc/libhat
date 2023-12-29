@@ -4,6 +4,7 @@ module;
 #include <array>
 #include <execution>
 #include <utility>
+#include <span>
 
 #include "Concepts.hpp"
 #include "Defines.hpp"
