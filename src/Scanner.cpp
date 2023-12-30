@@ -2,6 +2,7 @@ module;
 
 #include <libhat/Defines.hpp>
 #include "System.hpp"
+#include <span>
 
 module libhat.scanner;
 
