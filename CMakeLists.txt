@@ -6,6 +6,9 @@ endif()
 
 project(libhat)
 
+option(LIBHAT_STATIC_C_LIB "Build a static version of the C library" OFF)
+option(LIBHAT_SHARED_C_LIB "Build a shared version of the C library" OFF)
+option(LIBHAT_INSTALL_TARGET "Creates install rules for the libhat target" ON)
 option(LIBHAT_DISABLE_AVX512 "Disables AVX512 scanning" OFF)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
@@ -45,9 +48,30 @@ target_compile_definitions(libhat PUBLIC
     "$<$<BOOL:${LIBHAT_DISABLE_AVX512}>:LIBHAT_DISABLE_AVX512>"
 )
 
-install(TARGETS libhat
+if (LIBHAT_STATIC_C_LIB OR LIBHAT_SHARED_C_LIB)
+    set(LIBHAT_C_SOURCES
+        src/c/libhat.cpp
+    )
+
+    if (LIBHAT_STATIC_C_LIB)
+        add_library(libhat_c STATIC ${LIBHAT_C_SOURCES})
+    else()
+        add_library(libhat_c SHARED ${LIBHAT_C_SOURCES})
+        target_compile_definitions(libhat_c PRIVATE "LIBHAT_BUILD_SHARED_LIB")
+    endif()
+
+    target_link_libraries(libhat_c PRIVATE libhat)
+    target_include_directories(libhat_c PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+        $<INSTALL_INTERFACE:include>
+    )
+endif()
+
+if (LIBHAT_INSTALL_TARGET)
+    install(TARGETS libhat
         EXPORT libhat-targets
         RUNTIME DESTINATION "bin"
         ARCHIVE DESTINATION "lib"
         LIBRARY DESTINATION "lib"
-)
+    )
+endif()
