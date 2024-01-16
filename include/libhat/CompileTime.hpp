@@ -9,18 +9,18 @@
 namespace hat {
 
     template<typename Char, size_t N, template<size_t> typename Derived>
-    struct basic_string_literal {
+    struct basic_fixed_string {
         using const_reference   = const Char&;
         using const_pointer     = const Char*;
         using const_iterator    = const_pointer;
 
         static constexpr auto npos = static_cast<size_t>(-1);
 
-        constexpr basic_string_literal(std::basic_string_view<Char> str) {
+        constexpr basic_fixed_string(std::basic_string_view<Char> str) {
             std::copy_n(str.data(), N, value);
         }
 
-        constexpr basic_string_literal(const Char (&str)[N + 1]) {
+        constexpr basic_fixed_string(const Char (&str)[N + 1]) {
             std::copy_n(str, N, value);
         }
 
@@ -77,7 +77,7 @@ namespace hat {
         }
 
         template<size_t M, size_t K = N + M>
-        constexpr auto operator+(const basic_string_literal<Char, M, Derived>& str) const -> Derived<K> {
+        constexpr auto operator+(const basic_fixed_string<Char, M, Derived>& str) const -> Derived<K> {
             Char buf[K + 1]{};
             std::copy_n(this->value, this->size(), buf);
             std::copy_n(str.value, str.size(), buf + this->size());
@@ -90,7 +90,7 @@ namespace hat {
         }
 
         template<size_t M>
-        constexpr bool operator==(const basic_string_literal<Char, M, Derived>& str) const {
+        constexpr bool operator==(const basic_fixed_string<Char, M, Derived>& str) const {
             return std::equal(this->begin(), this->end(), str.begin(), str.end());
         }
 
@@ -117,25 +117,25 @@ namespace hat {
         Char value[N + 1]{};
     };
 
-    #define LIBHAT_DEFINE_STRING_LITERAL(name, type)                                                            \
-    template<size_t N>                                                                                          \
-    struct name : public basic_string_literal<type, N, name> {                                                  \
-        using basic_string_literal<type, N, name>::basic_string_literal;                                        \
-    };                                                                                                          \
-    template<size_t N>                                                                                          \
-    name(const type(&str)[N]) -> name<N - 1>;                                                                   \
-    template<size_t N, size_t M>                                                                                \
-    constexpr inline auto operator+(const type (&cstr)[N], const basic_string_literal<type, M, name>& lstr) {   \
-        return name{cstr} + lstr;                                                                               \
+    #define LIBHAT_DEFINE_FIXED_STRING(name, type)                                                          \
+    template<size_t N>                                                                                      \
+    struct name : public basic_fixed_string<type, N, name> {                                                \
+        using basic_fixed_string<type, N, name>::basic_fixed_string;                                        \
+    };                                                                                                      \
+    template<size_t N>                                                                                      \
+    name(const type(&str)[N]) -> name<N - 1>;                                                               \
+    template<size_t N, size_t M>                                                                            \
+    constexpr inline auto operator+(const type (&cstr)[N], const basic_fixed_string<type, M, name>& lstr) { \
+        return name{cstr} + lstr;                                                                           \
     }
 
-    LIBHAT_DEFINE_STRING_LITERAL(string_literal,    char)
-    LIBHAT_DEFINE_STRING_LITERAL(wstring_literal,   wchar_t)
-    LIBHAT_DEFINE_STRING_LITERAL(u8string_literal,  char8_t)
-    LIBHAT_DEFINE_STRING_LITERAL(u16string_literal, char16_t)
-    LIBHAT_DEFINE_STRING_LITERAL(u32string_literal, char32_t)
+    LIBHAT_DEFINE_FIXED_STRING(fixed_string,    char)
+    LIBHAT_DEFINE_FIXED_STRING(wfixed_string,   wchar_t)
+    LIBHAT_DEFINE_FIXED_STRING(u8fixed_string,  char8_t)
+    LIBHAT_DEFINE_FIXED_STRING(u16fixed_string, char16_t)
+    LIBHAT_DEFINE_FIXED_STRING(u32fixed_string, char32_t)
 
-    #undef LIBHAT_DEFINE_STRING_LITERAL
+    #undef LIBHAT_DEFINE_FIXED_STRING
 
     enum class parse_int_error {
         invalid_base,

@@ -112,7 +112,7 @@ namespace hat {
     }
 
     /// Parses a signature string at compile time and returns the result as a fixed_signature
-    template<string_literal str>
+    template<fixed_string str>
     [[nodiscard]] consteval auto compile_signature() {
         const auto sig = parse_signature(str.c_str()).value();
         constexpr auto N = parse_signature(str.c_str()).value().size();
@@ -123,7 +123,7 @@ namespace hat {
 }
 
 namespace hat::literals::signature_literals {
-    template<hat::string_literal str>
+    template<hat::fixed_string str>
     consteval auto operator""_sig() noexcept {
         return hat::compile_signature<str>();
     }
