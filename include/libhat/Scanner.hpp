@@ -179,14 +179,14 @@ namespace hat {
         signature_view  signature
     ) {
         // Truncate the leading wildcards from the signature
-		size_t offset = 0;
-		for (const auto& elem : signature) {
-			if (elem.has_value()) {
-			    break;
-			}
-			offset++;
-		}
-		signature = signature.subspan(offset);
+        size_t offset = 0;
+        for (const auto& elem : signature) {
+            if (elem.has_value()) {
+                break;
+            }
+            offset++;
+        }
+        signature = signature.subspan(offset);
 
         const auto begin = std::to_address(beginIt) + offset;
         const auto end = std::to_address(endIt);
