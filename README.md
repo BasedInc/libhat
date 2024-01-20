@@ -1,5 +1,5 @@
 # libhat
-A modern, high-performance library designed around game hacking
+A modern, high-performance library for C++20 designed around game hacking
 
 ## Feature overview
 - Windows x86/x64 support
