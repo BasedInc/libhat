@@ -37,7 +37,7 @@ const std::byte* relative_address = result.rel(1);
 std::string example = "test";
 
 // Here, I am accessing the value at offset 0x10 of a std::string, which is a size_t
-// If the object is passed as a reference, the return value must be const
+// If the object is passed as const, the return type will be const aswell
 const size_t& size = hat::member_at<size_t>(&std::as_const(example), 0x10);
 
 // Additionally, you can also do this:
