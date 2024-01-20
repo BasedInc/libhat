@@ -3,6 +3,9 @@
 
 #include <libhat/Process.hpp>
 
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+
 #include <Windows.h>
 #include <string>
 #include <span>
@@ -48,9 +51,11 @@ namespace hat::process {
         if (!ntHeaders)
             return {};
 
+        const auto maxChars = std::min<size_t>(name.size(), 8);
+
         const auto* sectionHeader = IMAGE_FIRST_SECTION(ntHeaders);
         for (int i = 0; i < ntHeaders->FileHeader.NumberOfSections; i++, sectionHeader++) {
-            if (strncmp(name.data(), reinterpret_cast<const char*>(sectionHeader->Name), 8) == 0) {
+            if (strncmp(name.data(), reinterpret_cast<const char*>(sectionHeader->Name), maxChars) == 0) {
                 return {
                     scanBytes + sectionHeader->VirtualAddress,
                     static_cast<size_t>(sectionHeader->Misc.VirtualSize)
