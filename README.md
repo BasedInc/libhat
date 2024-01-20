@@ -37,6 +37,5 @@ const std::byte* relative_address = result.rel(1);
 std::string example = "test";
 
 // Here, I am accessing the value at offset 0x10 of a std::string, which is a size_t
-// Note: If the object is passed as a reference, you must make it const
 const size_t& size = hat::member_at<size_t>(&std::as_const(example), 0x10);
 ```
