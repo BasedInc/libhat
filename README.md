@@ -1,5 +1,5 @@
 # libhat
-A modern, high-performance library designed around game hacking
+A modern, high-performance library for C++20 designed around game hacking
 
 ## Feature overview
 - Windows x86/x64 support
@@ -27,4 +27,19 @@ const std::byte* address = result.get();
 
 // Jump to an RIP relative address at a given offset
 const std::byte* relative_address = result.rel(1);
+```
+
+### Accessing offsets
+```cpp
+#include <libhat.hpp>
+
+// Get the value at a given offset inside of an object
+std::string example = "test";
+
+// Here, I am accessing the value at offset 0x10 of a std::string, which is a size_t
+// Note: If the object is passed as const, the return type will be const aswell
+const size_t& size = hat::member_at<size_t>(&std::as_const(example), 0x10);
+
+// Additionally, you can also do this:
+size_t& size = hat::member_at<size_t>(example, 0x10);
 ```
