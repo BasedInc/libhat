@@ -27,7 +27,10 @@ const std::byte* address = result.get();
 
 // Jump to an RIP relative address at a given offset
 const std::byte* relative_address = result.rel(1);
+```
 
+### Accessing offsets
+```cpp
 // Get the value at a given offset inside of an object
 std::string example = "test";
 
