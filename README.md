@@ -12,11 +12,11 @@ A modern, high-performance library for C++20 designed around game hacking
 ### Pattern scanning
 ```cpp
 // Parse a pattern's string representation to an array of bytes at compile time
-constexpr hat::fixed_signature pattern = hat::compile_signature<"E8 ? ? ? ? 1A 2B 3C 4D">();
+constexpr hat::fixed_signature pattern = hat::compile_signature<"48 8D 05 ? ? ? ? E8">();
 
 // ...or parse it at runtime
 using parsed_t = hat::result<hat::signature, hat::signature_parse_error>;
-parsed_t runtime_pattern = hat::parse_signature("E8 ? ? ? ? 1A 2B 3C 4D");
+parsed_t runtime_pattern = hat::parse_signature("48 8D 05 ? ? ? ? E8");
 
 // Scan for this pattern using your CPU's vectorization features
 auto begin = /* a contiguous iterator over std::byte */;
