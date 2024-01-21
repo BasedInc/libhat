@@ -3,7 +3,7 @@
 namespace Hat.Native;
 
 [StructLayout(LayoutKind.Sequential)]
-public struct Signature
+internal struct Signature
 {
 	public nint Data;
 	public nint Length;

@@ -2,9 +2,9 @@
 
 namespace Hat;
 
-public static class Utils
+internal static class Utils
 {
-    public static void CheckStatus(Status status)
+    internal static void CheckStatus(Status status)
     {
         if (status == Status.Success) return;
         
