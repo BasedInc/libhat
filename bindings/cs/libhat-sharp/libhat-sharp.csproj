@@ -10,9 +10,6 @@
 
     <ItemGroup>
       <None Remove="libhat_c.dll" />
-      <Content Include="libhat_c.dll">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
     </ItemGroup>
 
 </Project>
