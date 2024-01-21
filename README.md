@@ -11,8 +11,6 @@ A modern, high-performance library for C++20 designed around game hacking
 ## Quick start
 ### Pattern scanning
 ```cpp
-#include <libhat.hpp>
-
 // Convert a pattern's string representation to an array of bytes at compile time
 static constexpr auto pattern = hat::compile_signature<"E8 ? ? ? ? 1A 2B 3C 4D">();
 
@@ -31,15 +29,19 @@ const std::byte* relative_address = result.rel(1);
 
 ### Accessing offsets
 ```cpp
-#include <libhat.hpp>
+// An example struct and it's member offsets
+struct S {
+    uint32_t a{}; // 0x0
+    uint32_t b{}; // 0x4
+    uint32_t c{}; // 0x8
+    uint32_t d{}; // 0xC
+};
 
-// Get the value at a given offset inside of an object
-std::string example = "test";
+S s;
 
-// Here, I am accessing the value at offset 0x10 of a std::string, which is a size_t
-// Note: If the object is passed as const, the return type will be const aswell
-const size_t& size = hat::member_at<size_t>(&std::as_const(example), 0x10);
+// Obtain a mutable reference to 's.b' via it's offset
+uint32_t& b = hat::member_at<uint32_t>(&s, 0x4);
 
-// Additionally, you can also do this:
-size_t& size = hat::member_at<size_t>(example, 0x10);
+// If the provided pointer is const, the returned reference is const
+const uint32_t& b = hat::member_at<uint32_t>(&std::as_const(s), 0x4);
 ```
