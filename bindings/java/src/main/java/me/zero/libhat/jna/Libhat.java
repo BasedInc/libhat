@@ -48,6 +48,11 @@ public interface Libhat extends Library {
     Pointer libhat_find_pattern_mod(Pointer signature, Pointer module, String section, int align);
 
     /*
+     * const void* libhat_get_module(const char* name);
+     */
+    Pointer libhat_get_module(String name);
+
+    /*
      * void libhat_free(void* mem);
      */
     void libhat_free(Pointer mem);
