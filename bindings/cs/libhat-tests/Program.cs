@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Hat;
+using Hat.Extensions;
 
 Console.WriteLine("libhat tests\n");
 

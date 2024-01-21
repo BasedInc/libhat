@@ -1,4 +1,4 @@
-﻿namespace Hat;
+﻿namespace Hat.Extensions;
 
 public static class ArrayExtensions
 {
