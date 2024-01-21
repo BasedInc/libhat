@@ -1,4 +1,6 @@
-﻿using Hat.Native;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using Hat.Native;
 
 namespace Hat;
 
@@ -19,6 +21,18 @@ public unsafe class Scanner
 	{
 		_buffer = buffer;
 		_size = size;
+	}
+	
+	public Scanner(ProcessModule module, string section = ".text")
+	{
+		_section = section;
+		_module = module.BaseAddress;
+	}
+	
+	public Scanner(Span<byte> buffer)
+	{
+		_buffer = (nint)Unsafe.AsPointer(ref buffer[0]);
+		_size = (uint)buffer.Length;
 	}
 	
 	public nint FindPattern(Pattern pattern, ScanAlignment alignment = ScanAlignment.X1)
