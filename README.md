@@ -61,3 +61,23 @@ uint32_t& b = hat::member_at<uint32_t>(&s, 0x4);
 // If the provided pointer is const, the returned reference is const
 const uint32_t& b = hat::member_at<uint32_t>(&std::as_const(s), 0x4);
 ```
+
+### Writing to protected memory
+```cpp
+uintptr_t* vftable = ...;       // Pointer to a virtual function table in read-only data
+size_t target_func_index = ...; // Index to an interesting function
+
+// Use memory_protector to enable write protections
+hat::memory_protector prot{
+    (uintptr_t) &vftable[target_func_index],        // a pointer to the target memory
+    sizeof(uintptr_t),                              // the size of the memory block
+    hat::protection::Read | hat::protection::Write  // the new protection flags
+};
+
+// Overwrite pointer to redirect to a custom callback
+vftable[target_func_index] = (uintptr_t) my_callback;
+
+// On scope exit, original protections will be restored
+prot.~memory_protector(); // compiler generated
+
+```
