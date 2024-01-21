@@ -63,7 +63,7 @@ LIBHAT_API const void* libhat_find_pattern(
     const auto find_pattern = [=]<hat::scan_alignment A>() {
         const auto begin = static_cast<const std::byte*>(buffer);
         const auto end = static_cast<const std::byte*>(buffer) + size;
-        const auto result = hat::find_pattern(begin, end, view);
+        const auto result = hat::find_pattern<A>(begin, end, view);
         return result.has_result() ? result.get() : nullptr;
     };
 
