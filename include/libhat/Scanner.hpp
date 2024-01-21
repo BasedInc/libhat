@@ -190,7 +190,7 @@ namespace hat {
 
         const auto begin = std::to_address(beginIt) + offset;
         const auto end = std::to_address(endIt);
-        if (begin >= end) {
+        if (begin >= end || signature.size() > static_cast<size_t>(std::distance(begin, end))) {
             return nullptr;
         }
 
