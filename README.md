@@ -6,7 +6,7 @@ A modern, high-performance library for C++20 designed around game hacking
 - Vectorized scanning for byte patterns
 - RAII memory protector
 - Convenience wrappers over OS APIs
-- C bindings
+- Language bindings (C, C#, etc.)
 
 ## Quick start
 ### Pattern scanning
