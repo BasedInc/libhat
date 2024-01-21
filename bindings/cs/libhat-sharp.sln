@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "libhat-sharp", "libhat-sharp\libhat-sharp.csproj", "{EF020BDB-543C-4EA3-9C95-A3668E2E5E65}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "libhat-tests", "libhat-tests\libhat-tests.csproj", "{1FDDD9F4-F557-45C9-96CD-7CDF111B8176}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EF020BDB-543C-4EA3-9C95-A3668E2E5E65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF020BDB-543C-4EA3-9C95-A3668E2E5E65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF020BDB-543C-4EA3-9C95-A3668E2E5E65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF020BDB-543C-4EA3-9C95-A3668E2E5E65}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1FDDD9F4-F557-45C9-96CD-7CDF111B8176}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1FDDD9F4-F557-45C9-96CD-7CDF111B8176}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1FDDD9F4-F557-45C9-96CD-7CDF111B8176}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1FDDD9F4-F557-45C9-96CD-7CDF111B8176}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
