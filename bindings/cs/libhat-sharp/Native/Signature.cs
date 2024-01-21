@@ -6,5 +6,5 @@ namespace Hat.Native;
 public struct Signature
 {
 	public nint Data;
-	public uint Length;
+	public nint Length;
 }

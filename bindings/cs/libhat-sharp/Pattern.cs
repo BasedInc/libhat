@@ -4,7 +4,7 @@ namespace Hat;
 
 public unsafe class Pattern : IDisposable
 {
-	internal readonly Signature* Signature;
+	internal Signature* Signature;
 	private bool _disposed;
 	
 	public Pattern(string signature)
@@ -45,11 +45,11 @@ public unsafe class Pattern : IDisposable
 
 	public void Dispose()
 	{
-		if (_disposed)
-			return;
+		if (_disposed) return;
 		
 		Functions.libhat_free((nint) Signature);
 		_disposed = true;
+		Signature = (Signature*)nint.Zero;
 		GC.SuppressFinalize(this);
 	}
 	
