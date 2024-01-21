@@ -102,6 +102,13 @@ LIBHAT_API const void* libhat_find_pattern_mod(
     exit(EXIT_FAILURE);
 }
 
+LIBHAT_API const void* libhat_get_module(const char* name) {
+    return reinterpret_cast<const void*>(name
+        ? hat::process::get_module(name)
+        : hat::process::get_process_module()
+    );
+}
+
 LIBHAT_API void libhat_free(void* mem) {
     free(mem);
 }

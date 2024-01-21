@@ -58,6 +58,8 @@ LIBHAT_API const void* libhat_find_pattern_mod(
     scan_alignment      align
 );
 
+LIBHAT_API const void* libhat_get_module(const char* name);
+
 LIBHAT_API void libhat_free(void* mem);
 
 #ifdef __cplusplus
