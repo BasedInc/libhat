@@ -8,8 +8,4 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
-    <ItemGroup>
-      <None Remove="libhat_c.dll" />
-    </ItemGroup>
-
 </Project>
