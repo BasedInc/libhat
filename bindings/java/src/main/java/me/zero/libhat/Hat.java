@@ -33,7 +33,6 @@ public final class Hat {
      *
      * @param signature The string representation of a byte pattern
      * @return The created signature
-     * @throws IllegalArgumentException if {@code bytes.length != mask.length}
      * @throws RuntimeException if an internal error occurred, indicated by {@code status != Status.SUCCESS}
      */
     public static Signature parseSignature(final String signature) {
@@ -73,12 +72,14 @@ public final class Hat {
      * Finds the byte pattern described by the given {@link Signature} in the specified {@code buffer}, searching the
      * range including {@link ByteBuffer#position()} and up to but excluding {@link ByteBuffer#limit()}. If a match is
      * found, an {@link OptionalInt} containing the absolute position into {@code buffer} is returned. The underlying
-     * memory address of the returned result will not be aligned on any particular boundary.
+     * memory address of the returned result will not be aligned on any particular boundary. The specified
+     * {@link ByteBuffer} must be a direct buffer.
      *
      * @param signature The pattern to match
      * @param buffer    The buffer to search
      * @return The absolute position into {@code buffer} where a match was found,
      *         or {@link OptionalInt#empty()} if there was no match
+     * @throws IllegalArgumentException if the buffer is not direct or the signature has already been closed
      */
     public static OptionalInt findPattern(final Signature signature, final ByteBuffer buffer) {
         return findPattern(signature, buffer, ScanAlignment.X1);
@@ -88,13 +89,15 @@ public final class Hat {
      * Finds the byte pattern described by the given {@link Signature} in the specified {@code buffer}, searching the
      * range including {@link ByteBuffer#position()} and up to but excluding {@link ByteBuffer#limit()}. If a match is
      * found, an {@link OptionalInt} containing the absolute position into {@code buffer} is returned. The underlying
-     * memory address of the returned result will be byte aligned per the specified {@link ScanAlignment}.
+     * memory address of the returned result will be byte aligned per the specified {@link ScanAlignment}. The specified
+     * {@link ByteBuffer} must be a direct buffer.
      *
      * @param signature The pattern to match
      * @param buffer    The buffer to search
      * @param alignment The result address alignment
      * @return The absolute position into {@code buffer} where a match was found,
      *         or {@link OptionalInt#empty()} if there was no match
+     * @throws IllegalArgumentException if the buffer is not direct or the signature has already been closed
      */
     public static OptionalInt findPattern(final Signature signature, final ByteBuffer buffer, final ScanAlignment alignment) {
         if (!buffer.isDirect()) {
