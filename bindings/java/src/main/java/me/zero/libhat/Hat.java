@@ -22,6 +22,20 @@ public final class Hat {
         SIG_NO_BYTE
     }
 
+    /**
+     * Creates a new {@link Signature} from the specified string representation of a byte pattern. For example:
+     * <ul>
+     *     <li><code>48 8B 8D ? ? ? ? 48</code></li>
+     *     <li><code>E8 ? ? ? ? 88 86</code></li>
+     * </ul>
+     * The returned {@link Signature} is backed by a native heap allocation, and {@link Signature#close()} must be
+     * called when the object is done being used, either explicitly or through a try-with-resources block.
+     *
+     * @param signature The string representation of a byte pattern
+     * @return The created signature
+     * @throws IllegalArgumentException if {@code bytes.length != mask.length}
+     * @throws RuntimeException if an internal error occurred, indicated by {@code status != Status.SUCCESS}
+     */
     public static Signature parseSignature(final String signature) {
         final Pointer[] handle = new Pointer[1];
         final int status = Libhat.INSTANCE.libhat_parse_signature(signature, handle);
@@ -31,7 +45,19 @@ public final class Hat {
         return new Signature(handle[0]);
     }
 
-    public static Signature createSignature(byte[] bytes, byte[] mask) {
+    /**
+     * Creates a new {@link Signature} that describes a pattern matching the specified {@code bytes} where the
+     * corresponding {@code mask} value is non-zero. In other words, a mask value of {@code 0} indicates a wildcard.
+     * The returned {@link Signature} is backed by a native heap allocation, and {@link Signature#close()} must be
+     * called when the object is done being used, either explicitly or through a try-with-resources block.
+     *
+     * @param bytes The bytes to match
+     * @param mask  The mask applied to bytes
+     * @return The created signature
+     * @throws IllegalArgumentException if {@code bytes.length != mask.length}
+     * @throws RuntimeException if an internal error occurred, indicated by {@code status != Status.SUCCESS}
+     */
+    public static Signature createSignature(final byte[] bytes, final byte[] mask) {
         if (bytes.length != mask.length) {
             throw new IllegalArgumentException("Mismatch between bytes.length and mask.length");
         }
@@ -43,13 +69,39 @@ public final class Hat {
         return new Signature(handle[0]);
     }
 
+    /**
+     * Finds the byte pattern described by the given {@link Signature} in the specified {@code buffer}, searching the
+     * range including {@link ByteBuffer#position()} and up to but excluding {@link ByteBuffer#limit()}. If a match is
+     * found, an {@link OptionalInt} containing the absolute position into {@code buffer} is returned. The underlying
+     * memory address of the returned result will not be aligned on any particular boundary.
+     *
+     * @param signature The pattern to match
+     * @param buffer    The buffer to search
+     * @return The absolute position into {@code buffer} where a match was found,
+     *         or {@link OptionalInt#empty()} if there was no match
+     */
     public static OptionalInt findPattern(final Signature signature, final ByteBuffer buffer) {
         return findPattern(signature, buffer, ScanAlignment.X1);
     }
 
+    /**
+     * Finds the byte pattern described by the given {@link Signature} in the specified {@code buffer}, searching the
+     * range including {@link ByteBuffer#position()} and up to but excluding {@link ByteBuffer#limit()}. If a match is
+     * found, an {@link OptionalInt} containing the absolute position into {@code buffer} is returned. The underlying
+     * memory address of the returned result will be byte aligned per the specified {@link ScanAlignment}.
+     *
+     * @param signature The pattern to match
+     * @param buffer    The buffer to search
+     * @param alignment The result address alignment
+     * @return The absolute position into {@code buffer} where a match was found,
+     *         or {@link OptionalInt#empty()} if there was no match
+     */
     public static OptionalInt findPattern(final Signature signature, final ByteBuffer buffer, final ScanAlignment alignment) {
         if (!buffer.isDirect()) {
             throw new IllegalArgumentException("Provided buffer must be direct");
+        }
+        if (signature.handle == Pointer.NULL) {
+            throw new IllegalArgumentException("signature was nullptr");
         }
 
         final long start = Pointer.nativeValue(Native.getDirectBufferPointer(buffer)) + buffer.position();
@@ -66,5 +118,32 @@ public final class Hat {
             return OptionalInt.empty();
         }
         return OptionalInt.of((int) (Pointer.nativeValue(result) - start) + buffer.position());
+    }
+
+    /**
+     * Wrapper around {@link #parseSignature(String)} and {@link #findPattern(Signature, ByteBuffer)}
+     *
+     * @param signature A byte pattern string
+     * @param buffer The buffer to search
+     * @return The search result
+     */
+    public static OptionalInt findPattern(final String signature, final ByteBuffer buffer) {
+        try (final Signature sig = parseSignature(signature)) {
+            return findPattern(sig, buffer);
+        }
+    }
+
+    /**
+     * Wrapper around {@link #parseSignature(String)} and {@link #findPattern(Signature, ByteBuffer, ScanAlignment)}
+     *
+     * @param signature A byte pattern string
+     * @param buffer The buffer to search
+     * @param alignment The memory address alignment of the result
+     * @return The search result
+     */
+    public static OptionalInt findPattern(final String signature, final ByteBuffer buffer, final ScanAlignment alignment) {
+        try (final Signature sig = parseSignature(signature)) {
+            return findPattern(sig, buffer, alignment);
+        }
     }
 }
