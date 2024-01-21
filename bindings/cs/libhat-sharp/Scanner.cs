@@ -11,7 +11,7 @@ public unsafe class Scanner
 	private readonly nint? _buffer;
 	private readonly uint? _size;
 
-	public Scanner(string section, nint module)
+	public Scanner(nint module, string section = ".text")
 	{
 		_section = section;
 		_module = module;
