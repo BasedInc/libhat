@@ -33,8 +33,14 @@ hat::scan_result result = hat::find_pattern(pattern, ntdll, ".text");
 // Get the address pointed at by the pattern
 const std::byte* address = result.get();
 
-// Jump to an RIP relative address at a given offset
-const std::byte* relative_address = result.rel(1);
+// Resolve an RIP relative address at a given offset
+// 
+//   | signature matches here
+//   |        | relative address located at +3
+//   v        v
+//   48 8D 05 BE 53 23 01    lea  rax, [rip+0x12353be]
+//
+const std::byte* relative_address = result.rel(3);
 ```
 
 ### Accessing offsets
