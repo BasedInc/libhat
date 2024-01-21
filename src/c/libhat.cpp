@@ -2,6 +2,16 @@
 
 #include <libhat/Scanner.hpp>
 
+static signature_t* allocate_signature(const hat::signature_view signature) {
+    const auto bytes = std::as_bytes(signature);
+    auto* mem = malloc(sizeof(signature_t) + bytes.size());
+    auto* sig = static_cast<signature_t*>(mem);
+    sig->data = static_cast<std::byte*>(mem) + sizeof(signature_t);
+    sig->count = signature.size();
+    std::memcpy(sig->data, bytes.data(), bytes.size());
+    return sig;
+}
+
 extern "C" {
 
 LIBHAT_API libhat_status_t libhat_parse_signature(const char* signatureStr, signature_t** signatureOut) {
@@ -16,18 +26,26 @@ LIBHAT_API libhat_status_t libhat_parse_signature(const char* signatureStr, sign
         }
         return libhat_err_unknown;
     }
+    *signatureOut = allocate_signature(result.value());
+    return libhat_success;
+}
 
-    const auto bytes = std::as_bytes(std::span{result.value()});
-
-    auto* mem = malloc(sizeof(signature_t) + bytes.size());
-    auto* sig = static_cast<signature_t*>(mem);
-    sig->data = static_cast<std::byte*>(mem) + sizeof(signature_t);
-    sig->count = result.value().size();
-
-    std::memcpy(sig->data, bytes.data(), bytes.size());
-
-    *signatureOut = sig;
-
+LIBHAT_API libhat_status_t libhat_create_signature(
+    const char*   bytes,
+    const char*   mask,
+    const size_t  size,
+    signature_t** signatureOut
+) {
+    hat::signature signature{};
+    signature.reserve(size);
+    for (size_t i{}; i < size; i++) {
+        if (static_cast<bool>(mask[i])) {
+            signature.emplace_back(static_cast<std::byte>(bytes[i]));
+        } else {
+            signature.emplace_back(std::nullopt);
+        }
+    }
+    *signatureOut = allocate_signature(signature);
     return libhat_success;
 }
 

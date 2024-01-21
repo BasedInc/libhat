@@ -37,6 +37,13 @@ LIBHAT_API libhat_status_t libhat_parse_signature(
     signature_t** signatureOut
 );
 
+LIBHAT_API libhat_status_t libhat_create_signature(
+    const char*   bytes,
+    const char*   mask,
+    size_t        size,
+    signature_t** signatureOut
+);
+
 LIBHAT_API const void* libhat_find_pattern(
     const signature_t*  signature,
     const void*         buffer,
