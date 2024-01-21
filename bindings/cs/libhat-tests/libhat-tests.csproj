@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\libhat-sharp\libhat-sharp.csproj" />
+        <ProjectReference Include="..\libhat-sharp\libhat-sharp.csproj"/>
     </ItemGroup>
 
 </Project>

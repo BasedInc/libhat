@@ -11,6 +11,9 @@ internal static unsafe partial class Functions
 		[MarshalAs(UnmanagedType.LPStr)] string signatureStr, out Signature* signature);
 	
 	[LibraryImport(LIBRARY_NAME)]
+	internal static partial Status libhat_create_signature(byte[] bytes, byte[] mask, uint size, out Signature* signature);
+	
+	[LibraryImport(LIBRARY_NAME)]
 	internal static partial nint libhat_find_pattern(Signature* signature, nint buffer, uint size, ScanAlignment align);
 	
 	[LibraryImport(LIBRARY_NAME)]
