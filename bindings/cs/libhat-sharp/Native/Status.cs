@@ -1,6 +1,6 @@
 ﻿namespace Hat.Native;
 
-public enum Status
+internal enum Status
 {
 	Success,
 	UnknownError,
