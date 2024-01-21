@@ -74,7 +74,7 @@ hat::memory_protector prot{
     hat::protection::Read | hat::protection::Write  // the new protection flags
 };
 
-// Overwrite pointer to redirect to a custom callback
+// Overwrite function table entry to redirect to a custom callback
 vftable[target_func_index] = (uintptr_t) my_callback;
 
 // On scope exit, original protections will be restored
