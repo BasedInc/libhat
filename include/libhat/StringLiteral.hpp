@@ -10,17 +10,17 @@ namespace hat {
     };
 
     template<hat::fixed_string str>
-    struct string_literal : basic_string_literal<str> {};
+    using string_literal = basic_string_literal<str>;
 
     template<hat::wfixed_string str>
-    struct wstring_literal : basic_string_literal<str> {};
+    using wstring_literal = basic_string_literal<str>;
 
     template<hat::u8fixed_string str>
-    struct u8string_literal : basic_string_literal<str> {};
+    using u8string_literal = basic_string_literal<str>;
 
     template<hat::u16fixed_string str>
-    struct u16string_literal : basic_string_literal<str> {};
+    using u16string_literal = basic_string_literal<str>;
 
     template<hat::u32fixed_string str>
-    struct u32string_literal : basic_string_literal<str> {};
+    using u32string_literal = basic_string_literal<str>;
 }
