@@ -10,6 +10,7 @@ option(LIBHAT_STATIC_C_LIB "Build a static version of the C library" OFF)
 option(LIBHAT_SHARED_C_LIB "Build a shared version of the C library" OFF)
 option(LIBHAT_INSTALL_TARGET "Creates install rules for the libhat target" ON)
 option(LIBHAT_DISABLE_AVX512 "Disables AVX512 scanning" OFF)
+option(LIBHAT_TESTING "Enable tests" OFF)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set_source_files_properties(src/arch/x86/AVX2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
@@ -65,6 +66,12 @@ if (LIBHAT_STATIC_C_LIB OR LIBHAT_SHARED_C_LIB)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
         $<INSTALL_INTERFACE:include>
     )
+endif()
+
+if (LIBHAT_TESTING)
+    include(CTest)
+    enable_testing()
+    add_subdirectory(test)
 endif()
 
 if (LIBHAT_INSTALL_TARGET)

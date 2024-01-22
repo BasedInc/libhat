@@ -8,6 +8,33 @@ A modern, high-performance library for C++20 designed around game hacking
 - Convenience wrappers over OS APIs
 - Language bindings (C, C#, etc.)
 
+## Benchmarks
+The table below compares the single threaded throughput in bytes/s (real time) between
+libhat and [two other](test/benchmark/vendor) commonly used implementations for pattern
+scanning. The input buffers were randomly generated using a fixed seed, and the pattern
+scanned does not contain any match in the buffer. The benchmark was run on a system with
+an i7-9700K (which supports libhat's [AVX2](src/arch/x86/AVX2.cpp) scanner implementation).
+The full source code is available [here](test/benchmark/Compare.cpp).
+```
+---------------------------------------------------------------------------------------
+Benchmark                            Time             CPU   Iterations bytes_per_second
+---------------------------------------------------------------------------------------
+BM_Throughput_Libhat/4MiB       131578 ns        48967 ns        21379      29.6876Gi/s
+BM_Throughput_Libhat/16MiB      813977 ns       413524 ns         3514      19.1959Gi/s
+BM_Throughput_Libhat/128MiB    6910936 ns      3993486 ns          403      18.0873Gi/s
+BM_Throughput_Libhat/256MiB   13959379 ns      8121906 ns          202      17.9091Gi/s
+
+BM_Throughput_UC1/4MiB         4739731 ns      2776015 ns          591       843.93Mi/s
+BM_Throughput_UC1/16MiB       19011485 ns     10841837 ns          147      841.597Mi/s
+BM_Throughput_UC1/128MiB     152277511 ns     82465278 ns           18      840.571Mi/s
+BM_Throughput_UC1/256MiB     304964544 ns    180555556 ns            9      839.442Mi/s
+
+BM_Throughput_UC2/4MiB         9633499 ns      4617698 ns          291      415.218Mi/s
+BM_Throughput_UC2/16MiB       38507193 ns     22474315 ns           73      415.507Mi/s
+BM_Throughput_UC2/128MiB     307989100 ns    164930556 ns            9      415.599Mi/s
+BM_Throughput_UC2/256MiB     616449240 ns    331250000 ns            5      415.282Mi/s
+```
+
 ## Quick start
 ### Pattern scanning
 ```cpp
