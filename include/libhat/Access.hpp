@@ -1,5 +1,7 @@
 #pragma once
 
+#include <concepts>
+
 #include "Traits.hpp"
 
 namespace hat {

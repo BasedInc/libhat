@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "CompileTime.hpp"
+#include "FixedString.hpp"
 
 namespace hat {
 

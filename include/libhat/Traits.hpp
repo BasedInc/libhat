@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 namespace hat {
 
     template<typename To, typename From>
