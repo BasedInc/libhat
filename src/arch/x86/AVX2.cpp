@@ -53,7 +53,10 @@ namespace hat::detail {
             const auto cmp = _mm256_cmpeq_epi8(firstByte, _mm256_loadu_si256(vec));
             auto mask = static_cast<uint32_t>(_mm256_movemask_epi8(cmp));
 
-            if constexpr (cmpeq2) {
+            if constexpr (alignment != scan_alignment::X1) {
+                mask &= create_alignment_mask<uint32_t, alignment>();
+                if (!mask) continue;
+            } else if constexpr (cmpeq2) {
                 const auto cmp2 = _mm256_cmpeq_epi8(secondByte, _mm256_loadu_si256(vec));
                 auto mask2 = static_cast<uint32_t>(_mm256_movemask_epi8(cmp2));
                 // avoid loading unaligned memory by letting a match of the first signature byte in the last
@@ -61,7 +64,6 @@ namespace hat::detail {
                 mask &= (mask2 >> 1) | (0b1u << 31);
             }
 
-            mask &= create_alignment_mask<uint32_t, alignment>();
             while (mask) {
                 const auto offset = _tzcnt_u32(mask);
                 const auto i = reinterpret_cast<const std::byte*>(vec) + offset;
@@ -91,7 +93,7 @@ namespace hat::detail {
 
     template<scan_alignment alignment>
     scan_result find_pattern_avx2(const std::byte* begin, const std::byte* end, signature_view signature) {
-        const bool cmpeq2 = signature.size() > 1 && signature[1].has_value();
+        const bool cmpeq2 = alignment == scan_alignment::X1 && signature.size() > 1 && signature[1].has_value();
         const bool veccmp = signature.size() <= 33;
 
         if (cmpeq2 && veccmp) {

@@ -53,12 +53,14 @@ namespace hat::detail {
         for (; vec != e; vec++) {
             auto mask = _mm512_cmpeq_epi8_mask(firstByte, _mm512_loadu_si512(vec));
 
-            if constexpr (cmpeq2) {
+            if constexpr (alignment != scan_alignment::X1) {
+                mask &= create_alignment_mask<uint64_t, alignment>();
+                if (!mask) continue;
+            } else if constexpr (cmpeq2) {
                 const auto mask2 = _mm512_cmpeq_epi8_mask(secondByte, _mm512_loadu_si512(vec));
                 mask &= (mask2 >> 1) | (0b1ull << 63);
             }
 
-            mask &= create_alignment_mask<uint64_t, alignment>();
             while (mask) {
                 const auto offset = LIBHAT_TZCNT64(mask);
                 const auto i = reinterpret_cast<const std::byte*>(vec) + offset;
@@ -87,7 +89,7 @@ namespace hat::detail {
 
     template<scan_alignment alignment>
     scan_result find_pattern_avx512(const std::byte* begin, const std::byte* end, signature_view signature) {
-        const bool cmpeq2 = signature.size() > 1 && signature[1].has_value();
+        const bool cmpeq2 = alignment == scan_alignment::X1 && signature.size() > 1 && signature[1].has_value();
         const bool veccmp = signature.size() <= 65;
 
         if (cmpeq2 && veccmp) {

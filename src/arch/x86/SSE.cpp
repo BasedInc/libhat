@@ -53,13 +53,15 @@ namespace hat::detail {
             const auto cmp = _mm_cmpeq_epi8(firstByte, _mm_loadu_si128(vec));
             auto mask = static_cast<uint16_t>(_mm_movemask_epi8(cmp));
 
-            if constexpr (cmpeq2) {
+            if constexpr (alignment != scan_alignment::X1) {
+                mask &= create_alignment_mask<uint16_t, alignment>();
+                if (!mask) continue;
+            } else if constexpr (cmpeq2) {
                 const auto cmp2 = _mm_cmpeq_epi8(secondByte, _mm_loadu_si128(vec));
                 auto mask2 = static_cast<uint16_t>(_mm_movemask_epi8(cmp2));
                 mask &= (mask2 >> 1) | (0b1u << 15);
             }
 
-            mask &= create_alignment_mask<uint16_t, alignment>();
             while (mask) {
                 const auto offset = LIBHAT_BSF32(mask);
                 const auto i = reinterpret_cast<const std::byte*>(vec) + offset;
@@ -89,7 +91,7 @@ namespace hat::detail {
 
     template<scan_alignment alignment>
     scan_result find_pattern_sse(const std::byte* begin, const std::byte* end, signature_view signature) {
-        const bool cmpeq2 = signature.size() > 1 && signature[1].has_value();
+        const bool cmpeq2 = alignment == scan_alignment::X1 && signature.size() > 1 && signature[1].has_value();
         const bool veccmp = signature.size() <= 17;
 
         if (cmpeq2 && veccmp) {
