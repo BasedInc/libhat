@@ -38,6 +38,8 @@ BM_Throughput_UC2/256MiB     616449240 ns    331250000 ns            5      415.
 ## Quick start
 ### Pattern scanning
 ```cpp
+#include <libhat/Scanner.hpp>
+
 // Parse a pattern's string representation to an array of bytes at compile time
 constexpr hat::fixed_signature pattern = hat::compile_signature<"48 8D 05 ? ? ? ? E8">();
 
@@ -72,6 +74,8 @@ const std::byte* relative_address = result.rel(3);
 
 ### Accessing offsets
 ```cpp
+#include <libhat/Access.hpp>
+
 // An example struct and it's member offsets
 struct S {
     uint32_t a{}; // 0x0
@@ -91,6 +95,8 @@ const uint32_t& b = hat::member_at<uint32_t>(&std::as_const(s), 0x4);
 
 ### Writing to protected memory
 ```cpp
+#include <libhat/MemoryProtector.hpp>
+
 uintptr_t* vftable = ...;       // Pointer to a virtual function table in read-only data
 size_t target_func_index = ...; // Index to an interesting function
 
