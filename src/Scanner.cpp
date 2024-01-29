@@ -47,9 +47,11 @@ namespace hat::detail {
                 return find_pattern<scan_mode::AVX2, alignment>(begin, end, signature);
             }
         }
+#if !defined(LIBHAT_DISABLE_SSE)
         if (ext.sse41) {
             return find_pattern<scan_mode::SSE, alignment>(begin, end, signature);
         }
+#endif
 #endif
         // If none of the vectorized implementations are available/supported, then fallback to scanning per-byte
         return find_pattern<scan_mode::Single, alignment>(begin, end, signature);

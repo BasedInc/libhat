@@ -9,6 +9,7 @@ project(libhat)
 option(LIBHAT_STATIC_C_LIB "Build a static version of the C library" OFF)
 option(LIBHAT_SHARED_C_LIB "Build a shared version of the C library" OFF)
 option(LIBHAT_INSTALL_TARGET "Creates install rules for the libhat target" ON)
+option(LIBHAT_DISABLE_SSE "Disables SSE scanning" OFF)
 option(LIBHAT_DISABLE_AVX512 "Disables AVX512 scanning" OFF)
 option(LIBHAT_TESTING "Enable tests" OFF)
 
@@ -46,6 +47,7 @@ target_include_directories(libhat PUBLIC
 )
 
 target_compile_definitions(libhat PUBLIC
+    "$<$<BOOL:${LIBHAT_DISABLE_SSE}>:LIBHAT_DISABLE_SSE>"
     "$<$<BOOL:${LIBHAT_DISABLE_AVX512}>:LIBHAT_DISABLE_AVX512>"
 )
 
