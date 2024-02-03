@@ -24,7 +24,7 @@ namespace hat {
         }
 
         constexpr signature_element& operator=(const std::byte valueIn) noexcept {
-            return *this = signature_element{valueIn};
+            return *this = signature_element{ valueIn };
         }
 
         constexpr void reset(std::nullopt_t) noexcept {
@@ -51,15 +51,15 @@ namespace hat {
         bool present = false;
     };
 
-    using signature         = std::vector<signature_element>;
-    using signature_view    = std::span<const signature_element>;
+    using signature = std::vector<signature_element>;
+    using signature_view = std::span<const signature_element>;
 
     template<size_t N>
     using fixed_signature = std::array<signature_element, N>;
 
     /// Convert raw byte storage into a signature
     [[nodiscard]] constexpr signature bytes_to_signature(std::span<const std::byte> bytes) {
-        return {bytes.begin(), bytes.end()};
+        return { bytes.begin(), bytes.end() };
     }
 
     template<typename T>
@@ -87,27 +87,28 @@ namespace hat {
         signature sig{};
         bool containsByte = false;
         for (const auto& word : str | std::views::split(' ')) {
-            if (word.empty()) {
-                continue;
-            }
-            if (word[0] == '?') {
-                sig.emplace_back(std::nullopt);
-            } else {
-                const auto sv = std::string_view{word.begin(), word.end()};
-                const auto parsed = parse_int<uint8_t>(sv, 16);
-                if (parsed.has_value()) {
-                    sig.emplace_back(static_cast<std::byte>(parsed.value()));
-                } else {
-                    return result_error{signature_parse_error::parse_error};
+            if (!word.empty()) {
+                if (word[0] == '?') {
+                    sig.emplace_back(std::nullopt);
                 }
-                containsByte = true;
+                else {
+                    const auto sv = std::string_view{ word.begin(), word.end() };
+                    const auto parsed = parse_int<uint8_t>(sv, 16);
+                    if (parsed.has_value()) {
+                        sig.emplace_back(static_cast<std::byte>(parsed.value()));
+                        containsByte = true;
+                    }
+                    else {
+                        return result_error{ signature_parse_error::parse_error };
+                    }
+                }
             }
         }
         if (sig.empty()) {
-            return result_error{signature_parse_error::empty_signature};
+            return result_error{ signature_parse_error::empty_signature };
         }
         if (!containsByte) {
-            return result_error{signature_parse_error::missing_byte};
+            return result_error{ signature_parse_error::missing_byte };
         }
         return sig;
     }
