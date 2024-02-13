@@ -56,7 +56,29 @@ namespace hat {
         X16 = 16
     };
 
+    enum class scan_hint : uint64_t {
+        none    = 0,      // no hints
+        x86_64  = 1 << 0, // The data being scanned is x86_64 machine code
+    };
+
+    constexpr scan_hint operator|(scan_hint lhs, scan_hint rhs) {
+        using U = std::underlying_type_t<scan_hint>;
+        return static_cast<scan_hint>(static_cast<U>(lhs) | static_cast<U>(rhs));
+    }
+
+    constexpr scan_hint operator&(scan_hint lhs, scan_hint rhs) {
+        using U = std::underlying_type_t<scan_hint>;
+        return static_cast<scan_hint>(static_cast<U>(lhs) & static_cast<U>(rhs));
+    }
+
     namespace detail {
+
+        struct scan_context {
+            const std::byte* begin{};
+            const std::byte* end{};
+            signature_view signature{};
+            scan_hint hints{};
+        };
 
         enum class scan_mode {
             FastFirst, // std::find + std::equal
@@ -100,13 +122,14 @@ namespace hat {
         }
 
         template<scan_mode, scan_alignment>
-        scan_result find_pattern(const std::byte* begin, const std::byte* end, signature_view signature);
+        scan_result find_pattern(const scan_context&);
 
         template<scan_alignment alignment>
-        scan_result find_pattern(const std::byte* begin, const std::byte* end, signature_view signature);
+        scan_result find_pattern(const scan_context&);
 
         template<>
-        inline constexpr scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X1>(const std::byte* begin, const std::byte* end, signature_view signature) {
+        inline constexpr scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X1>(const scan_context& context) {
+            auto [begin, end, signature, _] = context;
             const auto firstByte = *signature[0];
             const auto scanEnd = end - signature.size() + 1;
 
@@ -132,7 +155,8 @@ namespace hat {
         }
 
         template<>
-        inline scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X16>(const std::byte* begin, const std::byte* end, signature_view signature) {
+        inline scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X16>(const scan_context& context) {
+            auto [begin, end, signature, _] = context;
             const auto firstByte = *signature[0];
 
             const auto scanBegin = next_boundary_align<scan_alignment::X16>(begin);
@@ -176,7 +200,8 @@ namespace hat {
     constexpr scan_result find_pattern(
         Iter            beginIt,
         Iter            endIt,
-        signature_view  signature
+        signature_view  signature,
+        scan_hint       hints = scan_hint::none
     ) {
         // Truncate the leading wildcards from the signature
         size_t offset = 0;
@@ -196,9 +221,9 @@ namespace hat {
 
         hat::scan_result result;
         if LIBHAT_IF_CONSTEVAL {
-            result = detail::find_pattern<detail::scan_mode::Single, alignment>(begin, end, signature);
+            result = detail::find_pattern<detail::scan_mode::Single, alignment>({begin, end, signature, hints});
         } else {
-            result = detail::find_pattern<alignment>(begin, end, signature);
+            result = detail::find_pattern<alignment>({begin, end, signature, hints});
         }
         return result.has_result() ? result.get() - offset : nullptr;
     }
@@ -218,3 +243,5 @@ namespace hat::experimental {
         process::module_t   mod = process::get_process_module()
     );
 }
+
+#include "Scanner.inl"
