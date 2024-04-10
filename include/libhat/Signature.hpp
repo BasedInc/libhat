@@ -51,8 +51,8 @@ namespace hat {
         bool present = false;
     };
 
-    using signature         = std::vector<signature_element>;
-    using signature_view    = std::span<const signature_element>;
+    using signature = std::vector<signature_element>;
+    using signature_view = std::span<const signature_element>;
 
     template<size_t N>
     using fixed_signature = std::array<signature_element, N>;
@@ -68,13 +68,20 @@ namespace hat {
         return bytes_to_signature(std::bit_cast<bytes>(value));
     }
 
-    [[nodiscard]] constexpr signature string_to_signature(std::string_view str) {
+    template<typename Char>
+    [[nodiscard]] constexpr signature string_to_signature(std::basic_string_view<Char> str) {
+        const auto bytes = std::as_bytes(std::span{str});
         signature sig{};
-        sig.reserve(str.size());
-        for (char ch : str) {
-            sig.emplace_back(static_cast<std::byte>(ch));
+        sig.reserve(bytes.size());
+        for (std::byte byte : bytes) {
+            sig.emplace_back(byte);
         }
         return sig;
+    }
+
+    template<typename Char>
+    [[nodiscard]] constexpr signature string_to_signature(std::basic_string<Char> str) {
+        return string_to_signature(std::basic_string_view{str});
     }
 
     enum class signature_parse_error {
