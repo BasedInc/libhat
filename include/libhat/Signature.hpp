@@ -81,7 +81,7 @@ namespace hat {
 
     template<typename Char>
     [[nodiscard]] constexpr signature string_to_signature(std::basic_string<Char> str) {
-        return string_to_signature(std::basic_string_view{str});
+        return string_to_signature(std::basic_string_view<Char>{str});
     }
 
     enum class signature_parse_error {
