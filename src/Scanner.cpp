@@ -1,7 +1,7 @@
 #include <libhat/Scanner.hpp>
 
 #include <libhat/Defines.hpp>
-#include "System.hpp"
+#include <libhat/System.hpp>
 
 namespace hat::detail {
 

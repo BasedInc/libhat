@@ -1,12 +1,14 @@
 #pragma once
 
+#include <libhat/Defines.hpp>
 #include <string>
 
+#if defined(LIBHAT_X86)
 namespace hat {
 
     struct system_info_x86 {
-        std::string cpu_vendor;
-        std::string cpu_brand;
+        std::string cpu_vendor{};
+        std::string cpu_brand{};
         struct {
             bool sse;
             bool sse2;
@@ -20,7 +22,7 @@ namespace hat {
             bool avx512bw;
             bool popcnt;
             bool bmi;
-        } extensions;
+        } extensions{};
 
         system_info_x86(const system_info_x86&) = delete;
         system_info_x86& operator=(const system_info_x86&) = delete;
@@ -31,4 +33,24 @@ namespace hat {
     };
 
     using system_info = system_info_x86;
+}
+#elif defined(LIBHAT_ARM)
+namespace hat {
+
+    struct system_info_arm {
+        system_info_arm(const system_info_arm&) = delete;
+        system_info_arm& operator=(const system_info_arm&) = delete;
+    private:
+        system_info_arm() = default;
+        friend const system_info_arm& get_system();
+        static const system_info_arm instance;
+    };
+
+    using system_info = system_info_arm;
+}
+#endif
+
+namespace hat {
+
+    const system_info& get_system();
 }

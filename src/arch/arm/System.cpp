@@ -1,7 +1,7 @@
 #include <libhat/Defines.hpp>
 #ifdef LIBHAT_ARM
 
-#include "System.hpp"
+#include <libhat/System.hpp>
 
 namespace hat {
 

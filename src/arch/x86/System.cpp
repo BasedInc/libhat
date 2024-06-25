@@ -1,7 +1,7 @@
 #include <libhat/Defines.hpp>
 #ifdef LIBHAT_X86
 
-#include "System.hpp"
+#include <libhat/System.hpp>
 
 #include <array>
 #include <cstdint>
