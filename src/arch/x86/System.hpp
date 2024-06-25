@@ -4,7 +4,7 @@
 
 namespace hat {
 
-    typedef struct system_info_x86 {
+    struct system_info_x86 {
         std::string cpu_vendor;
         std::string cpu_brand;
         struct {
@@ -16,9 +16,10 @@ namespace hat {
             bool sse42;
             bool avx;
             bool avx2;
-            bool avx512;
+            bool avx512f;
+            bool avx512bw;
             bool popcnt;
-            bool bmi1;
+            bool bmi;
         } extensions;
 
         system_info_x86(const system_info_x86&) = delete;
@@ -27,5 +28,7 @@ namespace hat {
         system_info_x86();
         friend const system_info_x86& get_system();
         static const system_info_x86 instance;
-    } system_info;
+    };
+
+    using system_info = system_info_x86;
 }

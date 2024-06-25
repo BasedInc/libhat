@@ -82,17 +82,18 @@ namespace hat {
         this->cpu_vendor = vendor;
         this->cpu_brand = brand;
         this->extensions = {
-            .sse    = f_1_EDX_[25],
-            .sse2   = f_1_EDX_[26],
-            .sse3   = f_1_ECX_[0],
-            .ssse3  = f_1_ECX_[9],
-            .sse41  = f_1_ECX_[19],
-            .sse42  = f_1_ECX_[20],
-            .avx    = f_1_ECX_[28] && avxsupport,
-            .avx2   = f_7_EBX_[5] && avxsupport,
-            .avx512 = f_7_EBX_[16] && f_7_EBX_[30] && avx512support, // AVX512F and AVX512BW
-            .popcnt = f_1_ECX_[23],
-            .bmi1   = f_7_EBX_[3],
+            .sse      = f_1_EDX_[25],
+            .sse2     = f_1_EDX_[26],
+            .sse3     = f_1_ECX_[0],
+            .ssse3    = f_1_ECX_[9],
+            .sse41    = f_1_ECX_[19],
+            .sse42    = f_1_ECX_[20],
+            .avx      = f_1_ECX_[28] && avxsupport,
+            .avx2     = f_7_EBX_[5] && avxsupport,
+            .avx512f  = f_7_EBX_[16] && avx512support,
+            .avx512bw = f_7_EBX_[30] && avx512support,
+            .popcnt   = f_1_ECX_[23],
+            .bmi      = f_7_EBX_[3],
         };
     }
 }

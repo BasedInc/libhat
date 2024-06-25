@@ -9,9 +9,9 @@ namespace hat::detail {
     scan_result find_pattern(const scan_context& context) {
 #if defined(LIBHAT_X86)
         const auto& ext = get_system().extensions;
-        if (ext.bmi1) {
+        if (ext.bmi) {
 #if !defined(LIBHAT_DISABLE_AVX512)
-            if (ext.avx512) {
+            if (ext.avx512f && ext.avx512bw) {
                 return find_pattern<scan_mode::AVX512, alignment>(context);
             }
 #endif
