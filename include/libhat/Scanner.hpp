@@ -192,7 +192,8 @@ namespace hat {
     scan_result find_pattern(
         signature_view      signature,
         std::string_view    section,
-        process::module_t   mod = process::get_process_module()
+        process::module_t   mod = process::get_process_module(),
+        scan_hint           hints = scan_hint::none
     );
 
     /// Root implementation of find_pattern
