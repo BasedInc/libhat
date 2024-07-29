@@ -24,7 +24,6 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif ()
 
 set(LIBHAT_SRC
-    src/Process.cpp
     src/Scanner.cpp
     src/System.cpp
 

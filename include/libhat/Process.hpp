@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <span>
 #include <string_view>
 
@@ -9,20 +10,19 @@ namespace hat::process {
     enum class module_t : uintptr_t {};
 
     /// Returns the module for the current process's base executable
-    auto get_process_module() -> module_t;
+    [[nodiscard]] module_t get_process_module();
 
-    /// Returns a module by its given name in the current process
-    auto get_module(const std::string& name) -> module_t;
-
-    /// Returns the module located at the specified base address
-    auto module_at(uintptr_t address) -> module_t;
+    /// Returns an optional containing the module with the given name in the current process
+    /// If the module is not found, std::nullopt is returned instead
+    [[nodiscard]] std::optional<module_t> get_module(const std::string& name);
 
     /// Returns the module located at the specified base address
-    auto module_at(std::byte* address) -> module_t;
+    /// If the given address does not point to a valid module, std::nullopt is returned instead
+    [[nodiscard]] std::optional<module_t> module_at(void* address);
 
     /// Returns the complete memory region for the given module. This may include portions which are uncommitted.
-    auto get_module_data(module_t mod) -> std::span<std::byte>;
+    [[nodiscard]] std::span<std::byte> get_module_data(module_t mod);
 
     /// Returns the memory region for a named section in the given module
-    auto get_section_data(module_t mod, std::string_view name) -> std::span<std::byte>;
+    [[nodiscard]] std::span<std::byte> get_section_data(module_t mod, std::string_view name);
 }
