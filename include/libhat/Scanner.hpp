@@ -182,7 +182,7 @@ namespace hat {
 
     /// Perform a signature scan on the entirety of the process module or a specified module
     template<scan_alignment alignment = scan_alignment::X1>
-    scan_result find_pattern(
+    [[deprecated]] scan_result find_pattern(
         signature_view      signature,
         process::module_t   mod = process::get_process_module()
     );
