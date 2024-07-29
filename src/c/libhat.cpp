@@ -87,9 +87,12 @@ LIBHAT_API const void* libhat_find_pattern_mod(
         signature->count
     };
 
-    const auto find_pattern = [=]<hat::scan_alignment A>() {
-        const auto mod = hat::process::module_at(reinterpret_cast<uintptr_t>(module));
-        const auto result = hat::find_pattern(view, section, mod);
+    const auto find_pattern = [=]<hat::scan_alignment A>() -> const std::byte* {
+        const auto mod = hat::process::module_at(const_cast<void*>(module));
+        if (!mod.has_value()) {
+            return nullptr;
+        }
+        const auto result = hat::find_pattern(view, section, mod.value());
         return result.has_result() ? result.get() : nullptr;
     };
 
@@ -103,10 +106,12 @@ LIBHAT_API const void* libhat_find_pattern_mod(
 }
 
 LIBHAT_API const void* libhat_get_module(const char* name) {
-    return reinterpret_cast<const void*>(name
-        ? hat::process::get_module(name)
-        : hat::process::get_process_module()
-    );
+    if (name) {
+        if (const auto mod = hat::process::get_module(name); mod.has_value()) {
+            return reinterpret_cast<const void*>(mod.value());
+        }
+    }
+    return reinterpret_cast<const void*>(hat::process::get_process_module());
 }
 
 LIBHAT_API void libhat_free(void* mem) {
