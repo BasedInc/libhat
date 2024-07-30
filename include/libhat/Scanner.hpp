@@ -262,9 +262,9 @@ namespace hat {
     ) -> std::pair<In, Out> {
         const auto [offset, trunc] = detail::truncate(signature);
         const auto begin = std::to_address(beginIn) + offset;
-        auto i = begin;
-        auto end = std::to_address(endIn);
+        const auto end = std::to_address(endIn);
 
+        auto i = begin;
         auto out = beginOut;
 
         while (i < end && out != endOut && trunc.size() <= static_cast<size_t>(std::distance(i, end))) {
@@ -291,29 +291,31 @@ namespace hat {
     constexpr size_t find_all_pattern(
         const In              beginIn,
         const In              endIn,
-        Out                   out,
+        const Out             outIn,
         const signature_view  signature,
         const scan_hint       hints = scan_hint::none
     ) {
         const auto [offset, trunc] = detail::truncate(signature);
-        auto begin = std::to_address(beginIn) + offset;
-        auto end = std::to_address(endIn);
+        const auto begin = std::to_address(beginIn) + offset;
+        const auto end = std::to_address(endIn);
 
+        auto i = begin;
+        auto out = outIn;
         size_t matches{};
 
-        while (begin < end && trunc.size() <= static_cast<size_t>(std::distance(begin, end))) {
+        while (begin < end && trunc.size() <= static_cast<size_t>(std::distance(i, end))) {
             const_scan_result result;
             if LIBHAT_IF_CONSTEVAL {
-                result = detail::find_pattern<detail::scan_mode::Single, alignment>({begin, end, trunc, hints});
+                result = detail::find_pattern<detail::scan_mode::Single, alignment>({i, end, trunc, hints});
             } else {
-                result = detail::find_pattern<alignment>({begin, end, trunc, hints});
+                result = detail::find_pattern<alignment>({i, end, trunc, hints});
             }
             if (!result.has_result()) {
                 break;
             }
             const auto addr = const_cast<typename detail::result_type_for<In>::underlying_type>(result.get() - offset);
             *out++ = addr;
-            begin = addr + detail::alignment_stride<alignment>;
+            i = addr + detail::alignment_stride<alignment>;
             matches++;
         }
 
