@@ -13,9 +13,17 @@
 
 namespace hat::process {
 
-    static bool isValidModule(const void* mod) {
+    static bool isValidModule(const void* mod, const std::optional<size_t> size) {
+        if (size && *size < sizeof(IMAGE_DOS_HEADER)) {
+            return false;
+        }
+
         const auto dosHeader = static_cast<const IMAGE_DOS_HEADER*>(mod);
         if (dosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
+            return false;
+        }
+
+        if (size && *size < dosHeader->e_lfanew + sizeof(IMAGE_NT_HEADERS)) {
             return false;
         }
 
@@ -44,8 +52,8 @@ namespace hat::process {
         return {};
     }
 
-    std::optional<module_t> module_at(void* address) {
-        if (isValidModule(address)) {
+    std::optional<module_t> module_at(void* address, std::optional<size_t> size) {
+        if (isValidModule(address, size)) {
             return module_t{std::bit_cast<uintptr_t>(address)};
         }
         return {};

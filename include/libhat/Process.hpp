@@ -16,9 +16,10 @@ namespace hat::process {
     /// If the module is not found, std::nullopt is returned instead
     [[nodiscard]] std::optional<module_t> get_module(const std::string& name);
 
-    /// Returns the module located at the specified base address
+    /// Returns the module located at the specified base address. Optionally, a size may be provided to indicate
+    /// the size of the allocation pointed to by address, preventing a potential out-of-bounds read.
     /// If the given address does not point to a valid module, std::nullopt is returned instead
-    [[nodiscard]] std::optional<module_t> module_at(void* address);
+    [[nodiscard]] std::optional<module_t> module_at(void* address, std::optional<size_t> size = {});
 
     /// Returns the complete memory region for the given module. This may include portions which are uncommitted.
     [[nodiscard]] std::span<std::byte> get_module_data(module_t mod);
