@@ -247,18 +247,57 @@ namespace hat {
             : nullptr;
     }
 
+    /// Finds all of the matches for the given signature in the input range, and writes the results into the output
+    /// range. If there is no space in the output range, the function will exit early. The first element of the returned
+    /// pair is an end iterator into the input range at the point in which the pattern search stopped. The second
+    /// element of the pair is an end iterator into the output range in which the matched results stop.
+    template<scan_alignment alignment = scan_alignment::X1, detail::byte_input_iterator In, std::output_iterator<detail::result_type_for<In>> Out>
+    constexpr auto find_all_pattern(
+        const In              beginIn,
+        const In              endIn,
+        const Out             beginOut,
+        const Out             endOut,
+        const signature_view  signature,
+        const scan_hint       hints = scan_hint::none
+    ) -> std::pair<In, Out> {
+        const auto [offset, trunc] = detail::truncate(signature);
+        const auto begin = std::to_address(beginIn) + offset;
+        auto i = begin;
+        auto end = std::to_address(endIn);
+
+        auto out = beginOut;
+
+        while (i < end && out != endOut && trunc.size() <= static_cast<size_t>(std::distance(i, end))) {
+            const_scan_result result;
+            if LIBHAT_IF_CONSTEVAL {
+                result = detail::find_pattern<detail::scan_mode::Single, alignment>({i, end, trunc, hints});
+            } else {
+                result = detail::find_pattern<alignment>({i, end, trunc, hints});
+            }
+            if (!result.has_result()) {
+                i = end;
+                break;
+            }
+            const auto addr = const_cast<typename detail::result_type_for<In>::underlying_type>(result.get() - offset);
+            *out++ = addr;
+            i = addr + detail::alignment_stride<alignment>;
+        }
+
+        return std::make_pair(std::next(beginIn, i - begin), out);
+    }
+
     /// Root implementation of find_all_pattern
     template<scan_alignment alignment = scan_alignment::X1, detail::byte_input_iterator In, std::output_iterator<detail::result_type_for<In>> Out>
     constexpr size_t find_all_pattern(
-        const In              beginIt,
-        const In              endIt,
+        const In              beginIn,
+        const In              endIn,
         Out                   out,
         const signature_view  signature,
         const scan_hint       hints = scan_hint::none
     ) {
         const auto [offset, trunc] = detail::truncate(signature);
-        auto begin = std::to_address(beginIt) + offset;
-        auto end = std::to_address(endIt);
+        auto begin = std::to_address(beginIn) + offset;
+        auto end = std::to_address(endIn);
 
         size_t matches{};
 
