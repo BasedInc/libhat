@@ -38,8 +38,10 @@ namespace hat::process {
     }
 
     std::optional<module_t> get_module(const std::string& name) {
-        const auto address = reinterpret_cast<uintptr_t>(GetModuleHandleA(name.c_str()));
-        return module_t{address};
+        if (const auto module = GetModuleHandleA(name.c_str()); module) {
+            return module_t{std::bit_cast<uintptr_t>(module)};
+        }
+        return {};
     }
 
     std::optional<module_t> module_at(void* address) {
