@@ -161,7 +161,7 @@ namespace hat {
         }
 
         template<>
-        inline constexpr const_scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X16>(const scan_context& context) {
+        inline const_scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X16>(const scan_context& context) {
             auto [begin, end, signature, _] = context;
             const auto firstByte = *signature[0];
 
