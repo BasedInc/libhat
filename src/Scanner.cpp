@@ -6,7 +6,7 @@
 namespace hat::detail {
 
     template<scan_alignment alignment>
-    scan_result find_pattern(const scan_context& context) {
+    const_scan_result find_pattern(const scan_context& context) {
 #if defined(LIBHAT_X86)
         const auto& ext = get_system().extensions;
         if (ext.bmi) {
@@ -29,6 +29,19 @@ namespace hat::detail {
         return find_pattern<scan_mode::Single, alignment>(context);
     }
 
-    template scan_result find_pattern<scan_alignment::X1>(const scan_context& context);
-    template scan_result find_pattern<scan_alignment::X16>(const scan_context& context);
+    template const_scan_result find_pattern<scan_alignment::X1>(const scan_context& context);
+    template const_scan_result find_pattern<scan_alignment::X16>(const scan_context& context);
+}
+
+// Validate return value const-ness for the root find_pattern impl
+namespace hat {
+    static_assert(std::is_same_v<scan_result, decltype(find_pattern(
+        std::declval<std::byte*>(),
+        std::declval<std::byte*>(),
+        std::declval<signature_view>()))>);
+
+    static_assert(std::is_same_v<const_scan_result, decltype(find_pattern(
+        std::declval<const std::byte*>(),
+        std::declval<const std::byte*>(),
+        std::declval<signature_view>()))>);
 }

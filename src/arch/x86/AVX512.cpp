@@ -26,7 +26,7 @@ namespace hat::detail {
     }
 
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
-    scan_result find_pattern_avx512(const scan_context& context) {
+    const_scan_result find_pattern_avx512(const scan_context& context) {
         auto [begin, end, signature, hints] = context;
         // 512 bit vector containing first signature byte repeated
         const auto firstByte = _mm512_set1_epi8(static_cast<int8_t>(*signature[0]));
@@ -89,7 +89,7 @@ namespace hat::detail {
     }
 
     template<scan_alignment alignment>
-    scan_result find_pattern_avx512(const scan_context& context) {
+    const_scan_result find_pattern_avx512(const scan_context& context) {
         auto& signature = context.signature;
         const bool cmpeq2 = alignment == scan_alignment::X1 && signature.size() > 1 && signature[1].has_value();
         const bool veccmp = signature.size() <= 65;
@@ -106,12 +106,12 @@ namespace hat::detail {
     }
 
     template<>
-    scan_result find_pattern<scan_mode::AVX512, scan_alignment::X1>(const scan_context& context) {
+    const_scan_result find_pattern<scan_mode::AVX512, scan_alignment::X1>(const scan_context& context) {
         return find_pattern_avx512<scan_alignment::X1>(context);
     }
 
     template<>
-    scan_result find_pattern<scan_mode::AVX512, scan_alignment::X16>(const scan_context& context) {
+    const_scan_result find_pattern<scan_mode::AVX512, scan_alignment::X16>(const scan_context& context) {
         return find_pattern_avx512<scan_alignment::X16>(context);
     }
 }

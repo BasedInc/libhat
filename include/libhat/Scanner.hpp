@@ -12,12 +12,15 @@
 
 namespace hat {
 
-    class scan_result {
+    template<typename T> requires (std::is_pointer_v<T> && sizeof(std::remove_pointer_t<T>) == 1)
+    class scan_result_base {
         using rel_t = int32_t;
     public:
-        constexpr scan_result() : result(nullptr) {}
-        constexpr scan_result(std::nullptr_t) : result(nullptr) {}          // NOLINT(google-explicit-constructor)
-        constexpr scan_result(const std::byte* result) : result(result) {}  // NOLINT(google-explicit-constructor)
+        using underlying_type = T;
+
+        constexpr scan_result_base() : result(nullptr) {}
+        constexpr scan_result_base(std::nullptr_t) : result(nullptr) {}          // NOLINT(google-explicit-constructor)
+        constexpr scan_result_base(T result) : result(result) {}  // NOLINT(google-explicit-constructor)
 
         /// Reads an integer of the specified type located at an offset from the signature result
         template<std::integral Int>
@@ -32,7 +35,7 @@ namespace hat {
         }
 
         /// Resolve the relative address located at an offset from the signature result
-        [[nodiscard]] constexpr const std::byte* rel(size_t offset) const {
+        [[nodiscard]] constexpr T rel(size_t offset) const {
             return this->has_result() ? this->result + this->read<rel_t>(offset) + offset + sizeof(rel_t) : nullptr;
         }
 
@@ -40,16 +43,19 @@ namespace hat {
             return this->result != nullptr;
         }
 
-        [[nodiscard]] constexpr const std::byte* operator*() const {
+        [[nodiscard]] constexpr T operator*() const {
             return this->result;
         }
 
-        [[nodiscard]] constexpr const std::byte* get() const {
+        [[nodiscard]] constexpr T get() const {
             return this->result;
         }
     private:
-        const std::byte* result;
+        T result;
     };
+
+    using scan_result = scan_result_base<std::byte*>;
+    using const_scan_result = scan_result_base<const std::byte*>;
 
     enum class scan_alignment {
         X1 = 1,
@@ -122,13 +128,13 @@ namespace hat {
         }
 
         template<scan_mode, scan_alignment>
-        scan_result find_pattern(const scan_context&);
+        const_scan_result find_pattern(const scan_context&);
 
         template<scan_alignment alignment>
-        scan_result find_pattern(const scan_context&);
+        const_scan_result find_pattern(const scan_context&);
 
         template<>
-        inline constexpr scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X1>(const scan_context& context) {
+        inline constexpr const_scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X1>(const scan_context& context) {
             auto [begin, end, signature, _] = context;
             const auto firstByte = *signature[0];
             const auto scanEnd = end - signature.size() + 1;
@@ -155,14 +161,14 @@ namespace hat {
         }
 
         template<>
-        inline scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X16>(const scan_context& context) {
+        inline constexpr const_scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X16>(const scan_context& context) {
             auto [begin, end, signature, _] = context;
             const auto firstByte = *signature[0];
 
             const auto scanBegin = next_boundary_align<scan_alignment::X16>(begin);
             const auto scanEnd = prev_boundary_align<scan_alignment::X16>(end - signature.size() + 1);
             if (scanBegin >= scanEnd) {
-                return {};
+                return nullptr;
             }
 
             for (auto i = scanBegin; i != scanEnd; i += 16) {
@@ -198,7 +204,7 @@ namespace hat {
 
     /// Root implementation of find_pattern
     template<scan_alignment alignment = scan_alignment::X1, detail::byte_iterator Iter>
-    constexpr scan_result find_pattern(
+    constexpr auto find_pattern(
         Iter            beginIt,
         Iter            endIt,
         signature_view  signature,
@@ -216,17 +222,22 @@ namespace hat {
 
         const auto begin = std::to_address(beginIt) + offset;
         const auto end = std::to_address(endIt);
+
+        using result_t = std::conditional_t<std::is_const_v<std::remove_pointer_t<decltype(begin)>>, const_scan_result, scan_result>;
+
         if (begin >= end || signature.size() > static_cast<size_t>(std::distance(begin, end))) {
-            return nullptr;
+            return result_t{nullptr};
         }
 
-        hat::scan_result result;
+        const_scan_result result;
         if LIBHAT_IF_CONSTEVAL {
             result = detail::find_pattern<detail::scan_mode::Single, alignment>({begin, end, signature, hints});
         } else {
             result = detail::find_pattern<alignment>({begin, end, signature, hints});
         }
-        return result.has_result() ? result.get() - offset : nullptr;
+        return result.has_result()
+            ? const_cast<typename result_t::underlying_type>(result.get() - offset)
+            : result_t{nullptr};
     }
 }
 
