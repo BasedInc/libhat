@@ -22,7 +22,8 @@ namespace hat::detail {
                              && std::is_trivially_constructible_v<To>;
 
     template<typename T>
-    concept byte_iterator = std::forward_iterator<T>
+    concept byte_input_iterator = std::input_iterator<T>
+                            && std::forward_iterator<T>
                             && std::contiguous_iterator<T>
                             && std::same_as<std::iter_value_t<T>, std::byte>;
 

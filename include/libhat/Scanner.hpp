@@ -19,8 +19,8 @@ namespace hat {
         using underlying_type = T;
 
         constexpr scan_result_base() : result(nullptr) {}
-        constexpr scan_result_base(std::nullptr_t) : result(nullptr) {}          // NOLINT(google-explicit-constructor)
-        constexpr scan_result_base(T result) : result(result) {}  // NOLINT(google-explicit-constructor)
+        constexpr scan_result_base(std::nullptr_t) : result(nullptr) {} // NOLINT(google-explicit-constructor)
+        constexpr scan_result_base(T result) : result(result) {}        // NOLINT(google-explicit-constructor)
 
         /// Reads an integer of the specified type located at an offset from the signature result
         template<std::integral Int>
@@ -50,6 +50,8 @@ namespace hat {
         [[nodiscard]] constexpr T get() const {
             return this->result;
         }
+
+        [[nodiscard]] constexpr bool operator==(const scan_result_base&) const noexcept = default;
     private:
         T result;
     };
@@ -99,10 +101,10 @@ namespace hat {
         template<scan_alignment alignment>
         inline constexpr auto alignment_stride = static_cast<std::underlying_type_t<scan_alignment>>(alignment);
 
-        template<std::integral type, scan_alignment alignment, auto stride = alignment_stride<alignment>>
+        template<std::integral type, scan_alignment alignment>
         inline consteval auto create_alignment_mask() {
             type mask{};
-            for (size_t i = 0; i < sizeof(type) * 8; i += stride) {
+            for (size_t i = 0; i < sizeof(type) * 8; i += alignment_stride<alignment>) {
                 mask |= (type(1) << i);
             }
             return mask;
@@ -184,6 +186,22 @@ namespace hat {
             }
             return nullptr;
         }
+
+        [[nodiscard]] constexpr auto truncate(const signature_view signature) noexcept {
+            // Truncate the leading wildcards from the signature
+            size_t offset = 0;
+            for (const auto& elem : signature) {
+                if (elem.has_value()) {
+                    break;
+                }
+                offset++;
+            }
+            return std::make_pair(offset, signature.subspan(offset));
+        }
+
+        template<byte_input_iterator T>
+        using result_type_for = std::conditional_t<std::is_const_v<std::remove_reference_t<std::iter_reference_t<T>>>,
+            const_scan_result, scan_result>;
     }
 
     /// Perform a signature scan on the entirety of the process module or a specified module
@@ -203,41 +221,76 @@ namespace hat {
     );
 
     /// Root implementation of find_pattern
-    template<scan_alignment alignment = scan_alignment::X1, detail::byte_iterator Iter>
+    template<scan_alignment alignment = scan_alignment::X1, detail::byte_input_iterator Iter>
     constexpr auto find_pattern(
-        Iter            beginIt,
-        Iter            endIt,
-        signature_view  signature,
-        scan_hint       hints = scan_hint::none
-    ) {
-        // Truncate the leading wildcards from the signature
-        size_t offset = 0;
-        for (const auto& elem : signature) {
-            if (elem.has_value()) {
-                break;
-            }
-            offset++;
-        }
-        signature = signature.subspan(offset);
-
+        const Iter            beginIt,
+        const Iter            endIt,
+        const signature_view  signature,
+        const scan_hint       hints = scan_hint::none
+    ) -> detail::result_type_for<Iter> {
+        const auto [offset, trunc] = detail::truncate(signature);
         const auto begin = std::to_address(beginIt) + offset;
         const auto end = std::to_address(endIt);
 
-        using result_t = std::conditional_t<std::is_const_v<std::remove_pointer_t<decltype(begin)>>, const_scan_result, scan_result>;
-
-        if (begin >= end || signature.size() > static_cast<size_t>(std::distance(begin, end))) {
-            return result_t{nullptr};
+        if (begin >= end || trunc.size() > static_cast<size_t>(std::distance(begin, end))) {
+            return {nullptr};
         }
 
         const_scan_result result;
         if LIBHAT_IF_CONSTEVAL {
-            result = detail::find_pattern<detail::scan_mode::Single, alignment>({begin, end, signature, hints});
+            result = detail::find_pattern<detail::scan_mode::Single, alignment>({begin, end, trunc, hints});
         } else {
-            result = detail::find_pattern<alignment>({begin, end, signature, hints});
+            result = detail::find_pattern<alignment>({begin, end, trunc, hints});
         }
         return result.has_result()
-            ? const_cast<typename result_t::underlying_type>(result.get() - offset)
-            : result_t{nullptr};
+            ? const_cast<typename detail::result_type_for<Iter>::underlying_type>(result.get() - offset)
+            : nullptr;
+    }
+
+    /// Root implementation of find_all_pattern
+    template<scan_alignment alignment = scan_alignment::X1, detail::byte_input_iterator In, std::output_iterator<detail::result_type_for<In>> Out>
+    constexpr size_t find_all_pattern(
+        const In              beginIt,
+        const In              endIt,
+        Out                   out,
+        const signature_view  signature,
+        const scan_hint       hints = scan_hint::none
+    ) {
+        const auto [offset, trunc] = detail::truncate(signature);
+        auto begin = std::to_address(beginIt) + offset;
+        auto end = std::to_address(endIt);
+
+        size_t matches{};
+
+        while (begin < end && trunc.size() <= static_cast<size_t>(std::distance(begin, end))) {
+            const_scan_result result;
+            if LIBHAT_IF_CONSTEVAL {
+                result = detail::find_pattern<detail::scan_mode::Single, alignment>({begin, end, trunc, hints});
+            } else {
+                result = detail::find_pattern<alignment>({begin, end, trunc, hints});
+            }
+            if (!result.has_result()) {
+                break;
+            }
+            const auto addr = const_cast<typename detail::result_type_for<In>::underlying_type>(result.get() - offset);
+            *out++ = addr;
+            begin = addr + detail::alignment_stride<alignment>;
+            matches++;
+        }
+
+        return matches;
+    }
+
+    /// Wrapper around the root find_all_pattern implementation that returns a std::vector of the results
+    template<scan_alignment alignment = scan_alignment::X1, detail::byte_input_iterator In>
+    constexpr auto find_all_pattern(
+        const In             beginIt,
+        const In             endIt,
+        const signature_view signature
+    ) -> std::vector<detail::result_type_for<In>> {
+        std::vector<detail::result_type_for<In>> results{};
+        find_all_pattern<alignment>(beginIt, endIt, std::back_inserter(results), signature);
+        return results;
     }
 }
 
