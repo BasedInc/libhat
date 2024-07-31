@@ -82,10 +82,21 @@ namespace hat {
     namespace detail {
 
         struct scan_context {
-            const std::byte* begin{};
-            const std::byte* end{};
             signature_view signature{};
             scan_hint hints{};
+
+            static constexpr scan_context create(const signature_view signature, const scan_hint hints) {
+                scan_context ctx{};
+                ctx.signature = signature;
+                ctx.hints = hints;
+                if LIBHAT_IF_CONSTEVAL {} else {
+                    ctx.apply_hints();
+                }
+                return ctx;
+            }
+        private:
+            scan_context() = default;
+            void apply_hints();
         };
 
         enum class scan_mode {
@@ -130,14 +141,14 @@ namespace hat {
         }
 
         template<scan_mode, scan_alignment>
-        const_scan_result find_pattern(const scan_context&);
+        const_scan_result find_pattern(const std::byte* begin, const std::byte* end, const scan_context&);
 
         template<scan_alignment alignment>
-        const_scan_result find_pattern(const scan_context&);
+        const_scan_result find_pattern(const std::byte* begin, const std::byte* end, const scan_context&);
 
         template<>
-        inline constexpr const_scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X1>(const scan_context& context) {
-            auto [begin, end, signature, _] = context;
+        inline constexpr const_scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X1>(const std::byte* begin, const std::byte* end, const scan_context& context) {
+            const auto signature = context.signature;
             const auto firstByte = *signature[0];
             const auto scanEnd = end - signature.size() + 1;
 
@@ -163,8 +174,8 @@ namespace hat {
         }
 
         template<>
-        inline const_scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X16>(const scan_context& context) {
-            auto [begin, end, signature, _] = context;
+        inline const_scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X16>(const std::byte* begin, const std::byte* end, const scan_context& context) {
+            const auto signature = context.signature;
             const auto firstByte = *signature[0];
 
             const auto scanBegin = next_boundary_align<scan_alignment::X16>(begin);
@@ -236,11 +247,13 @@ namespace hat {
             return {nullptr};
         }
 
+        const auto context = detail::scan_context::create(trunc, hints);
+
         const_scan_result result;
         if LIBHAT_IF_CONSTEVAL {
-            result = detail::find_pattern<detail::scan_mode::Single, alignment>({begin, end, trunc, hints});
+            result = detail::find_pattern<detail::scan_mode::Single, alignment>(begin, end, context);
         } else {
-            result = detail::find_pattern<alignment>({begin, end, trunc, hints});
+            result = detail::find_pattern<alignment>(begin, end, context);
         }
         return result.has_result()
             ? const_cast<typename detail::result_type_for<Iter>::underlying_type>(result.get() - offset)
@@ -267,12 +280,14 @@ namespace hat {
         auto i = begin;
         auto out = beginOut;
 
+        const auto context = detail::scan_context::create(trunc, hints);
+
         while (i < end && out != endOut && trunc.size() <= static_cast<size_t>(std::distance(i, end))) {
             const_scan_result result;
             if LIBHAT_IF_CONSTEVAL {
-                result = detail::find_pattern<detail::scan_mode::Single, alignment>({i, end, trunc, hints});
+                result = detail::find_pattern<detail::scan_mode::Single, alignment>(i, end, context);
             } else {
-                result = detail::find_pattern<alignment>({i, end, trunc, hints});
+                result = detail::find_pattern<alignment>(i, end, context);
             }
             if (!result.has_result()) {
                 i = end;
@@ -303,12 +318,14 @@ namespace hat {
         auto out = outIn;
         size_t matches{};
 
+        const auto context = detail::scan_context::create(trunc, hints);
+
         while (begin < end && trunc.size() <= static_cast<size_t>(std::distance(i, end))) {
             const_scan_result result;
             if LIBHAT_IF_CONSTEVAL {
-                result = detail::find_pattern<detail::scan_mode::Single, alignment>({i, end, trunc, hints});
+                result = detail::find_pattern<detail::scan_mode::Single, alignment>(i, end, context);
             } else {
-                result = detail::find_pattern<alignment>({i, end, trunc, hints});
+                result = detail::find_pattern<alignment>(i, end, context);
             }
             if (!result.has_result()) {
                 break;

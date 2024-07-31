@@ -26,8 +26,8 @@ namespace hat::detail {
     }
 
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
-    const_scan_result find_pattern_avx2(const scan_context& context) {
-        auto [begin, end, signature, hints] = context;
+    const_scan_result find_pattern_avx2(const std::byte* begin, const std::byte* end, const scan_context& context) {
+        const auto signature = context.signature;
 
         // 256 bit vector containing first signature byte repeated
         const auto firstByte = _mm256_set1_epi8(static_cast<int8_t>(*signature[0]));
@@ -90,34 +90,34 @@ namespace hat::detail {
 
         // Look in remaining bytes that couldn't be grouped into 256 bits
         begin = reinterpret_cast<const std::byte*>(vec);
-        return find_pattern<scan_mode::Single, alignment>({begin, end, signature, hints});
+        return find_pattern<scan_mode::Single, alignment>(begin, end, context);
     }
 
     template<scan_alignment alignment>
-    const_scan_result find_pattern_avx2(const scan_context& context) {
+    const_scan_result find_pattern_avx2(const std::byte* begin, const std::byte* end, const scan_context& context) {
         auto& signature = context.signature;
         const bool cmpeq2 = alignment == scan_alignment::X1 && signature.size() > 1 && signature[1].has_value();
         const bool veccmp = signature.size() <= 33;
 
         if (cmpeq2 && veccmp) {
-            return find_pattern_avx2<alignment, true, true>(context);
+            return find_pattern_avx2<alignment, true, true>(begin, end, context);
         } else if (cmpeq2) {
-            return find_pattern_avx2<alignment, true, false>(context);
+            return find_pattern_avx2<alignment, true, false>(begin, end, context);
         } else if (veccmp) {
-            return find_pattern_avx2<alignment, false, true>(context);
+            return find_pattern_avx2<alignment, false, true>(begin, end, context);
         } else {
-            return find_pattern_avx2<alignment, false, false>(context);
+            return find_pattern_avx2<alignment, false, false>(begin, end, context);
         }
     }
 
     template<>
-    const_scan_result find_pattern<scan_mode::AVX2, scan_alignment::X1>(const scan_context& context) {
-        return find_pattern_avx2<scan_alignment::X1>(context);
+    const_scan_result find_pattern<scan_mode::AVX2, scan_alignment::X1>(const std::byte* begin, const std::byte* end, const scan_context& context) {
+        return find_pattern_avx2<scan_alignment::X1>(begin, end, context);
     }
 
     template<>
-    const_scan_result find_pattern<scan_mode::AVX2, scan_alignment::X16>(const scan_context& context) {
-        return find_pattern_avx2<scan_alignment::X16>(context);
+    const_scan_result find_pattern<scan_mode::AVX2, scan_alignment::X16>(const std::byte* begin, const std::byte* end, const scan_context& context) {
+        return find_pattern_avx2<scan_alignment::X16>(begin, end, context);
     }
 }
 #endif
