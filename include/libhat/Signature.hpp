@@ -130,7 +130,7 @@ namespace hat {
     }
 
     [[nodiscard]] constexpr std::string to_string(const signature_view signature) {
-        static constexpr std::string_view hex{"0123456789ABCDEF"};
+        constexpr std::string_view hex{"0123456789ABCDEF"};
         std::string ret;
         ret.reserve(signature.size() * 3);
         for (auto& element : signature) {
