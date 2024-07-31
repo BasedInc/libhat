@@ -5,7 +5,7 @@
 
 namespace hat::detail {
 
-    void scan_context::apply_hints() {}
+    void scan_context::apply_hints([[maybe_unused]] const scan_alignment alignment) {}
 
     template<scan_alignment alignment>
     const_scan_result find_pattern(const std::byte* begin, const std::byte* end, const scan_context& context) {

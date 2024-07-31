@@ -85,18 +85,18 @@ namespace hat {
             signature_view signature{};
             scan_hint hints{};
 
-            static constexpr scan_context create(const signature_view signature, const scan_hint hints) {
+            static constexpr scan_context create(const signature_view signature, const scan_hint hints, const scan_alignment alignment) {
                 scan_context ctx{};
                 ctx.signature = signature;
                 ctx.hints = hints;
                 if LIBHAT_IF_CONSTEVAL {} else {
-                    ctx.apply_hints();
+                    ctx.apply_hints(alignment);
                 }
                 return ctx;
             }
         private:
             scan_context() = default;
-            void apply_hints();
+            void apply_hints(scan_alignment alignment);
         };
 
         enum class scan_mode {
@@ -247,7 +247,7 @@ namespace hat {
             return {nullptr};
         }
 
-        const auto context = detail::scan_context::create(trunc, hints);
+        const auto context = detail::scan_context::create(trunc, hints, alignment);
 
         const_scan_result result;
         if LIBHAT_IF_CONSTEVAL {
@@ -280,7 +280,7 @@ namespace hat {
         auto i = begin;
         auto out = beginOut;
 
-        const auto context = detail::scan_context::create(trunc, hints);
+        const auto context = detail::scan_context::create(trunc, hints, alignment);
 
         while (i < end && out != endOut && trunc.size() <= static_cast<size_t>(std::distance(i, end))) {
             const_scan_result result;
@@ -318,7 +318,7 @@ namespace hat {
         auto out = outIn;
         size_t matches{};
 
-        const auto context = detail::scan_context::create(trunc, hints);
+        const auto context = detail::scan_context::create(trunc, hints, alignment);
 
         while (begin < end && trunc.size() <= static_cast<size_t>(std::distance(i, end))) {
             const_scan_result result;
