@@ -128,6 +128,25 @@ namespace hat {
         std::ranges::move(sig, arr.begin());
         return arr;
     }
+
+    [[nodiscard]] constexpr std::string to_string(const signature_view signature) {
+        static constexpr std::string_view hex{"0123456789ABCDEF"};
+        std::string ret;
+        ret.reserve(signature.size() * 3);
+        for (auto& element : signature) {
+            if (element.has_value()) {
+                ret += {
+                    hex[static_cast<size_t>(element.value() >> 4) & 0xFu],
+                    hex[static_cast<size_t>(element.value() >> 0) & 0xFu],
+                    ' '
+                };
+            } else {
+                ret += "? ";
+            }
+        }
+        ret.pop_back();
+        return ret;
+    }
 }
 
 namespace hat::literals::signature_literals {
