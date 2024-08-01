@@ -61,3 +61,15 @@
     #include <type_traits>
     #define LIBHAT_IF_CONSTEVAL (std::is_constant_evaluated())
 #endif
+
+#if __has_cpp_attribute(likely)
+    #define LIBHAT_LIKELY [[likely]]
+#else
+    #define LIBHAT_LIKELY
+#endif
+
+#if __has_cpp_attribute(unlikely)
+    #define LIBHAT_UNLIKELY [[unlikely]]
+#else
+    #define LIBHAT_UNLIKELY
+#endif
