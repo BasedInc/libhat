@@ -133,7 +133,7 @@ namespace hat {
             }
             uintptr_t mod = reinterpret_cast<uintptr_t>(ptr) % stride;
             ptr += mod ? stride - mod : 0;
-            return ptr;
+            return std::assume_aligned<stride>(ptr);
         }
 
         template<scan_alignment alignment>
@@ -143,7 +143,7 @@ namespace hat {
                 return ptr;
             }
             uintptr_t mod = reinterpret_cast<uintptr_t>(ptr) % stride;
-            return ptr - mod;
+            return std::assume_aligned<stride>(ptr - mod);
         }
 
         template<scan_mode>
