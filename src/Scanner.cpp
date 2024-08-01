@@ -7,32 +7,28 @@ namespace hat::detail {
 
     void scan_context::apply_hints() {}
 
-    template<scan_alignment alignment>
-    std::pair<scan_function_t, size_t> resolve_scanner() {
+    std::pair<scan_function_t, size_t> resolve_scanner(const scan_context& context) {
 #if defined(LIBHAT_X86)
         const auto& ext = get_system().extensions;
         if (ext.bmi) {
 #if !defined(LIBHAT_DISABLE_AVX512)
             if (ext.avx512f && ext.avx512bw) {
-                return {&find_pattern<scan_mode::AVX512, alignment>, 64};
+                return {get_scanner<scan_mode::AVX512>(context), 64};
             }
 #endif
             if (ext.avx2) {
-                return {&find_pattern<scan_mode::AVX2, alignment>, 32};
+                return {get_scanner<scan_mode::AVX2>(context), 32};
             }
         }
 #if !defined(LIBHAT_DISABLE_SSE)
         if (ext.sse41) {
-            return {&find_pattern<scan_mode::SSE, alignment>, 16};
+            return {get_scanner<scan_mode::SSE>(context), 16};
         }
 #endif
 #endif
         // If none of the vectorized implementations are available/supported, then fallback to scanning per-byte
-        return {&find_pattern<scan_mode::Single, alignment>, 0};
+        return {get_scanner<scan_mode::Single>(context), 0};
     }
-
-    template std::pair<scan_function_t, size_t> resolve_scanner<scan_alignment::X1>();
-    template std::pair<scan_function_t, size_t> resolve_scanner<scan_alignment::X16>();
 }
 
 // Validate return value const-ness for the root find_pattern impl

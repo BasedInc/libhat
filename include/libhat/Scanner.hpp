@@ -105,19 +105,13 @@ namespace hat {
             scan_context() = default;
         };
 
-        template<scan_alignment alignment>
-        [[nodiscard]] std::pair<scan_function_t, size_t> resolve_scanner();
-
-        void apply_hints(scan_context& context);
+        [[nodiscard]] std::pair<scan_function_t, size_t> resolve_scanner(const scan_context&);
 
         enum class scan_mode {
-            FastFirst, // std::find + std::equal
-            SSE,       // x86 SSE 4.1
-            AVX2,      // x86 AVX2
-            AVX512,    // x86 AVX512
-
-            // Fallback mode to use for SIMD remaining bytes
-            Single = FastFirst
+            Single, // std::find + std::equal
+            SSE,    // x86 SSE 4.1
+            AVX2,   // x86 AVX2
+            AVX512, // x86 AVX512
         };
 
         template<scan_alignment alignment>
@@ -132,8 +126,9 @@ namespace hat {
             return mask;
         }
 
-        template<scan_alignment alignment, auto stride = alignment_stride<alignment>>
+        template<scan_alignment alignment>
         inline const std::byte* next_boundary_align(const std::byte* ptr) {
+            constexpr auto stride = alignment_stride<alignment>;
             if constexpr (stride == 1) {
                 return ptr;
             }
@@ -142,8 +137,9 @@ namespace hat {
             return ptr;
         }
 
-        template<scan_alignment alignment, auto stride = alignment_stride<alignment>>
+        template<scan_alignment alignment>
         inline const std::byte* prev_boundary_align(const std::byte* ptr) {
+            constexpr auto stride = alignment_stride<alignment>;
             if constexpr (stride == 1) {
                 return ptr;
             }
@@ -151,11 +147,14 @@ namespace hat {
             return ptr - mod;
         }
 
-        template<scan_mode, scan_alignment>
-        const_scan_result find_pattern(const std::byte* begin, const std::byte* end, const scan_context&);
+        template<scan_mode>
+        scan_function_t get_scanner(const scan_context&);
+
+        template<scan_alignment>
+        const_scan_result find_pattern_single(const std::byte* begin, const std::byte* end, const scan_context&);
 
         template<>
-        inline constexpr const_scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X1>(const std::byte* begin, const std::byte* end, const scan_context& context) {
+        constexpr const_scan_result find_pattern_single<scan_alignment::X1>(const std::byte* begin, const std::byte* end, const scan_context& context) {
             const auto signature = context.signature;
             const auto firstByte = *signature[0];
             const auto scanEnd = end - signature.size() + 1;
@@ -182,7 +181,7 @@ namespace hat {
         }
 
         template<>
-        inline const_scan_result find_pattern<scan_mode::FastFirst, scan_alignment::X16>(const std::byte* begin, const std::byte* end, const scan_context& context) {
+        inline const_scan_result find_pattern_single<scan_alignment::X16>(const std::byte* begin, const std::byte* end, const scan_context& context) {
             const auto signature = context.signature;
             const auto firstByte = *signature[0];
 
@@ -204,6 +203,15 @@ namespace hat {
                 }
             }
             return nullptr;
+        }
+
+        template<>
+        constexpr scan_function_t get_scanner<scan_mode::Single>(const scan_context& context) {
+            switch (context.alignment) {
+                case scan_alignment::X1: return &find_pattern_single<scan_alignment::X1>;
+                case scan_alignment::X16: return &find_pattern_single<scan_alignment::X16>;
+            }
+            std::unreachable();
         }
 
         [[nodiscard]] constexpr auto truncate(const signature_view signature) noexcept {
@@ -229,9 +237,9 @@ namespace hat {
             ctx.hints = hints;
             ctx.alignment = alignment;
             if LIBHAT_IF_CONSTEVAL {
-                ctx.scanner = &find_pattern<detail::scan_mode::Single, alignment>;
+                ctx.scanner = get_scanner<scan_mode::Single>(ctx);
             } else {
-                std::tie(ctx.scanner, ctx.vectorSize) = resolve_scanner<alignment>();
+                std::tie(ctx.scanner, ctx.vectorSize) = resolve_scanner(ctx);
                 ctx.apply_hints();
             }
             return ctx;
