@@ -90,3 +90,18 @@
     }
     #define LIBHAT_UNREACHABLE() hat::detail::unreachable_impl()
 #endif
+
+#if __has_cpp_attribute(assume)
+    #define LIBHAT_ASSUME(...) [[assume(__VA_ARGS__)]]
+#elif defined(_MSC_VER)
+    #define LIBHAT_ASSUME(...) __assume(__VA_ARGS__)
+#elif defined(__clang__)
+    #define LIBHAT_ASSUME(...) __builtin_assume(__VA_ARGS__)
+#else
+    #define LIBHAT_ASSUME(...)        \
+        do {                          \
+            if (!(__VA_ARGS__)) {     \
+                LIBHAT_UNREACHABLE(); \
+            }                         \
+        } while (0)
+#endif
