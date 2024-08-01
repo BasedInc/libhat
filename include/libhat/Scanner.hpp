@@ -211,7 +211,7 @@ namespace hat {
                 case scan_alignment::X1: return &find_pattern_single<scan_alignment::X1>;
                 case scan_alignment::X16: return &find_pattern_single<scan_alignment::X16>;
             }
-            std::unreachable();
+            LIBHAT_UNREACHABLE();
         }
 
         [[nodiscard]] constexpr auto truncate(const signature_view signature) noexcept {

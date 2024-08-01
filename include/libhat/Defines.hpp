@@ -73,3 +73,20 @@
 #else
     #define LIBHAT_UNLIKELY
 #endif
+
+#if __cpp_lib_unreachable >= 202202L
+    #include <utility>
+    #define LIBHAT_UNREACHABLE() std::unreachable()
+#elif defined(_MSC_VER)
+    #define LIBHAT_UNREACHABLE() __assume(false)
+#elif defined(__GNUC__)
+    #define LIBHAT_UNREACHABLE() __builtin_unreachable()
+#else
+    #include <cstdlib>
+    namespace hat::detail {
+        [[noreturn]] inline void unreachable_impl() {
+            std::abort();
+        }
+    }
+    #define LIBHAT_UNREACHABLE() hat::detail::unreachable_impl()
+#endif

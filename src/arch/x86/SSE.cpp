@@ -115,7 +115,7 @@ namespace hat::detail {
                 return &find_pattern_sse<scan_alignment::X16, false, false>;
             }
         }
-        std::unreachable();
+        LIBHAT_UNREACHABLE();
     }
 }
 #endif
