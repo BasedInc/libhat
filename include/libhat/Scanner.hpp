@@ -165,14 +165,14 @@ namespace hat {
                 } else {
                     i = std::find(std::execution::unseq, i, scanEnd, firstByte);
                 }
-                if (i == scanEnd) {
+                if (i == scanEnd) LIBHAT_UNLIKELY {
                     break;
                 }
                 // Compare everything after the first byte
                 auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
                     return !opt.has_value() || *opt == byte;
                 });
-                if (match) {
+                if (match) LIBHAT_UNLIKELY {
                     return i;
                 }
             }
@@ -196,7 +196,7 @@ namespace hat {
                     auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
                         return !opt.has_value() || *opt == byte;
                     });
-                    if (match) {
+                    if (match) LIBHAT_UNLIKELY {
                         return i;
                     }
                 }

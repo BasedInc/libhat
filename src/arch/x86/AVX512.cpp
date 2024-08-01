@@ -43,7 +43,7 @@ namespace hat::detail {
         }
 
         begin = next_boundary_align<alignment>(begin);
-        if (begin >= end) {
+        if (begin >= end) LIBHAT_UNLIKELY {
             return {};
         }
 
@@ -68,14 +68,14 @@ namespace hat::detail {
                 if constexpr (veccmp) {
                     const auto data = _mm512_loadu_si512(i + 1);
                     const auto invalid = _mm512_mask_cmpneq_epi8_mask(signatureMask, signatureBytes, data);
-                    if (!invalid) {
+                    if (!invalid) LIBHAT_UNLIKELY {
                         return i;
                     }
                 } else {
                     auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
                         return !opt.has_value() || *opt == byte;
                     });
-                    if (match) {
+                    if (match) LIBHAT_UNLIKELY {
                         return i;
                     }
                 }

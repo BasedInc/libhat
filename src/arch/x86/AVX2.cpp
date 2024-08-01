@@ -43,7 +43,7 @@ namespace hat::detail {
         }
 
         begin = next_boundary_align<alignment>(begin);
-        if (begin >= end) {
+        if (begin >= end) LIBHAT_UNLIKELY {
             return {};
         }
 
@@ -73,14 +73,14 @@ namespace hat::detail {
                     const auto data = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(i + 1));
                     const auto cmpToSig = _mm256_cmpeq_epi8(signatureBytes, data);
                     const auto matched = _mm256_testc_si256(cmpToSig, signatureMask);
-                    if (matched) {
+                    if (matched) LIBHAT_UNLIKELY {
                         return i;
                     }
                 } else {
                     auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
                         return !opt.has_value() || *opt == byte;
                     });
-                    if (match) {
+                    if (match) LIBHAT_UNLIKELY {
                         return i;
                     }
                 }
