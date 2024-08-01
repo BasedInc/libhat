@@ -99,8 +99,7 @@ namespace hat {
 
             void apply_hints();
 
-            template<scan_alignment alignment>
-            static constexpr scan_context create(signature_view signature, scan_hint hints);
+            static constexpr scan_context create(signature_view signature, scan_alignment alignment, scan_hint hints);
         private:
             scan_context() = default;
         };
@@ -230,12 +229,11 @@ namespace hat {
         using result_type_for = std::conditional_t<std::is_const_v<std::remove_reference_t<std::iter_reference_t<T>>>,
             const_scan_result, scan_result>;
 
-        template<scan_alignment alignment>
-        constexpr scan_context scan_context::create(const signature_view signature, const scan_hint hints) {
+        constexpr scan_context scan_context::create(const signature_view signature, const scan_alignment alignment, const scan_hint hints) {
             scan_context ctx{};
             ctx.signature = signature;
-            ctx.hints = hints;
             ctx.alignment = alignment;
+            ctx.hints = hints;
             if LIBHAT_IF_CONSTEVAL {
                 ctx.scanner = get_scanner<scan_mode::Single>(ctx);
             } else {
@@ -278,7 +276,7 @@ namespace hat {
             return {nullptr};
         }
 
-        const auto context = detail::scan_context::create<alignment>(trunc, hints);
+        const auto context = detail::scan_context::create(trunc, alignment, hints);
         const const_scan_result result = context.scan(begin, end);
         return result.has_result()
             ? const_cast<typename detail::result_type_for<Iter>::underlying_type>(result.get() - offset)
@@ -305,7 +303,7 @@ namespace hat {
         auto i = begin;
         auto out = beginOut;
 
-        const auto context = detail::scan_context::create<alignment>(trunc, hints);
+        const auto context = detail::scan_context::create(trunc, alignment, hints);
 
         while (i < end && out != endOut && trunc.size() <= static_cast<size_t>(std::distance(i, end))) {
             const auto result = context.scan(i, end);
@@ -338,7 +336,7 @@ namespace hat {
         auto out = outIn;
         size_t matches{};
 
-        const auto context = detail::scan_context::create<alignment>(trunc, hints);
+        const auto context = detail::scan_context::create(trunc, alignment, hints);
 
         while (begin < end && trunc.size() <= static_cast<size_t>(std::distance(i, end))) {
             const auto result = context.scan(i, end);
