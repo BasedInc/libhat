@@ -65,8 +65,9 @@ namespace hat {
     };
 
     enum class scan_hint : uint64_t {
-        none    = 0,      // no hints
-        x86_64  = 1 << 0, // The data being scanned is x86_64 machine code
+        none   = 0,      // no hints
+        x86_64 = 1 << 0, // The data being scanned is x86_64 machine code
+        pair0  = 1 << 1, // Only utilize byte pair based scanning if the signature starts with a byte pair
     };
 
     constexpr scan_hint operator|(scan_hint lhs, scan_hint rhs) {
@@ -85,26 +86,29 @@ namespace hat {
 
         using scan_function_t = const_scan_result(*)(const std::byte* begin, const std::byte* end, const scan_context& context);
 
+        struct scanner_context {
+            size_t vectorSize{};
+        };
+
         class scan_context {
         public:
             signature_view signature{};
             scan_function_t scanner{};
             scan_alignment alignment{};
-            size_t vectorSize{};
             scan_hint hints{};
+            std::optional<size_t> pairIndex{};
 
             [[nodiscard]] constexpr const_scan_result scan(const std::byte* begin, const std::byte* end) const {
                 return this->scanner(begin, end, *this);
             }
 
-            void apply_hints();
+            void auto_resolve_scanner();
+            void apply_hints(const scanner_context&);
 
             static constexpr scan_context create(signature_view signature, scan_alignment alignment, scan_hint hints);
         private:
             scan_context() = default;
         };
-
-        [[nodiscard]] std::pair<scan_function_t, size_t> resolve_scanner(const scan_context&);
 
         enum class scan_mode {
             Single, // std::find + std::equal
@@ -117,7 +121,7 @@ namespace hat {
         inline constexpr auto alignment_stride = static_cast<std::underlying_type_t<scan_alignment>>(alignment);
 
         template<std::integral type, scan_alignment alignment>
-        inline consteval auto create_alignment_mask() {
+        LIBHAT_FORCEINLINE consteval auto create_alignment_mask() {
             type mask{};
             for (size_t i = 0; i < sizeof(type) * 8; i += alignment_stride<alignment>) {
                 mask |= (type(1) << i);
@@ -126,7 +130,7 @@ namespace hat {
         }
 
         template<scan_alignment alignment>
-        inline const std::byte* next_boundary_align(const std::byte* ptr) {
+        LIBHAT_FORCEINLINE const std::byte* next_boundary_align(const std::byte* ptr) {
             constexpr auto stride = alignment_stride<alignment>;
             if constexpr (stride == 1) {
                 return ptr;
@@ -137,17 +141,53 @@ namespace hat {
         }
 
         template<scan_alignment alignment>
-        inline const std::byte* prev_boundary_align(const std::byte* ptr) {
+        LIBHAT_FORCEINLINE const std::byte* prev_boundary_align(const std::byte* ptr) {
             constexpr auto stride = alignment_stride<alignment>;
             if constexpr (stride == 1) {
                 return ptr;
             }
-            uintptr_t mod = reinterpret_cast<uintptr_t>(ptr) % stride;
+            const uintptr_t mod = reinterpret_cast<uintptr_t>(ptr) % stride;
             return std::assume_aligned<stride>(ptr - mod);
         }
 
+        template<typename Type>
+        LIBHAT_FORCEINLINE const std::byte* align_pointer_as(const std::byte* ptr) {
+            constexpr size_t alignment = alignof(Type);
+            const uintptr_t mod = reinterpret_cast<uintptr_t>(ptr) % alignment;
+            ptr += mod ? alignment - mod : 0;
+            return std::assume_aligned<alignment>(ptr);
+        }
+
+        template<typename Vector>
+        LIBHAT_FORCEINLINE auto segment_scan(
+            const std::byte* begin,
+            const std::byte* end,
+            const size_t signatureSize,
+            const size_t cmpOffset
+        ) -> std::tuple<std::span<const std::byte>, std::span<const Vector>, std::span<const std::byte>> {
+            const auto preBegin = begin;
+            const auto vecBegin = reinterpret_cast<const Vector*>(align_pointer_as<Vector>(preBegin + cmpOffset));
+            const auto vecEnd = vecBegin + (static_cast<size_t>(end - reinterpret_cast<const std::byte*>(vecBegin)) - signatureSize) / sizeof(Vector);
+            const auto preEnd = reinterpret_cast<const std::byte*>(vecBegin) - cmpOffset + signatureSize;
+            const auto postBegin = reinterpret_cast<const std::byte*>(vecEnd);
+            const auto postEnd = end;
+
+            auto validateRange = [signatureSize](const std::byte* b, const std::byte* e) -> std::span<const std::byte> {
+                if (b <= e && static_cast<size_t>(e - b) >= signatureSize) {
+                    return {b, e};
+                }
+                return {};
+            };
+
+            return {
+                validateRange(preBegin, preEnd),
+                std::span{vecBegin, vecEnd},
+                validateRange(postBegin, postEnd)
+            };
+        }
+
         template<scan_mode>
-        scan_function_t get_scanner(const scan_context&);
+        scan_function_t resolve_scanner(scan_context&);
 
         template<scan_alignment>
         const_scan_result find_pattern_single(const std::byte* begin, const std::byte* end, const scan_context&);
@@ -205,7 +245,7 @@ namespace hat {
         }
 
         template<>
-        constexpr scan_function_t get_scanner<scan_mode::Single>(const scan_context& context) {
+        constexpr scan_function_t resolve_scanner<scan_mode::Single>(scan_context& context) {
             switch (context.alignment) {
                 case scan_alignment::X1: return &find_pattern_single<scan_alignment::X1>;
                 case scan_alignment::X16: return &find_pattern_single<scan_alignment::X16>;
@@ -235,10 +275,9 @@ namespace hat {
             ctx.alignment = alignment;
             ctx.hints = hints;
             if LIBHAT_IF_CONSTEVAL {
-                ctx.scanner = get_scanner<scan_mode::Single>(ctx);
+                ctx.scanner = resolve_scanner<scan_mode::Single>(ctx);
             } else {
-                std::tie(ctx.scanner, ctx.vectorSize) = resolve_scanner(ctx);
-                ctx.apply_hints();
+                ctx.auto_resolve_scanner();
             }
             return ctx;
         }

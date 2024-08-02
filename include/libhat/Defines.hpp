@@ -77,10 +77,10 @@
 #if __cpp_lib_unreachable >= 202202L
     #include <utility>
     #define LIBHAT_UNREACHABLE() std::unreachable()
+#elif defined(__GNUC__) || defined(__clang__)
+    #define LIBHAT_UNREACHABLE() __builtin_unreachable()
 #elif defined(_MSC_VER)
     #define LIBHAT_UNREACHABLE() __assume(false)
-#elif defined(__GNUC__)
-    #define LIBHAT_UNREACHABLE() __builtin_unreachable()
 #else
     #include <cstdlib>
     namespace hat::detail {
@@ -93,10 +93,10 @@
 
 #if __has_cpp_attribute(assume)
     #define LIBHAT_ASSUME(...) [[assume(__VA_ARGS__)]]
-#elif defined(_MSC_VER)
-    #define LIBHAT_ASSUME(...) __assume(__VA_ARGS__)
 #elif defined(__clang__)
     #define LIBHAT_ASSUME(...) __builtin_assume(__VA_ARGS__)
+#elif defined(_MSC_VER)
+    #define LIBHAT_ASSUME(...) __assume(__VA_ARGS__)
 #else
     #define LIBHAT_ASSUME(...)        \
         do {                          \
@@ -104,4 +104,12 @@
                 LIBHAT_UNREACHABLE(); \
             }                         \
         } while (0)
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+    #define LIBHAT_FORCEINLINE inline __attribute__((always_inline))
+#elif defined(_MSC_VER)
+    #define LIBHAT_FORCEINLINE __forceinline
+#else
+    #define LIBHAT_FORCEINLINE inline
 #endif
