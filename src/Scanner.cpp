@@ -12,43 +12,38 @@ namespace hat::detail {
         const bool pair0 = static_cast<bool>(this->hints & scan_hint::pair0);
 
         if (x86_64 && !pair0 && scanner.vectorSize && this->alignment == hat::scan_alignment::X1) {
-            static constexpr auto get_score = [](const std::byte a, const std::byte b) {
+            static constexpr auto getScore = [](const std::byte a, const std::byte b) {
                 constexpr auto& pairs = hat::detail::x86_64::pairs_x1;
                 const auto it = std::ranges::find(pairs, std::pair{a, b});
                 return it == pairs.end() ? pairs.size() : pairs.size() - static_cast<size_t>(it - pairs.begin()) - 1;
             };
 
-            static constexpr auto score_pair = [](auto&& tup) {
-                auto [a, b] = std::get<1>(tup);
-                return std::make_tuple(std::get<0>(tup), get_score(a.value(), b.value()));
-            };
+            std::optional<std::pair<size_t, size_t>> bestPair{};
+            for (auto it = this->signature.begin(); it != std::prev(this->signature.end()); it++) {
+                const auto i = static_cast<size_t>(it - this->signature.begin());
+                auto& a = *it;
+                auto& b = *std::next(it);
 
-            static constexpr auto is_complete_pair = [](auto&& tup) {
-                auto [a, b] = std::get<1>(tup);
-                return a.has_value() && b.has_value();
-            };
+                if (a.has_value() && b.has_value()) {
+                    const auto score = getScore(a.value(), b.value());
+                    if (!bestPair || score > bestPair->second) {
+                        bestPair.emplace(i, score);
+                    }
+                }
+            }
 
-            auto valid_pairs = this->signature
-                | std::views::take(scanner.vectorSize)
-                | std::views::adjacent<2>
-                | std::views::transform([this]<typename T>(const T& t) mutable {
-                    // Scuffed impl of std::views::enumerate basically
-                    return std::make_tuple(&std::get<0>(t) - this->signature.data(), t);
-                })
-                | std::views::filter(is_complete_pair)
-                | std::views::transform(score_pair);
-
-            if (!valid_pairs.empty()) {
-                this->pairIndex = std::get<0>(std::ranges::max(valid_pairs, std::ranges::less{}, [](auto&& tup) {
-                    return std::get<1>(tup);
-                }));
+            if (bestPair) {
+                this->pairIndex = bestPair->first;
             }
         }
 
         // If no "optimal" pair was found, find the first byte pair in the signature
         if (!this->pairIndex.has_value()) {
-            size_t i{};
-            for (auto&& [a, b] : this->signature | std::views::adjacent<2>) {
+            for (auto it = this->signature.begin(); it != std::prev(this->signature.end()); it++) {
+                const auto i = static_cast<size_t>(it - this->signature.begin());
+                auto& a = *it;
+                auto& b = *std::next(it);
+
                 if (a.has_value() && b.has_value()) {
                     this->pairIndex = i;
                     break;
@@ -56,7 +51,6 @@ namespace hat::detail {
                 if (i == 0 && pair0) {
                     break;
                 }
-                i++;
             }
         }
     }
