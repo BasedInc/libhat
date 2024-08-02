@@ -165,19 +165,24 @@ namespace hat {
             const size_t signatureSize,
             const size_t cmpOffset
         ) -> std::tuple<std::span<const std::byte>, std::span<const Vector>, std::span<const std::byte>> {
-            const auto preBegin = begin;
-            const auto vecBegin = reinterpret_cast<const Vector*>(align_pointer_as<Vector>(preBegin + cmpOffset));
-            const auto vecEnd = vecBegin + (static_cast<size_t>(end - reinterpret_cast<const std::byte*>(vecBegin)) - signatureSize) / sizeof(Vector);
-            const auto preEnd = reinterpret_cast<const std::byte*>(vecBegin) - cmpOffset + signatureSize;
-            const auto postBegin = reinterpret_cast<const std::byte*>(vecEnd);
-            const auto postEnd = end;
-
             auto validateRange = [signatureSize](const std::byte* b, const std::byte* e) -> std::span<const std::byte> {
                 if (b <= e && static_cast<size_t>(e - b) >= signatureSize) {
                     return {b, e};
                 }
                 return {};
             };
+
+            // If the scan can't be vectorized, just do the single byte scanner "pre" part
+            if (static_cast<size_t>(end - begin) < sizeof(Vector)) {
+                return {validateRange(begin, end), {}, {}};
+            }
+
+            const auto preBegin = begin;
+            const auto vecBegin = reinterpret_cast<const Vector*>(align_pointer_as<Vector>(preBegin + cmpOffset));
+            const auto vecEnd = vecBegin + (static_cast<size_t>(end - reinterpret_cast<const std::byte*>(vecBegin)) - signatureSize) / sizeof(Vector);
+            const auto preEnd = reinterpret_cast<const std::byte*>(vecBegin) - cmpOffset + signatureSize;
+            const auto postBegin = reinterpret_cast<const std::byte*>(vecEnd);
+            const auto postEnd = end;
 
             return {
                 validateRange(preBegin, preEnd),
