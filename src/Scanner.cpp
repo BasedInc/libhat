@@ -12,13 +12,13 @@ namespace hat::detail {
         const bool pair0 = static_cast<bool>(this->hints & scan_hint::pair0);
 
         if (x86_64 && !pair0 && scanner.vectorSize && this->alignment == hat::scan_alignment::X1) {
-            const auto get_score = [this](const std::byte a, const std::byte b) {
+            static constexpr auto get_score = [](const std::byte a, const std::byte b) {
                 constexpr auto& pairs = hat::detail::x86_64::pairs_x1;
                 const auto it = std::ranges::find(pairs, std::pair{a, b});
                 return it == pairs.end() ? pairs.size() : pairs.size() - static_cast<size_t>(it - pairs.begin()) - 1;
             };
 
-            const auto score_pair = [&](auto&& tup) {
+            static constexpr auto score_pair = [](auto&& tup) {
                 auto [a, b] = std::get<1>(tup);
                 return std::make_tuple(std::get<0>(tup), get_score(a.value(), b.value()));
             };
@@ -31,7 +31,10 @@ namespace hat::detail {
             auto valid_pairs = this->signature
                 | std::views::take(scanner.vectorSize)
                 | std::views::adjacent<2>
-                | std::views::enumerate
+                | std::views::transform([this]<typename T>(const T& t) mutable {
+                    // Scuffed impl of std::views::enumerate basically
+                    return std::make_tuple(&std::get<0>(t) - this->signature.data(), t);
+                })
                 | std::views::filter(is_complete_pair)
                 | std::views::transform(score_pair);
 
@@ -96,4 +99,33 @@ namespace hat {
         std::declval<const std::byte*>(),
         std::declval<const std::byte*>(),
         std::declval<signature_view>()))>);
+
+    consteval auto count_matches() {
+        constexpr std::array a{std::byte{1}, std::byte{2}, std::byte{3}, std::byte{4}, std::byte{1}};
+        constexpr auto s = hat::compile_signature<"01">();
+
+        std::vector<const_scan_result> results{};
+        hat::find_all_pattern(a.cbegin(), a.cend(), std::back_inserter(results), s);
+        return results.size();
+    }
+    static_assert(count_matches() == 2);
+
+    static_assert([] {
+        constexpr std::array a{std::byte{1}, std::byte{2}, std::byte{3}, std::byte{4}, std::byte{1}};
+        constexpr auto s = hat::compile_signature<"01">();
+
+        std::vector<const_scan_result> results{};
+        hat::find_all_pattern(a.cbegin(), a.cend(), std::back_inserter(results), s);
+
+        return results == hat::find_all_pattern(a.cbegin(), a.cend(), s);
+    }());
+
+    static_assert([] {
+        constexpr std::array a{std::byte{1}, std::byte{2}, std::byte{3}, std::byte{4}, std::byte{1}};
+        constexpr auto s = hat::compile_signature<"01">();
+
+        std::array<const_scan_result, 2> results{};
+        const auto [scan_end, results_end] = hat::find_all_pattern(a.cbegin(), a.cend(), results.begin(), results.end(), s);
+        return scan_end == a.cend() && results_end == std::next(results.begin(), 2);
+    }());
 }
