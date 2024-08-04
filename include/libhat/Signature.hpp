@@ -27,7 +27,7 @@ namespace hat {
             return *this = signature_element{valueIn};
         }
 
-        constexpr void reset(std::nullopt_t) noexcept {
+        constexpr void reset() noexcept {
             *this = std::nullopt;
         }
 
