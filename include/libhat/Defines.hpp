@@ -15,6 +15,8 @@
 // Detect Operating System
 #if defined(_WIN32)
     #define LIBHAT_WINDOWS
+#elif defined(__unix__) || defined(__unix) || defined(__APPLE__) || defined(__MACH__)
+    #define LIBHAT_UNIX
 #else
     #error Unsupported Operating System
 #endif

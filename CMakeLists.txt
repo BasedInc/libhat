@@ -39,6 +39,9 @@ set(LIBHAT_SRC
     src/arch/arm/System.cpp)
 
 add_library(libhat STATIC ${LIBHAT_SRC})
+if(UNIX)
+    set_target_properties(libhat PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
 
 target_include_directories(libhat PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
