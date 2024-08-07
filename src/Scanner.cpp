@@ -15,7 +15,7 @@ namespace hat::detail {
             static constexpr auto getScore = [](const std::byte a, const std::byte b) {
                 constexpr auto& pairs = hat::detail::x86_64::pairs_x1;
                 const auto it = std::ranges::find(pairs, std::pair{a, b});
-                return it == pairs.end() ? pairs.size() : pairs.size() - static_cast<size_t>(it - pairs.begin()) - 1;
+                return static_cast<size_t>(it - pairs.begin());
             };
 
             std::optional<std::pair<size_t, size_t>> bestPair{};
