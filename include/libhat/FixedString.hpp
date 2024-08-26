@@ -8,9 +8,13 @@ namespace hat {
 
     template<typename Char, size_t N, template<size_t> typename Derived>
     struct basic_fixed_string {
-        using const_reference   = const Char&;
-        using const_pointer     = const Char*;
-        using const_iterator    = const_pointer;
+        using value_type      = Char;
+        using pointer         = Char*;
+        using const_pointer   = const Char*;
+        using reference       = Char&;
+        using const_reference = const Char&;
+        using iterator        = pointer;
+        using const_iterator  = const_pointer;
 
         static constexpr auto npos = static_cast<size_t>(-1);
 
@@ -22,12 +26,36 @@ namespace hat {
             std::copy_n(str, N, value);
         }
 
+        [[nodiscard]] constexpr iterator begin() {
+            return this->c_str();
+        }
+
+        [[nodiscard]] constexpr iterator end() {
+            return this->begin() + this->size();
+        }
+
         [[nodiscard]] constexpr const_iterator begin() const {
             return this->c_str();
         }
 
         [[nodiscard]] constexpr const_iterator end() const {
             return this->begin() + this->size();
+        }
+
+        [[nodiscard]] constexpr const_iterator cbegin() const {
+            return this->begin();
+        }
+
+        [[nodiscard]] constexpr const_iterator cend() const {
+            return this->end();
+        }
+
+        [[nodiscard]] constexpr reference operator[](size_t pos) {
+            return this->value[pos];
+        }
+
+        [[nodiscard]] constexpr reference at(size_t pos) {
+            return this->value[pos];
         }
 
         [[nodiscard]] constexpr const_reference operator[](size_t pos) const {
@@ -38,6 +66,14 @@ namespace hat {
             return this->value[pos];
         }
 
+        [[nodiscard]] constexpr reference front() {
+            return this->value[0];
+        }
+
+        [[nodiscard]] constexpr reference back() {
+            return this->value[size() - 1];
+        }
+
         [[nodiscard]] constexpr const_reference front() const {
             return this->value[0];
         }
@@ -46,8 +82,16 @@ namespace hat {
             return this->value[size() - 1];
         }
 
+        [[nodiscard]] constexpr pointer c_str() {
+            return static_cast<Char*>(this->value);
+        }
+
         [[nodiscard]] constexpr const_pointer c_str() const {
             return static_cast<const Char*>(this->value);
+        }
+
+        [[nodiscard]] constexpr pointer data() {
+            return this->c_str();
         }
 
         [[nodiscard]] constexpr const_pointer data() const {
