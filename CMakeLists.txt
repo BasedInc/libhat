@@ -39,7 +39,7 @@ set(LIBHAT_SRC
     src/arch/arm/System.cpp)
 
 add_library(libhat STATIC ${LIBHAT_SRC})
-if(UNIX)
+if (UNIX)
     set_target_properties(libhat PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
@@ -60,6 +60,9 @@ if (LIBHAT_STATIC_C_LIB OR LIBHAT_SHARED_C_LIB)
 
     if (LIBHAT_STATIC_C_LIB)
         add_library(libhat_c STATIC ${LIBHAT_C_SOURCES})
+        if (UNIX)
+            set_target_properties(libhat_c PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        endif()
     else()
         add_library(libhat_c SHARED ${LIBHAT_C_SOURCES})
         target_compile_definitions(libhat_c PRIVATE "LIBHAT_BUILD_SHARED_LIB")
