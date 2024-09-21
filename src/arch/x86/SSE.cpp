@@ -9,7 +9,7 @@
 
 namespace hat::detail {
 
-    inline auto load_signature_128(const signature_view signature) {
+    inline void load_signature_128(const signature_view signature, __m128i& bytes, __m128i& mask) {
         std::byte byteBuffer[16]{}; // The remaining signature bytes
         std::byte maskBuffer[16]{}; // A bitmask for the signature bytes we care about
         for (size_t i = 0; i < signature.size(); i++) {
@@ -19,10 +19,8 @@ namespace hat::detail {
                 maskBuffer[i] = std::byte{0xFFu};
             }
         }
-        return std::make_tuple(
-            _mm_loadu_si128(reinterpret_cast<__m128i*>(&byteBuffer)),
-            _mm_loadu_si128(reinterpret_cast<__m128i*>(&maskBuffer))
-        );
+        bytes = _mm_loadu_si128(reinterpret_cast<__m128i*>(&byteBuffer));
+        mask = _mm_loadu_si128(reinterpret_cast<__m128i*>(&maskBuffer));
     }
 
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
@@ -41,7 +39,7 @@ namespace hat::detail {
 
         __m128i signatureBytes, signatureMask;
         if constexpr (veccmp) {
-            std::tie(signatureBytes, signatureMask) = load_signature_128(signature);
+            load_signature_128(signature, signatureBytes, signatureMask);
         }
 
         begin = next_boundary_align<alignment>(begin);
