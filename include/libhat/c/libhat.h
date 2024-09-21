@@ -1,9 +1,19 @@
 #pragma once
 
-#if defined(LIBHAT_BUILD_SHARED_LIB)
-    #define LIBHAT_API __declspec(dllexport)
-#elif defined(LIBHAT_USE_SHARED_LIB)
-    #define LIBHAT_API __declspec(dllimport)
+#if defined(LIBHAT_WINDOWS)
+    #if defined(LIBHAT_BUILD_SHARED_LIB)
+        #define LIBHAT_API __declspec(dllexport)
+    #elif defined(LIBHAT_USE_SHARED_LIB)
+        #define LIBHAT_API __declspec(dllimport)
+    #else
+        #define LIBHAT_API
+    #endif
+#elif defined(LIBHAT_UNIX)
+    #if defined(LIBHAT_BUILD_SHARED_LIB)
+        #define LIBHAT_API __attribute__((visibility("default")))
+    #else
+        #define LIBHAT_API
+    #endif
 #else
     #define LIBHAT_API
 #endif

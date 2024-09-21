@@ -8,7 +8,15 @@
 #include <bitset>
 #include <vector>
 #include <immintrin.h>
-#include <intrin.h>
+#include <cstring>
+
+#ifdef LIBHAT_WINDOWS
+    #include <intrin.h>
+#endif
+
+#ifdef LIBHAT_UNIX
+    #include <cpuid.h>
+#endif
 
 #ifndef _XCR_XFEATURE_ENABLED_MASK
     #define _XCR_XFEATURE_ENABLED_MASK 0
@@ -20,13 +28,31 @@ namespace hat {
     static constexpr int CPU_EXTENDED_INFO = static_cast<int>(0x80000000);
     static constexpr int CPU_BRAND_STRING = static_cast<int>(0x80000004);
 
+    // don't re-use the __cpuid name here because linux macro'd it
+    #ifdef LIBHAT_WINDOWS
+    static void cpuid_impl(int* info, int id) {
+        __cpuid(info, id);
+    }
+    static void cpuidex_impl(int* info, int id, int subId) {
+        __cpuidex(info, id, subId);
+    }
+    #endif
+    #ifdef LIBHAT_UNIX
+    static void cpuid_impl(int* info, int id) {
+        __cpuid(id, info[0], info[1], info[2], info[3]);
+    }
+    static void cpuidex_impl(int* info, int id, int subId) {
+        __cpuid_count(id, subId, info[0], info[1], info[2], info[3]);
+    }
+    #endif
+
     system_info_x86::system_info_x86() {
         std::array<int, 4> info{};
         std::vector<std::array<int, 4>> data{};
         std::vector<std::array<int, 4>> extData{};
 
         // Gather info
-        __cpuid(info.data(), CPU_BASIC_INFO);
+        hat::cpuid_impl(info.data(), CPU_BASIC_INFO);
         auto nIds = info[0];
 
         char vendor[0xC + 1]{};
@@ -35,15 +61,14 @@ namespace hat {
         memcpy(vendor + 8, &info[2], sizeof(int));
 
         for (int i = CPU_BASIC_INFO; i <= nIds; i++) {
-            __cpuidex(info.data(), i, 0);
+            hat::cpuidex_impl(info.data(), i, 0);
             data.push_back(info);
         }
-
         // Gather extended info
-        __cpuid(info.data(), CPU_EXTENDED_INFO);
+        hat::cpuid_impl(info.data(), CPU_EXTENDED_INFO);
         int nExtIds = info[0];
         for (int i = CPU_EXTENDED_INFO; i <= nExtIds; i++) {
-            __cpuidex(info.data(), i, 0);
+            hat::cpuidex_impl(info.data(), i, 0);
             extData.push_back(info);
         }
 
