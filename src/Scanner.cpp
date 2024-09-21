@@ -3,14 +3,17 @@
 #include <libhat/Defines.hpp>
 #include <libhat/System.hpp>
 
+#ifdef LIBHAT_HINT_X86_64
 #include "arch/x86/Frequency.hpp"
+#endif
 
 namespace hat::detail {
 
     void scan_context::apply_hints(const scanner_context& scanner) {
-        const bool x86_64 = static_cast<bool>(this->hints & scan_hint::x86_64);
         const bool pair0 = static_cast<bool>(this->hints & scan_hint::pair0);
 
+#ifdef LIBHAT_HINT_X86_64
+        const bool x86_64 = static_cast<bool>(this->hints & scan_hint::x86_64);
         if (x86_64 && !pair0 && scanner.vectorSize && this->alignment == hat::scan_alignment::X1) {
             static constexpr auto getScore = [](const std::byte a, const std::byte b) {
                 constexpr auto& pairs = hat::detail::x86_64::pairs_x1;
@@ -36,6 +39,7 @@ namespace hat::detail {
                 this->pairIndex = bestPair->first;
             }
         }
+#endif
 
         // If no "optimal" pair was found, find the first byte pair in the signature
         if (!this->pairIndex.has_value()) {

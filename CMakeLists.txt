@@ -13,6 +13,8 @@ option(LIBHAT_DISABLE_SSE "Disables SSE scanning" OFF)
 option(LIBHAT_DISABLE_AVX512 "Disables AVX512 scanning" OFF)
 option(LIBHAT_TESTING "Enable tests" OFF)
 
+option(LIBHAT_HINT_X86_64 "Enables support for the x86_64 scan hint, requires a small (less than 1KB) data table" ON)
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     set_source_files_properties(src/arch/x86/AVX2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
     set_source_files_properties(src/arch/x86/AVX512.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX512")
@@ -51,6 +53,7 @@ target_include_directories(libhat PUBLIC
 target_compile_definitions(libhat PUBLIC
     "$<$<BOOL:${LIBHAT_DISABLE_SSE}>:LIBHAT_DISABLE_SSE>"
     "$<$<BOOL:${LIBHAT_DISABLE_AVX512}>:LIBHAT_DISABLE_AVX512>"
+    "$<$<BOOL:${LIBHAT_HINT_X86_64}>:LIBHAT_HINT_X86_64>"
 )
 
 if (LIBHAT_STATIC_C_LIB OR LIBHAT_SHARED_C_LIB)
