@@ -90,6 +90,14 @@ namespace hat {
             size_t vectorSize{};
         };
 
+        enum class scan_mode {
+            Auto,   // Picks a mode at runtime
+            Single, // std::find + std::equal
+            SSE,    // x86 SSE 4.1
+            AVX2,   // x86 AVX2
+            AVX512, // x86 AVX512
+        };
+
         class scan_context {
         public:
             signature_view signature{};
@@ -105,16 +113,10 @@ namespace hat {
             void auto_resolve_scanner();
             void apply_hints(const scanner_context&);
 
+            template<scan_mode mode = scan_mode::Auto>
             static constexpr scan_context create(signature_view signature, scan_alignment alignment, scan_hint hints);
         private:
             scan_context() = default;
-        };
-
-        enum class scan_mode {
-            Single, // std::find + std::equal
-            SSE,    // x86 SSE 4.1
-            AVX2,   // x86 AVX2
-            AVX512, // x86 AVX512
         };
 
         template<scan_alignment alignment>
@@ -248,7 +250,7 @@ namespace hat {
             if (!pre.empty()) {
                 for (auto i = next_boundary_align<scan_alignment::X16>(pre.data()); i < std::to_address(pre.end()); i += 16) {
                     if (*i == firstByte) {
-                        if (end - i < signature.size()) {
+                        if (static_cast<size_t>(end - i) < signature.size()) {
                             break;
                         }
                         auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
@@ -277,7 +279,7 @@ namespace hat {
             if (!post.empty()) {
                 for (auto i = next_boundary_align<scan_alignment::X16>(post.data()); i < std::to_address(post.end()); i += 16) {
                     if (*i == firstByte) {
-                        if (end - i < signature.size()) {
+                        if (static_cast<size_t>(end - i) < signature.size()) {
                             break;
                         }
                         auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
@@ -318,6 +320,7 @@ namespace hat {
         using result_type_for = std::conditional_t<std::is_const_v<std::remove_reference_t<std::iter_reference_t<T>>>,
             const_scan_result, scan_result>;
 
+        template<scan_mode mode>
         constexpr scan_context scan_context::create(const signature_view signature, const scan_alignment alignment, const scan_hint hints) {
             scan_context ctx{};
             ctx.signature = signature;
@@ -326,7 +329,11 @@ namespace hat {
             if LIBHAT_IF_CONSTEVAL {
                 ctx.scanner = resolve_scanner<scan_mode::Single>(ctx);
             } else {
-                ctx.auto_resolve_scanner();
+                if constexpr (mode == scan_mode::Auto) {
+                    ctx.auto_resolve_scanner();
+                } else {
+                    ctx.scanner = resolve_scanner<mode>(ctx);
+                }
             }
             return ctx;
         }
