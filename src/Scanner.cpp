@@ -63,7 +63,7 @@ namespace hat::detail {
 #if defined(LIBHAT_X86)
         const auto& ext = get_system().extensions;
         if (ext.bmi) {
-#if !defined(LIBHAT_DISABLE_AVX512)
+#if defined(LIBHAT_X86_64) && !defined(LIBHAT_DISABLE_AVX512)
             if (ext.avx512f && ext.avx512bw) {
                 this->scanner = resolve_scanner<scan_mode::AVX512>(*this);
                 return;

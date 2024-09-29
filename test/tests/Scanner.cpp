@@ -59,30 +59,31 @@ protected:
 };
 
 using FindPatternTestTypes = ::testing::Types<
-    FindPatternParameters<hat::detail::scan_mode::Single, 3, 256>,
-    FindPatternParameters<hat::detail::scan_mode::SSE,    3, 256>,
-    FindPatternParameters<hat::detail::scan_mode::AVX2,   3, 256>,
+#ifdef LIBHAT_X86
+    FindPatternParameters<hat::detail::scan_mode::SSE, 3, 256>,
+    FindPatternParameters<hat::detail::scan_mode::SSE, 8, 256>,
+    FindPatternParameters<hat::detail::scan_mode::SSE, 16, 256>,
+    FindPatternParameters<hat::detail::scan_mode::SSE, 32, 256>,
+    FindPatternParameters<hat::detail::scan_mode::SSE, 64, 256>,
+
+    FindPatternParameters<hat::detail::scan_mode::AVX2, 3, 256>,
+    FindPatternParameters<hat::detail::scan_mode::AVX2, 8, 256>,
+    FindPatternParameters<hat::detail::scan_mode::AVX2, 16, 256>,
+    FindPatternParameters<hat::detail::scan_mode::AVX2, 32, 256>,
+    FindPatternParameters<hat::detail::scan_mode::AVX2, 64, 256>,
+#endif
+#ifdef LIBHAT_X86_64
     FindPatternParameters<hat::detail::scan_mode::AVX512, 3, 256>,
-
-    FindPatternParameters<hat::detail::scan_mode::Single, 8, 256>,
-    FindPatternParameters<hat::detail::scan_mode::SSE,    8, 256>,
-    FindPatternParameters<hat::detail::scan_mode::AVX2,   8, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 8, 256>,
-
-    FindPatternParameters<hat::detail::scan_mode::Single, 16, 256>,
-    FindPatternParameters<hat::detail::scan_mode::SSE,    16, 256>,
-    FindPatternParameters<hat::detail::scan_mode::AVX2,   16, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 16, 256>,
-
-    FindPatternParameters<hat::detail::scan_mode::Single, 32, 256>,
-    FindPatternParameters<hat::detail::scan_mode::SSE,    32, 256>,
-    FindPatternParameters<hat::detail::scan_mode::AVX2,   32, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 32, 256>,
-
-    FindPatternParameters<hat::detail::scan_mode::Single, 64, 256>,
-    FindPatternParameters<hat::detail::scan_mode::SSE,    64, 256>,
-    FindPatternParameters<hat::detail::scan_mode::AVX2,   64, 256>,
-    FindPatternParameters<hat::detail::scan_mode::AVX512, 64, 256>
+    FindPatternParameters<hat::detail::scan_mode::AVX512, 64, 256>,
+#endif
+    FindPatternParameters<hat::detail::scan_mode::Single, 3, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Single, 8, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Single, 16, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Single, 32, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Single, 64, 256>
 >;
 
 class FindPatternTestNameGenerator {
