@@ -6,6 +6,7 @@ template<hat::detail::scan_mode Mode, size_t SignatureSize, size_t MaxBufferSize
 struct FindPatternParameters {
     static_assert(SignatureSize <= MaxBufferSize);
     static_assert(SignatureSize < 0xFF);
+    static_assert(SignatureSize >= 2);
 
     static constexpr auto mode = Mode;
     static constexpr auto signature_size = SignatureSize;
@@ -32,25 +33,26 @@ protected:
         for (int i{}; i < SignatureSize; i++) {
             sig[i] = static_cast<std::byte>(i + 1);
         }
-        sig[1] = std::nullopt;
+        hat::fixed_signature<SignatureSize> sigWildcard = sig;
+        sigWildcard[1] = std::nullopt;
 
-        const auto context = hat::detail::scan_context::create<Mode>(sig, alignment, hat::scan_hint::none);
+        const auto contextA = hat::detail::scan_context::create<Mode>(sig, alignment, hat::scan_hint::none);
+        const auto contextB = hat::detail::scan_context::create<Mode>(sigWildcard, alignment, hat::scan_hint::none);
 
-        for (size_t size = sig.size(); size != MaxBufferSize; size++) {
-            for (size_t offset{}; offset != size - sig.size() + 1; offset++) {
+        for (size_t size = SignatureSize; size != MaxBufferSize; size++) {
+            for (size_t offset{}; offset != size - SignatureSize + 1; offset++) {
                 std::vector code(size, std::byte{0x00});
                 auto* const begin = std::to_address(code.begin());
                 auto* const end = std::to_address(code.end());
 
-                ASSERT_FALSE(context.scan(begin, end).has_result());
+                ASSERT_FALSE(contextA.scan(begin, end).has_result());
+                ASSERT_FALSE(contextB.scan(begin, end).has_result());
 
                 std::ranges::copy(sig | std::views::transform(&hat::signature_element::value),
                     begin + offset);
 
-                callback(
-                    context.scan(begin, end),
-                    begin + offset
-                );
+                callback(contextA.scan(begin, end), begin + offset);
+                callback(contextB.scan(begin, end), begin + offset);
             }
         }
     }
