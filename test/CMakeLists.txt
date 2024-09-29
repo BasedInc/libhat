@@ -55,6 +55,7 @@ function(register_test NAME SOURCE)
 endfunction()
 
 register_test(libhat_benchmark_compare benchmark/Compare.cpp)
+register_test(libhat_test_scanner tests/Scanner.cpp)
 
 add_executable(libhat_hwinfo info/HardwareInfo.cpp)
 target_link_libraries(libhat_hwinfo PRIVATE libhat)
