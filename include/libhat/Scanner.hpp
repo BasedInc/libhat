@@ -172,17 +172,22 @@ namespace hat {
                 return {};
             };
 
-            // If the scan can't be vectorized, just do the single byte scanner "pre" part
-            if (static_cast<size_t>(end - begin) < sizeof(Vector)) {
+            const auto preBegin = begin;
+            const auto vecBegin = reinterpret_cast<const Vector*>(align_pointer_as<Vector>(preBegin + cmpOffset));
+            if (reinterpret_cast<const std::byte*>(vecBegin) > end) LIBHAT_UNLIKELY {
                 return {validateRange(begin, end), {}, {}};
             }
 
-            const auto preBegin = begin;
-            const auto vecBegin = reinterpret_cast<const Vector*>(align_pointer_as<Vector>(preBegin + cmpOffset));
             const size_t vecAvailable = end - reinterpret_cast<const std::byte*>(vecBegin);
             const auto vecEnd = vecBegin + (vecAvailable >= signatureSize ? (vecAvailable - signatureSize) / sizeof(Vector) : 0);
+
+            // If the scan can't be vectorized, just do the single byte scanner "pre" part
+            if (vecBegin == vecEnd) LIBHAT_UNLIKELY {
+                return {validateRange(begin, end), {}, {}};
+            }
+
             const auto preEnd = reinterpret_cast<const std::byte*>(vecBegin) - cmpOffset + signatureSize;
-            const auto postBegin = reinterpret_cast<const std::byte*>(vecEnd);
+            const auto postBegin = reinterpret_cast<const std::byte*>(vecEnd) - cmpOffset;
             const auto postEnd = end;
 
             return {
