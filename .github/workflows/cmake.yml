@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Configure
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
@@ -39,7 +39,7 @@ jobs:
       - name: Configure
         env:
           CXX: ${{matrix.compiler.exe}}-${{matrix.compiler.version}}
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=ON
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING=ON
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
