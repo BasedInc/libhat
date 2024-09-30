@@ -11,12 +11,15 @@ env:
 
 jobs:
   macos:
+    strategy:
+      matrix:
+        cxx_standard: [ 20, 23 ]
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
 
       - name: Configure
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
@@ -27,6 +30,7 @@ jobs:
         compiler:
           - { pkg: g++, exe: g++, version: 14 }
           - { pkg: clang, exe: clang++, version: 18 }
+        cxx_standard: [ 20, 23 ]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
@@ -39,7 +43,7 @@ jobs:
       - name: Configure
         env:
           CXX: ${{matrix.compiler.exe}}-${{matrix.compiler.version}}
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING=ON
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING=ON
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
@@ -53,12 +57,13 @@ jobs:
       matrix:
         target: [ Win32, x64 ]
         toolset: [ v143, ClangCL ]
+        cxx_standard: [ 20, 23 ]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
 
       - name: Configure
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=ON -A ${{matrix.target}} -T ${{matrix.toolset}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=ON -A ${{matrix.target}} -T ${{matrix.toolset}}
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
