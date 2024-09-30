@@ -42,7 +42,7 @@ namespace hat::detail {
 #endif
 
         // If no "optimal" pair was found, find the first byte pair in the signature
-        if (!this->pairIndex.has_value()) {
+        if (!this->pairIndex.has_value() && this->alignment == hat::scan_alignment::X1) {
             for (auto it = this->signature.begin(); it != std::prev(this->signature.end()); it++) {
                 const auto i = static_cast<size_t>(it - this->signature.begin());
                 auto& a = *it;
