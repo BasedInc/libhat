@@ -43,11 +43,6 @@ namespace hat::detail {
             load_signature_512(signature, signatureBytes, signatureMask);
         }
 
-        begin = next_boundary_align<alignment>(begin);
-        if (begin >= end) LIBHAT_UNLIKELY {
-            return {};
-        }
-
         auto [pre, vec, post] = segment_scan<__m512i, veccmp>(begin, end, signature.size(), cmpIndex);
 
         if (!pre.empty()) {
