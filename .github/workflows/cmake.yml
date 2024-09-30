@@ -15,7 +15,7 @@ jobs:
             matrix:
                 compiler:
                     - { pkg: g++, exe: g++, version: 14 }
-#                    - { pkg: clang, exe: clang++, version: 18 }
+                    - { pkg: clang, exe: clang++, version: 18 }
         runs-on: ubuntu-24.04
         steps:
             - uses: actions/checkout@v3
