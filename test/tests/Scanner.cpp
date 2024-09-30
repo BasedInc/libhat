@@ -6,7 +6,6 @@ template<hat::detail::scan_mode Mode, size_t SignatureSize, size_t MaxBufferSize
 struct FindPatternParameters {
     static_assert(SignatureSize <= MaxBufferSize);
     static_assert(SignatureSize < 0xFF);
-    static_assert(SignatureSize >= 2);
 
     static constexpr auto mode = Mode;
     static constexpr auto signature_size = SignatureSize;
@@ -34,7 +33,9 @@ protected:
             sig[i] = static_cast<std::byte>(i + 1);
         }
         hat::fixed_signature<SignatureSize> sigWildcard = sig;
-        sigWildcard[1] = std::nullopt;
+        if constexpr (SignatureSize >= 2) {
+            sigWildcard[1] = std::nullopt;
+        }
 
         const auto contextA = hat::detail::scan_context::create<Mode>(sig, alignment, hat::scan_hint::none);
         const auto contextB = hat::detail::scan_context::create<Mode>(sigWildcard, alignment, hat::scan_hint::none);
@@ -60,12 +61,14 @@ protected:
 
 using FindPatternTestTypes = ::testing::Types<
 #ifdef LIBHAT_X86
+    FindPatternParameters<hat::detail::scan_mode::SSE, 1, 256>,
     FindPatternParameters<hat::detail::scan_mode::SSE, 3, 256>,
     FindPatternParameters<hat::detail::scan_mode::SSE, 8, 256>,
     FindPatternParameters<hat::detail::scan_mode::SSE, 16, 256>,
     FindPatternParameters<hat::detail::scan_mode::SSE, 32, 256>,
     FindPatternParameters<hat::detail::scan_mode::SSE, 64, 256>,
 
+    FindPatternParameters<hat::detail::scan_mode::AVX2, 1, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX2, 3, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX2, 8, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX2, 16, 256>,
@@ -73,12 +76,14 @@ using FindPatternTestTypes = ::testing::Types<
     FindPatternParameters<hat::detail::scan_mode::AVX2, 64, 256>,
 #endif
 #ifdef LIBHAT_X86_64
+    FindPatternParameters<hat::detail::scan_mode::AVX512, 1, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 3, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 8, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 16, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 32, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 64, 256>,
 #endif
+    FindPatternParameters<hat::detail::scan_mode::Single, 1, 256>,
     FindPatternParameters<hat::detail::scan_mode::Single, 3, 256>,
     FindPatternParameters<hat::detail::scan_mode::Single, 8, 256>,
     FindPatternParameters<hat::detail::scan_mode::Single, 16, 256>,
