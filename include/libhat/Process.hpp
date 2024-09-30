@@ -2,7 +2,6 @@
 
 #include <optional>
 #include <span>
-#include <string>
 #include <string_view>
 
 namespace hat::process {
@@ -15,7 +14,7 @@ namespace hat::process {
 
     /// Returns an optional containing the module with the given name in the current process
     /// If the module is not found, std::nullopt is returned instead
-    [[nodiscard]] std::optional<module_t> get_module(const std::string& name);
+    [[nodiscard]] std::optional<module_t> get_module(std::string_view name);
 
     /// Returns the module located at the specified base address. Optionally, a size may be provided to indicate
     /// the size of the allocation pointed to by address, preventing a potential out-of-bounds read.

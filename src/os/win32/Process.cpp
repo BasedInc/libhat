@@ -42,17 +42,27 @@ namespace hat::process {
     }
 
     module_t get_process_module() {
-        return module_t{reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr))};
+        return module_t{reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr))};
     }
 
-    std::optional<module_t> get_module(const std::string& name) {
-        if (const auto module = GetModuleHandleA(name.c_str()); module) {
+    std::optional<module_t> get_module(const std::string_view name) {
+        const int size = MultiByteToWideChar(CP_UTF8, 0, name.data(), static_cast<int>(name.size()), nullptr, 0);
+        if (!size) {
+            return {};
+        }
+
+        std::wstring str;
+        str.resize(size);
+
+        MultiByteToWideChar(CP_UTF8, 0, name.data(), static_cast<int>(name.size()), str.data(), size);
+
+        if (const auto module = GetModuleHandleW(str.c_str()); module) {
             return module_t{std::bit_cast<uintptr_t>(module)};
         }
         return {};
     }
 
-    std::optional<module_t> module_at(void* address, std::optional<size_t> size) {
+    std::optional<module_t> module_at(void* address, const std::optional<size_t> size) {
         if (isValidModule(address, size)) {
             return module_t{std::bit_cast<uintptr_t>(address)};
         }
@@ -72,7 +82,7 @@ namespace hat::process {
         const auto maxChars = std::min<size_t>(name.size(), 8);
 
         const auto* sectionHeader = IMAGE_FIRST_SECTION(&ntHeaders);
-        for (int i = 0; i < ntHeaders.FileHeader.NumberOfSections; i++, sectionHeader++) {
+        for (DWORD i = 0; i < ntHeaders.OptionalHeader.NumberOfRvaAndSizes; i++, sectionHeader++) {
             if (strncmp(name.data(), reinterpret_cast<const char*>(sectionHeader->Name), maxChars) == 0) {
                 return {
                     bytes + sectionHeader->VirtualAddress,
