@@ -79,11 +79,13 @@ namespace hat::process {
         auto* bytes = reinterpret_cast<std::byte*>(mod);
         const auto& ntHeaders = getNTHeaders(mod);
 
-        const auto maxChars = std::min<size_t>(name.size(), 8);
-
         const auto* sectionHeader = IMAGE_FIRST_SECTION(&ntHeaders);
         for (DWORD i = 0; i < ntHeaders.OptionalHeader.NumberOfRvaAndSizes; i++, sectionHeader++) {
-            if (strncmp(name.data(), reinterpret_cast<const char*>(sectionHeader->Name), maxChars) == 0) {
+            const std::string_view sectionName{
+                reinterpret_cast<const char*>(sectionHeader->Name),
+                strnlen_s(reinterpret_cast<const char*>(sectionHeader->Name), IMAGE_SIZEOF_SHORT_NAME)
+            };
+            if (sectionName == name) {
                 return {
                     bytes + sectionHeader->VirtualAddress,
                     static_cast<size_t>(sectionHeader->Misc.VirtualSize)
