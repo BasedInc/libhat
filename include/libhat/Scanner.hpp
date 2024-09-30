@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <execution>
+#include <memory>
 #include <utility>
 
 #include "Concepts.hpp"
