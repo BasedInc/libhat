@@ -100,7 +100,7 @@ namespace hat {
 
     consteval auto count_matches() {
         constexpr std::array a{std::byte{1}, std::byte{2}, std::byte{3}, std::byte{4}, std::byte{1}};
-        constexpr hat::fixed_signature s{std::byte{1}};
+        constexpr hat::fixed_signature<1> s{std::byte{1}};
 
         std::vector<const_scan_result> results{};
         hat::find_all_pattern(a.cbegin(), a.cend(), std::back_inserter(results), s);
@@ -110,7 +110,7 @@ namespace hat {
 
     static_assert([] {
         constexpr std::array a{std::byte{1}, std::byte{2}, std::byte{3}, std::byte{4}, std::byte{1}};
-        constexpr hat::fixed_signature s{std::byte{1}};
+        constexpr hat::fixed_signature<1> s{std::byte{1}};
 
         std::vector<const_scan_result> results{};
         hat::find_all_pattern(a.cbegin(), a.cend(), std::back_inserter(results), s);
@@ -120,7 +120,7 @@ namespace hat {
 
     static_assert([] {
         constexpr std::array a{std::byte{1}, std::byte{2}, std::byte{3}, std::byte{4}, std::byte{1}};
-        constexpr hat::fixed_signature s{std::byte{1}};
+        constexpr hat::fixed_signature<1> s{std::byte{1}};
 
         std::array<const_scan_result, 2> results{};
         const auto [scan_end, results_end] = hat::find_all_pattern(a.cbegin(), a.cend(), results.begin(), results.end(), s);
