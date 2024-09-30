@@ -237,57 +237,20 @@ namespace hat {
             const auto signature = context.signature;
             const auto firstByte = *signature[0];
 
-            struct dummy_vector {
-                alignas(16) std::array<std::byte, 16> buf{};
+            const auto scanBegin = next_boundary_align<scan_alignment::X16>(begin);
+            const auto scanEnd = next_boundary_align<scan_alignment::X16>(end - signature.size() + 1);
 
-                [[nodiscard]] const std::byte* data() const {
-                    return this->buf.data();
-                }
-            };
-
-            auto [pre, vec, post] = segment_scan<dummy_vector>(begin, end, signature.size(), 0);
-
-            if (!pre.empty()) {
-                for (auto i = next_boundary_align<scan_alignment::X16>(pre.data()); i < std::to_address(pre.end()); i += 16) {
-                    if (*i == firstByte) {
-                        if (static_cast<size_t>(end - i) < signature.size()) {
-                            break;
-                        }
-                        auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
-                            return !opt.has_value() || *opt == byte;
-                        });
-                        if (match) LIBHAT_UNLIKELY {
-                            return i;
-                        }
-                    }
-                }
+            if (scanBegin >= scanEnd) {
+                return nullptr;
             }
 
-            for (auto& it : vec) {
-                const std::byte* i = it.data();
+            for (auto i = scanBegin; i != scanEnd; i += 16) {
                 if (*i == firstByte) {
-                    // Compare everything after the first byte
                     auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
                         return !opt.has_value() || *opt == byte;
                     });
                     if (match) LIBHAT_UNLIKELY {
                         return i;
-                    }
-                }
-            }
-
-            if (!post.empty()) {
-                for (auto i = next_boundary_align<scan_alignment::X16>(post.data()); i < std::to_address(post.end()); i += 16) {
-                    if (*i == firstByte) {
-                        if (static_cast<size_t>(end - i) < signature.size()) {
-                            break;
-                        }
-                        auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
-                            return !opt.has_value() || *opt == byte;
-                        });
-                        if (match) LIBHAT_UNLIKELY {
-                            return i;
-                        }
                     }
                 }
             }
