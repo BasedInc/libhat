@@ -218,7 +218,11 @@ namespace hat {
                 if LIBHAT_IF_CONSTEVAL {
                     i = std::find(i, scanEnd, firstByte);
                 } else {
-                    i = std::find(std::execution::unseq, i, scanEnd, firstByte);
+                    #if __cpp_lib_execution >= 201902L
+                        i = std::find(std::execution::unseq, i, scanEnd, firstByte);
+                    #else
+                        i = std::find(i, scanEnd, firstByte);
+                    #endif
                 }
                 if (i == scanEnd) LIBHAT_UNLIKELY {
                     break;
