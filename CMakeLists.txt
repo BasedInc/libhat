@@ -12,6 +12,7 @@ option(LIBHAT_INSTALL_TARGET "Creates install rules for the libhat target" ON)
 option(LIBHAT_DISABLE_SSE "Disables SSE scanning" OFF)
 option(LIBHAT_DISABLE_AVX512 "Disables AVX512 scanning" OFF)
 option(LIBHAT_TESTING "Enable tests" OFF)
+option(LIBHAT_TESTING_ASAN "Enable address sanitizer when testing" ON)
 option(LIBHAT_TESTING_SDE "Run tests using Intel Software Development Emulator" ON)
 
 option(LIBHAT_HINT_X86_64 "Enables support for the x86_64 scan hint, requires a small (less than 1KB) data table" ON)
@@ -24,6 +25,13 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set_source_files_properties(src/arch/x86/AVX2.cpp PROPERTIES COMPILE_FLAGS "-mavx -mavx2 -mbmi")
     set_source_files_properties(src/arch/x86/AVX512.cpp PROPERTIES COMPILE_FLAGS "-mavx512f -mavx512bw -mbmi")
     set_source_files_properties(src/arch/x86/System.cpp PROPERTIES COMPILE_FLAGS "-mxsave")
+endif()
+
+if(LIBHAT_TESTING AND LIBHAT_TESTING_ASAN)
+    if(MSVC)
+        add_compile_options($<$<CONFIG:Debug>:/fsanitize=address>)
+    endif()
+    # TODO: Linux
 endif()
 
 set(LIBHAT_SRC
