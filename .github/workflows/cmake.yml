@@ -10,7 +10,34 @@ env:
     BUILD_TYPE: Debug
 
 jobs:
-    build:
+    linux:
+        strategy:
+            matrix:
+                compiler:
+                    - { pkg: g++, exe: g++, version: 14 }
+#                    - { pkg: clang, exe: clang++, version: 18 }
+        runs-on: ubuntu-24.04
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Install Compiler
+              run: |
+                  sudo apt update
+                  sudo apt install -y ${{matrix.compiler.pkg}}-${{matrix.compiler.version}}
+
+            - name: Configure
+              env:
+                  CXX: ${{matrix.compiler.exe}}-${{matrix.compiler.version}}
+              run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=ON
+
+            - name: Build
+              run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+            - name: Test
+              working-directory: ${{github.workspace}}/build
+              run: ctest -C ${{env.BUILD_TYPE}} -R libhat_test_.*
+
+    windows:
         strategy:
             matrix:
                 target:
@@ -21,7 +48,7 @@ jobs:
         steps:
             - uses: actions/checkout@v3
 
-            - name: Configure CMake
+            - name: Configure
               run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=ON -A ${{matrix.target.target}} -T ${{matrix.toolset}}
 
             - name: Build
