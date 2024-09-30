@@ -31,7 +31,7 @@ jobs:
               run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=ON
 
             - name: Build
-              run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+              run: cmake --build ${{github.workspace}}/build -j 4
 
             - name: Test
               working-directory: ${{github.workspace}}/build
@@ -50,7 +50,7 @@ jobs:
               run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=ON -A ${{matrix.target}} -T ${{matrix.toolset}}
 
             - name: Build
-              run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+              run: cmake --build ${{github.workspace}}/build -j 4
 
             - name: Test
               working-directory: ${{github.workspace}}/build
