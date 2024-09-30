@@ -28,7 +28,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 if(LIBHAT_TESTING AND LIBHAT_TESTING_ASAN)
-    if(MSVC)
+    if(MSVC AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options($<$<CONFIG:Debug>:/fsanitize=address>)
     endif()
     # TODO: Linux
