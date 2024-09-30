@@ -14,7 +14,7 @@ namespace hat {
     };
 
     template<std::integral Integer, detail::char_iterator Iter>
-    inline constexpr result<Integer, parse_int_error> parse_int(Iter begin, Iter end, uint8_t base = 10) noexcept {
+    LIBHAT_CONSTEXPR_RESULT result<Integer, parse_int_error> parse_int(Iter begin, Iter end, uint8_t base = 10) noexcept {
         if (base < 2 || base > 36) {
             return result_error{parse_int_error::invalid_base};
         }
@@ -54,7 +54,7 @@ namespace hat {
     }
 
     template<typename Integer>
-    inline constexpr result<Integer, parse_int_error> parse_int(std::string_view str, uint8_t base = 10) noexcept {
+    LIBHAT_CONSTEXPR_RESULT result<Integer, parse_int_error> parse_int(std::string_view str, uint8_t base = 10) noexcept {
         return parse_int<Integer>(str.cbegin(), str.cend(), base);
     }
 }

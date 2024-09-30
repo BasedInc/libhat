@@ -90,7 +90,7 @@ namespace hat {
         empty_signature,
     };
 
-    [[nodiscard]] constexpr result<signature, signature_parse_error> parse_signature(std::string_view str) {
+    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_parse_error> parse_signature(std::string_view str) {
         signature sig{};
         bool containsByte = false;
         for (const auto& word : str | std::views::split(' ')) {
