@@ -47,7 +47,7 @@ namespace hat::detail {
             return {};
         }
 
-        auto [pre, vec, post] = segment_scan<__m256i>(begin, end, signature.size(), cmpIndex);
+        auto [pre, vec, post] = segment_scan<__m256i, veccmp>(begin, end, signature.size(), cmpIndex);
 
         if (!pre.empty()) {
             const auto result = find_pattern_single<alignment>(pre.data(), pre.data() + pre.size(), context);

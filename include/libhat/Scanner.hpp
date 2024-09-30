@@ -160,7 +160,7 @@ namespace hat {
             return std::assume_aligned<alignment>(ptr);
         }
 
-        template<typename Vector>
+        template<typename Vector, bool veccmp>
         LIBHAT_FORCEINLINE auto segment_scan(
             const std::byte* begin,
             const std::byte* end,
@@ -181,7 +181,8 @@ namespace hat {
             }
 
             const size_t vecAvailable = end - reinterpret_cast<const std::byte*>(vecBegin);
-            const auto vecEnd = vecBegin + (vecAvailable >= signatureSize ? (vecAvailable - signatureSize) / sizeof(Vector) : 0);
+            const size_t requiredAfter = veccmp ? sizeof(Vector) : signatureSize;
+            const auto vecEnd = vecBegin + (vecAvailable >= requiredAfter ? (vecAvailable - requiredAfter) / sizeof(Vector) : 0);
 
             // If the scan can't be vectorized, just do the single byte scanner "pre" part
             if (vecBegin == vecEnd) LIBHAT_UNLIKELY {
