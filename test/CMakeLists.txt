@@ -5,6 +5,10 @@ include(FetchContent)
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY  https://github.com/google/googletest.git
