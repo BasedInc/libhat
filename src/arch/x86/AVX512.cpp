@@ -5,7 +5,6 @@
 #include <libhat/Scanner.hpp>
 
 #include <immintrin.h>
-#include <tuple>
 
 namespace hat::detail {
 
