@@ -16,7 +16,7 @@ jobs:
         cxx_standard: [ 20, 23 ]
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Configure
         run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
@@ -33,7 +33,7 @@ jobs:
         cxx_standard: [ 20, 23 ]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Compiler
         run: |
@@ -74,7 +74,7 @@ jobs:
             target: ARM64
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure
         run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=${{startsWith(matrix.target, 'ARM') && 'OFF' || 'ON'}} -A ${{matrix.target}} -T ${{matrix.toolset}}
 
