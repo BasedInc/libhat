@@ -55,9 +55,23 @@ jobs:
   windows:
     strategy:
       matrix:
-        target: [ Win32, x64 ]
+        target: [ Win32, x64, ARM, ARM64 ]
         toolset: [ v143, ClangCL ]
         cxx_standard: [ 20, 23 ]
+        include:
+          - target: Win32
+            vcvars: vcvars32
+          - target: x64
+            vcvars: vcvars64
+          - target: ARM
+            vcvars: vcvarsamd64_arm
+          - target: ARM64
+            vcvars: vcvarsamd64_arm64
+        exclude:
+          - toolset: ClangCL
+            target: ARM
+          - toolset: ClangCL
+            target: ARM64
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
@@ -69,8 +83,9 @@ jobs:
         run: cmake --build ${{github.workspace}}/build -j 4
 
       - name: Test
+        if: ${{!startsWith(matrix.target, 'ARM')}}
         working-directory: ${{github.workspace}}/build
         shell: cmd
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\${{matrix.target == 'Win32' && 'vcvars32' || 'vcvars64'}}.bat"
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\${{matrix.vcvars}}.bat"
           ctest -C ${{env.BUILD_TYPE}} -R libhat_test_.*
