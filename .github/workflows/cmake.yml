@@ -75,9 +75,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
-
       - name: Configure
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=ON -A ${{matrix.target}} -T ${{matrix.toolset}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=${{startsWith(matrix.target, 'ARM') && 'OFF' || 'ON'}} -A ${{matrix.target}} -T ${{matrix.toolset}}
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
