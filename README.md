@@ -3,6 +3,7 @@ A modern, high-performance library for C++20 designed around game hacking
 
 ## Feature overview
 - Windows x86/x64 support
+- Linux support
 - Vectorized scanning for byte patterns
 - RAII memory protector
 - Convenience wrappers over OS APIs
