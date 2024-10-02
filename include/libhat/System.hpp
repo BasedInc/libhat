@@ -3,10 +3,21 @@
 #include <libhat/Defines.hpp>
 #include <string>
 
+namespace hat {
+    struct system_info {
+        system_info(const system_info&) = delete;
+        system_info& operator=(const system_info&) = delete;
+        system_info(system_info&&) = delete;
+        system_info& operator=(system_info&&) = delete;
+    protected:
+        system_info();
+    };
+}
+
 #if defined(LIBHAT_X86)
 namespace hat {
 
-    struct system_info_x86 {
+    struct system_info_x86 : hat::system_info {
         std::string cpu_vendor{};
         std::string cpu_brand{};
         struct {
@@ -23,34 +34,29 @@ namespace hat {
             bool popcnt;
             bool bmi;
         } extensions{};
-
-        system_info_x86(const system_info_x86&) = delete;
-        system_info_x86& operator=(const system_info_x86&) = delete;
     private:
         system_info_x86();
         friend const system_info_x86& get_system();
         static const system_info_x86 instance;
     };
 
-    using system_info = system_info_x86;
+    using system_info_impl = system_info_x86;
 }
 #elif defined(LIBHAT_ARM)
 namespace hat {
 
-    struct system_info_arm {
-        system_info_arm(const system_info_arm&) = delete;
-        system_info_arm& operator=(const system_info_arm&) = delete;
+    struct system_info_arm : hat::system_info {
     private:
         system_info_arm() = default;
         friend const system_info_arm& get_system();
         static const system_info_arm instance;
     };
 
-    using system_info = system_info_arm;
+    using system_info_impl = system_info_arm;
 }
 #endif
 
 namespace hat {
 
-    const system_info& get_system();
+    const system_info_impl& get_system();
 }
