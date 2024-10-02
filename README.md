@@ -8,6 +8,11 @@ A modern, high-performance library for C++20 designed around game hacking
 - Convenience wrappers over OS APIs
 - Language bindings (C, C#, etc.)
 
+## Versioning
+This project adheres to [semantic versioning](https://semver.org/spec/v2.0.0.html). Any declaration that
+is within a `detail` or `experimental` namespace is not considered part of the public API, and usage
+may break at any time without the MAJOR version number being incremented.
+
 ## Benchmarks
 The table below compares the single threaded throughput in bytes/s (real time) between
 libhat and [two other](test/benchmark/vendor) commonly used implementations for pattern

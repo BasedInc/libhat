@@ -4,7 +4,16 @@ if(NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 20)
 endif()
 
-project(libhat)
+set(LIBHAT_VERSION_MAJOR 0)
+set(LIBHAT_VERSION_MINOR 1)
+set(LIBHAT_VERSION_PATCH 0)
+set(LIBHAT_VERSION ${LIBHAT_VERSION_MAJOR}.${LIBHAT_VERSION_MINOR}.${LIBHAT_VERSION_PATCH})
+
+project(libhat
+    VERSION ${LIBHAT_VERSION}
+    DESCRIPTION "A high-performance, modern, C++20 library designed around game hacking"
+    HOMEPAGE_URL "https://github.com/BasedInc/libhat"
+)
 
 option(LIBHAT_STATIC_C_LIB "Build a static version of the C library" OFF)
 option(LIBHAT_SHARED_C_LIB "Build a shared version of the C library" OFF)
