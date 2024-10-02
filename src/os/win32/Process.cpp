@@ -41,6 +41,23 @@ namespace hat::process {
         return *reinterpret_cast<const IMAGE_NT_HEADERS*>(scanBytes + dosHeader->e_lfanew);
     }
 
+    bool hat::process::is_readable(const std::span<const std::byte> region) {
+        for (auto* addr = region.data(); addr < region.data() + region.size();) {
+            MEMORY_BASIC_INFORMATION mbi{};
+            if (!VirtualQuery(addr, &mbi, sizeof(mbi))) {
+                return false;
+            }
+            if (mbi.State != MEM_COMMIT) {
+                return false;
+            }
+            if (!(mbi.Protect & (PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_READONLY | PAGE_READWRITE))) {
+                return false;
+            }
+            addr = static_cast<const std::byte*>(mbi.BaseAddress) + mbi.RegionSize;
+        }
+        return true;
+    }
+
     hat::process::module get_process_module() {
         return module{reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr))};
     }

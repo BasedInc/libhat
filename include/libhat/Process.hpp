@@ -14,6 +14,7 @@ namespace hat::process {
         }
 
         /// Returns the complete memory region for the given module. This may include portions which are uncommitted.
+        /// To verify whether the region is safe to read, use hat::process::is_readable.
         [[nodiscard]] std::span<std::byte> get_module_data() const;
 
         /// Returns the memory region for a named section
@@ -28,6 +29,9 @@ namespace hat::process {
 
         uintptr_t baseAddress{};
     };
+
+    /// Returns whether the entirety of a given memory region is readable
+    [[nodiscard]] bool is_readable(std::span<const std::byte> region);
 
     /// Returns the module for the current process's base executable
     [[nodiscard]] hat::process::module get_process_module();
