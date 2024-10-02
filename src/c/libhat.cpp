@@ -109,10 +109,12 @@ LIBHAT_API const void* libhat_find_pattern_mod(
 LIBHAT_API const void* libhat_get_module(const char* name) {
     if (name) {
         if (const auto mod = hat::process::get_module(name); mod.has_value()) {
-            return reinterpret_cast<const void*>(mod.value());
+            return reinterpret_cast<const void*>(mod.value().address());
+        } else {
+            return nullptr;
         }
     }
-    return reinterpret_cast<const void*>(hat::process::get_process_module());
+    return reinterpret_cast<const void*>(hat::process::get_process_module().address());
 }
 
 LIBHAT_API void libhat_free(void* mem) {

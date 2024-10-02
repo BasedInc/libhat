@@ -6,7 +6,7 @@
 namespace hat::experimental {
 
     template<>
-    scan_result find_vtable<compiler_type::MSVC>(const std::string& className, hat::process::module_t mod) {
+    scan_result find_vtable<compiler_type::MSVC>(const std::string& className, hat::process::module mod) {
         // Tracing cross-references
         // Type Descriptor => Object Locator => VTable
         auto sig = string_to_signature(".?AV" + className + "@@");
@@ -23,7 +23,7 @@ namespace hat::experimental {
         typeDesc -= 2 * sizeof(void*);
 
         // The actual xref refers to an offset from the base module
-        const auto loffset = static_cast<uint32_t>(typeDesc - reinterpret_cast<std::byte*>(mod));
+        const auto loffset = static_cast<uint32_t>(typeDesc - reinterpret_cast<std::byte*>(mod.address()));
         auto locator = object_to_signature(loffset);
         // FIXME: These appear to be the values just for basic classes with single inheritance. We should be using a
         //        different method to differentiate the object locator from the base class descriptor.
@@ -50,7 +50,7 @@ namespace hat::experimental {
     }
 
     template<>
-    scan_result find_vtable<compiler_type::GNU>(const std::string& className, hat::process::module_t mod) {
+    scan_result find_vtable<compiler_type::GNU>(const std::string& className, hat::process::module mod) {
         // Tracing cross-references
         // Type Descriptor Name => Type Info => VTable
         const auto sig = string_to_signature(std::to_string(className.size()) + className + "\0");

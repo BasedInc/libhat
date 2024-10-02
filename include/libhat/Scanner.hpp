@@ -312,17 +312,29 @@ namespace hat {
     template<scan_alignment alignment = scan_alignment::X1>
     [[deprecated]] scan_result find_pattern(
         signature_view      signature,
-        process::module_t   mod = process::get_process_module()
-    );
+        process::module     mod = process::get_process_module()
+    ) {
+        const auto data = mod.get_module_data();
+        if (data.empty()) {
+            return nullptr;
+        }
+        return find_pattern<alignment>(data.begin(), data.end(), signature);
+    }
 
     /// Perform a signature scan on a specific section of the process module or a specified module
     template<scan_alignment alignment = scan_alignment::X1>
     scan_result find_pattern(
         signature_view      signature,
         std::string_view    section,
-        process::module_t   mod = process::get_process_module(),
+        process::module     mod = process::get_process_module(),
         scan_hint           hints = scan_hint::none
-    );
+    ) {
+        const auto data = mod.get_section_data(section);
+        if (data.empty()) {
+            return nullptr;
+        }
+        return find_pattern<alignment>(data.begin(), data.end(), signature, hints);
+    }
 
     /// Root implementation of find_pattern
     template<scan_alignment alignment = scan_alignment::X1, detail::byte_input_iterator Iter>
@@ -440,8 +452,6 @@ namespace hat::experimental {
     template<compiler_type compiler>
     scan_result find_vtable(
         const std::string&  className,
-        process::module_t   mod = process::get_process_module()
+        process::module     mod = process::get_process_module()
     );
 }
-
-#include "Scanner.inl"
