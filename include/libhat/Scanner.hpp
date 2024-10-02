@@ -308,19 +308,6 @@ namespace hat {
         }
     }
 
-    /// Perform a signature scan on the entirety of the process module or a specified module
-    template<scan_alignment alignment = scan_alignment::X1>
-    [[deprecated]] scan_result find_pattern(
-        signature_view      signature,
-        process::module     mod = process::get_process_module()
-    ) {
-        const auto data = mod.get_module_data();
-        if (data.empty()) {
-            return nullptr;
-        }
-        return find_pattern<alignment>(data.begin(), data.end(), signature);
-    }
-
     /// Perform a signature scan on a specific section of the process module or a specified module
     template<scan_alignment alignment = scan_alignment::X1>
     scan_result find_pattern(
@@ -330,9 +317,6 @@ namespace hat {
         scan_hint           hints = scan_hint::none
     ) {
         const auto data = mod.get_section_data(section);
-        if (data.empty()) {
-            return nullptr;
-        }
         return find_pattern<alignment>(data.begin(), data.end(), signature, hints);
     }
 
