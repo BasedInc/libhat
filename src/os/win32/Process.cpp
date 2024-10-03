@@ -42,6 +42,12 @@ namespace hat::process {
     }
 
     bool hat::process::is_readable(const std::span<const std::byte> region) {
+        constexpr DWORD readFlags = PAGE_EXECUTE_READ
+            | PAGE_EXECUTE_READWRITE
+            | PAGE_EXECUTE_WRITECOPY
+            | PAGE_READONLY
+            | PAGE_READWRITE
+            | PAGE_WRITECOPY;
         for (auto* addr = region.data(); addr < region.data() + region.size();) {
             MEMORY_BASIC_INFORMATION mbi{};
             if (!VirtualQuery(addr, &mbi, sizeof(mbi))) {
@@ -50,7 +56,7 @@ namespace hat::process {
             if (mbi.State != MEM_COMMIT) {
                 return false;
             }
-            if (!(mbi.Protect & (PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_READONLY | PAGE_READWRITE))) {
+            if (!(mbi.Protect & readFlags)) {
                 return false;
             }
             addr = static_cast<const std::byte*>(mbi.BaseAddress) + mbi.RegionSize;
