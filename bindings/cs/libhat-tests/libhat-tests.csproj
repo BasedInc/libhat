@@ -6,10 +6,12 @@
         <RootNamespace>Hat.Tests</RootNamespace>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <Configurations>Debug;Release</Configurations>
+        <Platforms>AnyCPU;x64</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\libhat-sharp\libhat-sharp.csproj"/>
+      <PackageReference Include="libhat-sharp" Version="0.1.1" />
     </ItemGroup>
 
 </Project>

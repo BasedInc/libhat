@@ -21,10 +21,18 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <RepositoryUrl>https://github.com/phasephasephase/libhat</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
+        <Configurations>Debug;Release</Configurations>
+        <Platforms>AnyCPU;x64</Platforms>
+        <PackageTags>libhat;vectorized;game-hacking;modding;pattern-scanning</PackageTags>
     </PropertyGroup>
     
     <ItemGroup>
-        <None Include="../../../README.md" Pack="true" PackagePath="/" />
+        <!-- make README available in the package -->
+        <None Include="../README.md" Pack="true" PackagePath="/" />
+        
+        <!-- include the native library in the package (libhat_c) -->
+        <None Include="runtimes/win-x64/native/libhat_c.dll" Pack="true" PackagePath="runtimes/win-x64/native/" />
+        <None Include="runtimes/win-x86/native/libhat_c.dll" Pack="true" PackagePath="runtimes/win-x86/native/" />
     </ItemGroup>
 
 </Project>
