@@ -6,12 +6,12 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <AssemblyVersion>0.1.1</AssemblyVersion>
-        <FileVersion>0.1.1.1</FileVersion>
+        <AssemblyVersion>0.1.2</AssemblyVersion>
+        <FileVersion>0.1.2.1</FileVersion>
         
         <!-- nuget package -->
         <PackageId>libhat-sharp</PackageId>
-        <Version>0.1.1</Version>
+        <Version>0.1.2</Version>
         <Authors>phase</Authors>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Title>libhat-sharp</Title>
@@ -21,8 +21,6 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <RepositoryUrl>https://github.com/phasephasephase/libhat</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <Configurations>Debug;Release</Configurations>
-        <Platforms>AnyCPU;x64</Platforms>
         <PackageTags>libhat;vectorized;game-hacking;modding;pattern-scanning</PackageTags>
     </PropertyGroup>
     
@@ -30,9 +28,9 @@
         <!-- make README available in the package -->
         <None Include="../README.md" Pack="true" PackagePath="/" />
         
-        <!-- include the native library in the package (libhat_c) -->
-        <None Include="runtimes/win-x64/native/libhat_c.dll" Pack="true" PackagePath="runtimes/win-x64/native/" />
-        <None Include="runtimes/win-x86/native/libhat_c.dll" Pack="true" PackagePath="runtimes/win-x86/native/" />
+        <!-- include the native libraries in the package -->
+        <Content Include="runtimes/win-x64/native/libhat_c.dll" Pack="true" PackagePath="runtimes/win-x64/native/" />
+        <Content Include="runtimes/win-x86/native/libhat_c.dll" Pack="true" PackagePath="runtimes/win-x86/native/" />
     </ItemGroup>
 
 </Project>

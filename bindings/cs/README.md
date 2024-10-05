@@ -16,7 +16,7 @@ You can install it using the following command:
 ```csharp
 using Hat;
 
-// Parse a pattern's string representation into a byte array at runtime
+// Parse a pattern's string representation to an array of bytes at runtime
 Pattern pattern = new Pattern("48 8D 05 ? ? ? ? E8");
 
 // Create a scanner object for a section in a specific module
@@ -33,4 +33,17 @@ Span<byte> buffer = /* ... */;
 Scanner scanner = new Scanner(buffer);
 
 // Scan for this pattern using your CPU's vectorization features
-nint result = scanner.FindPattern(pattern);
+ScanResult? result = scanner.FindPattern(pattern);
+
+// Get the address pointed at by the pattern
+nint address = result!.Address;
+
+// Resolve an RIP relative address at a given offset
+// 
+//   | signature matches here
+//   |        | relative address located at +3
+//   v        v
+//   48 8D 05 BE 53 23 01    lea  rax, [rip+0x12353be]
+//
+nint relativeAddress = result!.Relative(3);
+```

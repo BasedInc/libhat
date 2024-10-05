@@ -7,11 +7,11 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <Configurations>Debug;Release</Configurations>
-        <Platforms>AnyCPU;x64</Platforms>
+        <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="libhat-sharp" Version="0.1.1" />
+      <ProjectReference Include="..\libhat-sharp\libhat-sharp.csproj" />
     </ItemGroup>
 
 </Project>
