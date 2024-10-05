@@ -4,6 +4,7 @@ C# bindings for libhat, a high-performance game hacking library.
 ## Notes
 - Currently only includes the pattern scanning functionality of libhat (libhat_c only implements pattern scanning)
 - Supports Windows only, x86 and x64
+- Requires .NET 8, support for .NET Standard 2.0 will be added later
 - Linux support will be added in the future
 
 ## Installation
