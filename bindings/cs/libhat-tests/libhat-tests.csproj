@@ -11,7 +11,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\libhat-sharp\libhat-sharp.csproj" />
+      <PackageReference Include="libhat-sharp" Version="0.1.2" />
     </ItemGroup>
 
 </Project>
