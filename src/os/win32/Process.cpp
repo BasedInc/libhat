@@ -103,7 +103,7 @@ namespace hat::process {
         const auto& ntHeaders = getNTHeaders(*this);
 
         const auto* sectionHeader = IMAGE_FIRST_SECTION(&ntHeaders);
-        for (DWORD i = 0; i < ntHeaders.OptionalHeader.NumberOfRvaAndSizes; i++, sectionHeader++) {
+        for (WORD i = 0; i < ntHeaders.FileHeader.NumberOfSections; i++, sectionHeader++) {
             const std::string_view sectionName{
                 reinterpret_cast<const char*>(sectionHeader->Name),
                 strnlen_s(reinterpret_cast<const char*>(sectionHeader->Name), IMAGE_SIZEOF_SHORT_NAME)
