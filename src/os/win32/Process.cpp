@@ -41,7 +41,7 @@ namespace hat::process {
         return *reinterpret_cast<const IMAGE_NT_HEADERS*>(scanBytes + dosHeader->e_lfanew);
     }
 
-    bool hat::process::is_readable(const std::span<const std::byte> region) {
+    bool is_readable(const std::span<const std::byte> region) {
         constexpr DWORD readFlags = PAGE_EXECUTE_READ
             | PAGE_EXECUTE_READWRITE
             | PAGE_EXECUTE_WRITECOPY

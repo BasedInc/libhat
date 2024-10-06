@@ -35,9 +35,31 @@ namespace hat {
             return static_cast<size_t>(read<Int>(offset)) / sizeof(ArrayType);
         }
 
-        /// Resolve the relative address located at an offset from the signature result
-        [[nodiscard]] constexpr T rel(size_t offset) const {
-            return this->has_result() ? this->result + this->read<rel_t>(offset) + offset + sizeof(rel_t) : nullptr;
+        /// Resolve the relative address located at an offset from the signature result. The behavior is undefined if
+        /// there is no result. The "offset" parameter is the number of bytes after the result's match that the relative
+        /// address is located. For example:
+        ///
+        ///        | result matches here
+        ///        |        | relative address located at +3 (offset)
+        ///        v        v
+        ///   0x0: 48 8D 05 BE 53 23 01    lea  rax, [rip+0x12353be]
+        ///   0x7: <next instruction>
+        ///
+        /// The "remaining" parameter is the number of bytes after the relative address that the next instruction
+        /// begins. In the majority of cases, this parameter can be left as 0. However, consider the following example:
+        ///
+        ///        | result matches here
+        ///        |     | relative address located at +2 (offset)
+        ///        |     |           | end of relative address
+        ///        v     v           v
+        ///   0x0: 83 3D BE 53 23 01 00    cmp    DWORD PTR [rip+0x12353be],0x0
+        ///   0x7: <next instruction>
+        ///
+        /// The "0x0" operand comes after the relative address. The absolute address referred to by the RIP relative
+        /// address in this case is 0x12353BE + 0x7 = 0x12353C5. Simply using rel(2) would yield an incorrect result of
+        /// 0x12353C4. In this case, rel(2, 1) would yield the expected 0x12353C5.
+        [[nodiscard]] constexpr T rel(size_t offset, size_t remaining = 0) const {
+            return this->result + this->read<rel_t>(offset) + offset + sizeof(rel_t) + remaining;
         }
 
         [[nodiscard]] constexpr bool has_result() const {
