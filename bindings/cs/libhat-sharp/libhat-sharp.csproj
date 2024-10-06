@@ -34,8 +34,6 @@
     <ItemGroup>
         <!-- make README available in the package -->
         <None Include="../README.md" Pack="true" PackagePath="/" />
-        
-        <!-- include the native libraries in the package -->
     </ItemGroup>
 
 </Project>
