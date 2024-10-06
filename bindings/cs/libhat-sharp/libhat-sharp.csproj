@@ -6,22 +6,29 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <AssemblyVersion>0.1.2</AssemblyVersion>
-        <FileVersion>0.1.2.1</FileVersion>
+        <AssemblyVersion>0.2.0</AssemblyVersion>
+        <FileVersion>0.2.0.1</FileVersion>
         
         <!-- nuget package -->
         <PackageId>libhat-sharp</PackageId>
-        <Version>0.1.2</Version>
+        <Version>0.2.0</Version>
         <Authors>phase</Authors>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Title>libhat-sharp</Title>
-        <Description>C# bindings for libhat, a high-performance game hacking library. Currently only includes the pattern scanner, which uses CPU vectorization features to quickly find patterns.</Description>
+        <Description>
+            C# bindings for libhat, a high-performance game hacking library. 
+            Currently only includes the pattern scanner, which uses CPU vectorization features to quickly find patterns.
+        </Description>
         <PackageProjectUrl>https://github.com/BasedInc/libhat</PackageProjectUrl>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <RepositoryUrl>https://github.com/phasephasephase/libhat</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageTags>libhat;vectorized;game-hacking;modding;pattern-scanning</PackageTags>
+        <PackageReleaseNotes>
+            - Updated to latest libhat release
+            - Added missing summary for ScanResult class
+        </PackageReleaseNotes>
     </PropertyGroup>
     
     <ItemGroup>
@@ -29,8 +36,6 @@
         <None Include="../README.md" Pack="true" PackagePath="/" />
         
         <!-- include the native libraries in the package -->
-        <Content Include="runtimes/win-x64/native/libhat_c.dll" Pack="true" PackagePath="runtimes/win-x64/native/" />
-        <Content Include="runtimes/win-x86/native/libhat_c.dll" Pack="true" PackagePath="runtimes/win-x86/native/" />
     </ItemGroup>
 
 </Project>
