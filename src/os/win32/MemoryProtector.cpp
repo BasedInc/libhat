@@ -6,7 +6,8 @@
 #include <Windows.h>
 
 namespace hat {
-    static DWORD ToWinProt(const protection flags) {
+
+    static DWORD to_system_prot(const protection flags) {
         const bool r = static_cast<bool>(flags & protection::Read);
         const bool w = static_cast<bool>(flags & protection::Write);
         const bool x = static_cast<bool>(flags & protection::Execute);
@@ -20,7 +21,12 @@ namespace hat {
     }
 
     memory_protector::memory_protector(const uintptr_t address, const size_t size, const protection flags) : address(address), size(size) {
-        this->set = 0 != VirtualProtect(reinterpret_cast<LPVOID>(this->address), this->size, ToWinProt(flags), reinterpret_cast<PDWORD>(&this->oldProtection));
+        this->set = 0 != VirtualProtect(
+            reinterpret_cast<LPVOID>(this->address),
+            this->size,
+            to_system_prot(flags),
+            reinterpret_cast<PDWORD>(&this->oldProtection)
+        );
     }
 
     void memory_protector::restore() {
