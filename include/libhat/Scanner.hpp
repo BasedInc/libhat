@@ -116,9 +116,9 @@ namespace hat {
         enum class scan_mode {
             Auto,   // Picks a mode at runtime
             Single, // std::find + std::equal
-            SSE,    // x86 SSE 4.1
-            AVX2,   // x86 AVX2
-            AVX512, // x86 AVX512
+            SSE,    // x86/x64 SSE 4.1
+            AVX2,   // x86/x64 AVX2
+            AVX512, // x64 AVX512
         };
 
         class scan_context {

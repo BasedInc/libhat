@@ -5,6 +5,8 @@
 
 namespace hat {
     struct system_info {
+        size_t page_size{};
+
         system_info(const system_info&) = delete;
         system_info& operator=(const system_info&) = delete;
         system_info(system_info&&) = delete;
