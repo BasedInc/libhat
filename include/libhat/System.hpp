@@ -44,7 +44,7 @@ namespace hat {
 
     using system_info_impl = system_info_x86;
 }
-#elif defined(LIBHAT_ARM)
+#elif defined(LIBHAT_ARM) || defined(LIBHAT_AARCH64)
 namespace hat {
 
     struct system_info_arm : hat::system_info {
