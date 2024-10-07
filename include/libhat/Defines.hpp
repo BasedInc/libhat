@@ -1,12 +1,13 @@
 #pragma once
 
 // Detect CPU Architecture
-#if defined(_M_X64) || defined(__amd64__) || defined(_M_IX86) || defined(__i386__)
+#if defined(_M_X64) || defined(__amd64__)
+    #define LIBHAT_X86_64
+#elif defined(_M_IX86) || defined(__i386__)
     #define LIBHAT_X86
-    #if defined(_M_X64) || defined(__amd64__)
-        #define LIBHAT_X86_64
-    #endif
-#elif defined(_M_ARM64) || defined(__aarch64__) || defined(_M_ARM) || defined(__arm__)
+#elif defined(_M_ARM64) || defined(__aarch64__)
+    #define LIBHAT_AARCH64
+#elif defined(_M_ARM) || defined(__arm__)
     #define LIBHAT_ARM
 #else
     #error Unsupported Architecture
@@ -15,22 +16,24 @@
 // Detect Operating System
 #if defined(_WIN32)
     #define LIBHAT_WINDOWS
-#elif defined(__unix__) || defined(__unix) || defined(__APPLE__) || defined(__MACH__)
+#elif defined(linux) || defined(__linux__) || defined(__linux)
     #define LIBHAT_UNIX
+    #define LIBHAT_LINUX
+#elif defined(__APPLE__) && defined(__MACH__)
+    #define LIBHAT_UNIX
+    #define LIBHAT_MAC
 #else
     #error Unsupported Operating System
 #endif
 
 // Macros wrapping intrinsics
-#ifdef LIBHAT_X86
-    #ifdef LIBHAT_X86_64
-        #define LIBHAT_TZCNT64(num) _tzcnt_u64(num)
-        #define LIBHAT_BLSR64(num) _blsr_u64(num)
-    #else
-        #include <bit>
-        #define LIBHAT_TZCNT64(num) std::countl_zero(num)
-        #define LIBHAT_BLSR64(num) num & (num - 1)
-    #endif
+#if defined(LIBHAT_X86_64)
+    #define LIBHAT_TZCNT64(num) _tzcnt_u64(num)
+    #define LIBHAT_BLSR64(num) _blsr_u64(num)
+#elif defined(LIBHAT_X86)
+    #include <bit>
+    #define LIBHAT_TZCNT64(num) std::countl_zero(num)
+    #define LIBHAT_BLSR64(num) num & (num - 1)
 #endif
 
 #ifdef _MSC_VER

@@ -1,6 +1,6 @@
 #include <libhat/Defines.hpp>
 
-#ifdef LIBHAT_X86
+#if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
 
 #include <libhat/Scanner.hpp>
 

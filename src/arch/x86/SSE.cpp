@@ -1,6 +1,6 @@
 #include <libhat/Defines.hpp>
 
-#if defined(LIBHAT_X86) && !defined(LIBHAT_DISABLE_SSE)
+#if (defined(LIBHAT_X86) || defined(LIBHAT_X86_64)) && !defined(LIBHAT_DISABLE_SSE)
 
 #include <libhat/Scanner.hpp>
 

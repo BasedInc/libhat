@@ -16,7 +16,7 @@ namespace hat {
     };
 }
 
-#if defined(LIBHAT_X86)
+#if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
 namespace hat {
 
     struct system_info_x86 : hat::system_info {
