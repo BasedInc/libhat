@@ -20,12 +20,11 @@ namespace hat {
     }
 
     memory_protector::memory_protector(const uintptr_t address, const size_t size, const protection flags) : address(address), size(size) {
-        VirtualProtect(reinterpret_cast<LPVOID>(this->address), this->size, ToWinProt(flags), reinterpret_cast<PDWORD>(&this->oldProtection));
+        this->set = 0 != VirtualProtect(reinterpret_cast<LPVOID>(this->address), this->size, ToWinProt(flags), reinterpret_cast<PDWORD>(&this->oldProtection));
     }
 
-    memory_protector::~memory_protector() {
-        DWORD temp;
-        VirtualProtect(reinterpret_cast<LPVOID>(this->address), this->size, this->oldProtection, &temp);
+    void memory_protector::restore() {
+        VirtualProtect(reinterpret_cast<LPVOID>(this->address), this->size, this->oldProtection, reinterpret_cast<PDWORD>(&this->oldProtection));
     }
 }
 #endif
