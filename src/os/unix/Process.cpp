@@ -1,6 +1,8 @@
 #include <libhat/Defines.hpp>
 #ifdef LIBHAT_UNIX
 
+#include <libhat/Process.hpp>
+
 #include <dlfcn.h>
 
 namespace hat::process {
