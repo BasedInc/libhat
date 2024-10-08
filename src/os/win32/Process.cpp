@@ -64,6 +64,27 @@ namespace hat::process {
         return true;
     }
 
+    bool is_writable(const std::span<const std::byte> region) {
+        constexpr DWORD writeFlags = PAGE_EXECUTE_READWRITE
+            | PAGE_EXECUTE_WRITECOPY
+            | PAGE_READWRITE
+            | PAGE_WRITECOPY;
+        for (auto* addr = region.data(); addr < region.data() + region.size();) {
+            MEMORY_BASIC_INFORMATION mbi{};
+            if (!VirtualQuery(addr, &mbi, sizeof(mbi))) {
+                return false;
+            }
+            if (mbi.State != MEM_COMMIT) {
+                return false;
+            }
+            if (!(mbi.Protect & writeFlags)) {
+                return false;
+            }
+            addr = static_cast<const std::byte*>(mbi.BaseAddress) + mbi.RegionSize;
+        }
+        return true;
+    }
+
     hat::process::module get_process_module() {
         return module{reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr))};
     }

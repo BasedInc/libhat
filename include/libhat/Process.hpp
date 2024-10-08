@@ -33,6 +33,9 @@ namespace hat::process {
     /// Returns whether the entirety of a given memory region is readable
     [[nodiscard]] bool is_readable(std::span<const std::byte> region);
 
+    /// Returns whether the entirety of a given memory region is writable
+    [[nodiscard]] bool is_writable(std::span<const std::byte> region);
+
     /// Returns the module for the current process's base executable
     [[nodiscard]] hat::process::module get_process_module();
 
