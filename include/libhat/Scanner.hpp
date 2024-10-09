@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstring>
 #include <execution>
 #include <memory>
 #include <utility>
