@@ -30,7 +30,7 @@ namespace hat {
             if LIBHAT_IF_CONSTEVAL {
                 constexpr size_t sz = sizeof(Int);
                 return std::bit_cast<Int>([=, this]<size_t... Index>(std::index_sequence<Index...>) {
-                    return std::array<T, sz>{this->result + offset + Index...};
+                    return std::array<std::byte, sz>{(this->result + offset)[Index]...};
                 }(std::make_index_sequence<sz>{}));
             } else {
                 Int value;
