@@ -27,7 +27,7 @@ namespace hat {
         template<std::integral Int>
         [[nodiscard]] constexpr Int read(size_t offset) const {
             if LIBHAT_IF_CONSTEVAL {
-                static constexpr size_t sz = sizeof(Int);
+                constexpr size_t sz = sizeof(Int);
                 return std::bit_cast<Int>([=]<size_t... Index>(std::index_sequence<Index...>) {
                     return std::array<T, sz>{this->result + offset + Index...};
                 }(std::make_index_sequence<sz>{}));
