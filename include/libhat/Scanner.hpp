@@ -26,7 +26,16 @@ namespace hat {
         /// Reads an integer of the specified type located at an offset from the signature result
         template<std::integral Int>
         [[nodiscard]] constexpr Int read(size_t offset) const {
-            return *reinterpret_cast<const Int*>(this->result + offset);
+            if LIBHAT_IF_CONSTEVAL {
+                static constexpr size_t sz = sizeof(Int);
+                return std::bit_cast<Int>([=]<size_t... Index>(std::index_sequence<Index...>) {
+                    return std::array<T, sz>{this->result + offset + Index...};
+                }(std::make_index_sequence<sz>{}));
+            } else {
+                Int value;
+                std::memcpy(&value, this->result + offset, sizeof(Int));
+                return value;
+            }
         }
 
         /// Reads an integer of the specified type which represents an index into an array with the given element type
