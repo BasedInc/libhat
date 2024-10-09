@@ -84,7 +84,7 @@ namespace hat {
             return this->result;
         }
 
-        [[nodiscard]] constexpr bool operator==(const scan_result_base&) const noexcept = default;
+        [[nodiscard]] constexpr auto operator<=>(const scan_result_base&) const noexcept = default;
     private:
         T result;
     };
