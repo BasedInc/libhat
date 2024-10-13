@@ -61,18 +61,18 @@ LIBHAT_API const void* libhat_find_pattern(
         signature->count
     };
 
-    const auto find_pattern = [=]<hat::scan_alignment A>() {
+    const auto find_pattern = [=](const hat::scan_alignment alignment) {
         const auto begin = static_cast<const std::byte*>(buffer);
         const auto end = static_cast<const std::byte*>(buffer) + size;
-        const auto result = hat::find_pattern<A>(begin, end, view);
+        const auto result = hat::find_pattern(begin, end, view, alignment);
         return result.has_result() ? result.get() : nullptr;
     };
 
     switch (align) {
         case scan_alignment_x1:
-            return find_pattern.operator()<hat::scan_alignment::X1>();
+            return find_pattern(hat::scan_alignment::X1);
         case scan_alignment_x16:
-            return find_pattern.operator()<hat::scan_alignment::X16>();
+            return find_pattern(hat::scan_alignment::X16);
     }
     exit(EXIT_FAILURE);
 }
