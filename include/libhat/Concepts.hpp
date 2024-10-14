@@ -3,6 +3,7 @@
 #include <concepts>
 #include <cstddef>
 #include <iterator>
+#include <ranges>
 #include <type_traits>
 
 namespace hat::detail {
@@ -26,6 +27,12 @@ namespace hat::detail {
                             && std::forward_iterator<T>
                             && std::contiguous_iterator<T>
                             && std::same_as<std::iter_value_t<T>, std::byte>;
+
+    template<typename T>
+    concept byte_input_range = std::ranges::input_range<T>
+                            && std::ranges::contiguous_range<T>
+                            && std::ranges::sized_range<T>
+                            && std::same_as<std::ranges::range_value_t<T>, std::byte>;
 
     template<typename T>
     concept char_iterator = std::is_same_v<std::iter_value_t<T>, char>;

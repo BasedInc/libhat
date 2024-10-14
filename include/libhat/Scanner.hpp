@@ -368,6 +368,17 @@ namespace hat {
             : nullptr;
     }
 
+    /// Range overload of find_pattern
+    template<detail::byte_input_range Range>
+    [[nodiscard]] constexpr auto find_pattern(
+        Range&& range,
+        const signature_view  signature,
+        const scan_alignment  alignment = scan_alignment::X1,
+        const scan_hint       hints = scan_hint::none
+    ) noexcept -> detail::result_type_for<std::ranges::iterator_t<Range>> {
+        return find_pattern(std::ranges::begin(range), std::ranges::end(range), signature, alignment, hints);
+    }
+
     /// Perform a signature scan on a specific section of the process module or a specified module
     [[nodiscard]] inline scan_result find_pattern(
         const signature_view   signature,
