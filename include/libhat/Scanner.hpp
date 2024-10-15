@@ -505,6 +505,16 @@ namespace hat {
         find_all_pattern(beginIt, endIt, std::back_inserter(results), signature, alignment, hints);
         return results;
     }
+
+    template<detail::byte_input_range In>
+    constexpr auto find_all_pattern(
+        In&&                  rangeIn,
+        const signature_view  signature,
+        const scan_alignment  alignment = scan_alignment::X1,
+        const scan_hint       hints = scan_hint::none
+    ) noexcept -> std::vector<detail::result_type_for<std::ranges::iterator_t<In>>> {
+        return find_all_pattern(std::ranges::begin(rangeIn), std::ranges::end(rangeIn), signature, alignment, hints);
+    }
 }
 
 namespace hat::experimental {
