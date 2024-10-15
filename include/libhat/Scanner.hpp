@@ -428,6 +428,23 @@ namespace hat {
         return std::make_pair(std::next(beginIn, i - begin), out);
     }
 
+    template<detail::byte_input_range In, std::ranges::output_range<detail::result_type_for<std::ranges::iterator_t<In>>> Out>
+    [[nodiscard]] constexpr auto find_all_pattern(
+        In&&                  rangeIn,
+        Out&&                 rangeOut,
+        const signature_view  signature,
+        const scan_alignment  alignment = scan_alignment::X1,
+        const scan_hint       hints = scan_hint::none
+    ) noexcept -> std::pair<std::ranges::iterator_t<In>, std::ranges::iterator_t<Out>> {
+        return find_all_pattern(
+            std::ranges::begin(rangeIn), std::ranges::end(rangeIn),
+            std::ranges::begin(rangeOut), std::ranges::end(rangeOut),
+            signature,
+            alignment,
+            hints
+        );
+    }
+
     /// Finds all of the matches for the given signature in the input range, and writes the results into the output
     /// iterator. The entire input range will be searched and all results written to the output range. The number of
     /// matches found is returned.
@@ -462,6 +479,17 @@ namespace hat {
         }
 
         return matches;
+    }
+
+    template<detail::byte_input_range In, std::output_iterator<detail::result_type_for<std::ranges::iterator_t<In>>> Out>
+    constexpr size_t find_all_pattern(
+        In&&                  rangeIn,
+        const Out             beginOut,
+        const signature_view  signature,
+        const scan_alignment  alignment = scan_alignment::X1,
+        const scan_hint       hints = scan_hint::none
+    ) noexcept {
+        return find_all_pattern(std::ranges::begin(rangeIn), std::ranges::end(rangeIn), beginOut, signature, alignment, hints);
     }
 
     /// Wrapper around the root find_all_pattern implementation that returns a std::vector of the results
