@@ -92,7 +92,10 @@ if(LIBHAT_STATIC_C_LIB OR LIBHAT_SHARED_C_LIB)
         endif()
     else()
         add_library(libhat_c SHARED ${LIBHAT_C_SOURCES})
-        target_compile_definitions(libhat_c PRIVATE "LIBHAT_BUILD_SHARED_LIB")
+        target_compile_definitions(libhat_c
+            PRIVATE LIBHAT_BUILD_SHARED_LIB
+            INTERFACE LIBHAT_USE_SHARED_LIB
+        )
     endif()
 
     target_link_libraries(libhat_c PRIVATE libhat)

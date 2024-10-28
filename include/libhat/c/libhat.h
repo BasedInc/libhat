@@ -1,5 +1,7 @@
 #pragma once
 
+#include <libhat/Platform.h>
+
 #if defined(LIBHAT_WINDOWS)
     #if defined(LIBHAT_BUILD_SHARED_LIB)
         #define LIBHAT_API __declspec(dllexport)
