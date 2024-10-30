@@ -65,6 +65,7 @@ set(LIBHAT_SRC
     src/arch/arm/System.cpp)
 
 add_library(libhat STATIC ${LIBHAT_SRC})
+add_library(libhat::libhat ALIAS libhat)
 if(UNIX)
     set_target_properties(libhat PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
@@ -98,6 +99,7 @@ if(LIBHAT_STATIC_C_LIB OR LIBHAT_SHARED_C_LIB)
         )
     endif()
 
+    add_library(libhat::libhat_c ALIAS libhat_c)
     target_link_libraries(libhat_c PRIVATE libhat)
     target_include_directories(libhat_c PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
