@@ -60,7 +60,7 @@ protected:
 };
 
 using FindPatternTestTypes = ::testing::Types<
-#ifdef LIBHAT_X86
+#if defined(LIBHAT_X86_64) || defined(LIBHAT_X86)
     FindPatternParameters<hat::detail::scan_mode::SSE, 1, 256>,
     FindPatternParameters<hat::detail::scan_mode::SSE, 3, 256>,
     FindPatternParameters<hat::detail::scan_mode::SSE, 8, 256>,
