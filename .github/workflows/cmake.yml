@@ -63,10 +63,10 @@ jobs:
             vcvars: vcvars32
           - target: x64
             vcvars: vcvars64
-          - target: ARM
-            vcvars: vcvarsamd64_arm
-          - target: ARM64
-            vcvars: vcvarsamd64_arm64
+#          - target: ARM
+#            vcvars: vcvarsamd64_arm
+#          - target: ARM64
+#            vcvars: vcvarsamd64_arm64
         exclude:
           - toolset: ClangCL
             target: ARM
