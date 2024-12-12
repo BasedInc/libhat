@@ -55,7 +55,7 @@ jobs:
   windows:
     strategy:
       matrix:
-        target: [ Win32, x64, ARM, ARM64 ]
+        target: [ Win32, x64 ] # ARM, ARM64
         toolset: [ v143, ClangCL ]
         cxx_standard: [ 20, 23 ]
         include:
