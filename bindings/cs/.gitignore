@@ -485,3 +485,6 @@ $RECYCLE.BIN/
 
 # JetBrains Rider
 .idea/
+
+# libhat_c binaries should only exist locally
+libhat_c.*

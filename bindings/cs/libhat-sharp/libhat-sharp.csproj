@@ -6,6 +6,34 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <AssemblyVersion>0.2.0</AssemblyVersion>
+        <FileVersion>0.2.0.1</FileVersion>
+        
+        <!-- nuget package -->
+        <PackageId>libhat-sharp</PackageId>
+        <Version>0.2.0</Version>
+        <Authors>phase</Authors>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>libhat-sharp</Title>
+        <Description>
+            C# bindings for libhat, a high-performance game hacking library. 
+            Currently only includes the pattern scanner, which uses CPU vectorization features to quickly find patterns.
+        </Description>
+        <PackageProjectUrl>https://github.com/BasedInc/libhat</PackageProjectUrl>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <RepositoryUrl>https://github.com/phasephasephase/libhat</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>libhat;vectorized;game-hacking;modding;pattern-scanning</PackageTags>
+        <PackageReleaseNotes>
+            - Updated to latest libhat release
+            - Added missing summary for ScanResult class
+        </PackageReleaseNotes>
     </PropertyGroup>
+    
+    <ItemGroup>
+        <!-- make README available in the package -->
+        <None Include="../README.md" Pack="true" PackagePath="/" />
+    </ItemGroup>
 
 </Project>
