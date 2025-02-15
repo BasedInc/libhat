@@ -60,14 +60,14 @@ LIBHAT_API const void* libhat_find_pattern(
     const signature_t*  signature,
     const void*         buffer,
     size_t              size,
-    scan_alignment      align
+    scan_alignment_t    align
 );
 
 LIBHAT_API const void* libhat_find_pattern_mod(
     const signature_t*  signature,
     const void*         module,
     const char*         section,
-    scan_alignment      align
+    scan_alignment_t    align
 );
 
 LIBHAT_API const void* libhat_get_module(const char* name);
