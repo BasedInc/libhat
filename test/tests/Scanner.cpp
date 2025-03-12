@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <libhat/Scanner.hpp>
+#include <libhat/scanner.hpp>
 #include <format>
 
 template<hat::detail::scan_mode Mode, size_t SignatureSize, size_t MaxBufferSize>

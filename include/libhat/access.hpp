@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <concepts>
 
-#include "Traits.hpp"
+#include "type_traits.hpp"
 
 namespace hat {
 

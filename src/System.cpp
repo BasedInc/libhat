@@ -1,4 +1,4 @@
-#include <libhat/System.hpp>
+#include <libhat/system.hpp>
 
 namespace hat {
 

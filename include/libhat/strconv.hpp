@@ -3,8 +3,8 @@
 #include <string_view>
 #include <type_traits>
 
-#include "Concepts.hpp"
-#include "Result.hpp"
+#include "concepts.hpp"
+#include "result.hpp"
 
 namespace hat {
 

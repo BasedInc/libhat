@@ -1,7 +1,7 @@
-#include <libhat/Defines.hpp>
+#include <libhat/defines.hpp>
 #ifdef LIBHAT_WINDOWS
 
-#include <libhat/MemoryProtector.hpp>
+#include <libhat/memory_protector.hpp>
 
 #include <Windows.h>
 

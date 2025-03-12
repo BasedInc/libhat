@@ -1,7 +1,7 @@
-#include <libhat/Defines.hpp>
+#include <libhat/defines.hpp>
 #ifdef LIBHAT_WINDOWS
 
-#include <libhat/Process.hpp>
+#include <libhat/process.hpp>
 
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN

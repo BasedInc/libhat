@@ -1,8 +1,8 @@
-#include <libhat/Defines.hpp>
+#include <libhat/defines.hpp>
 
 #if (defined(LIBHAT_X86) || defined(LIBHAT_X86_64)) && !defined(LIBHAT_DISABLE_SSE)
 
-#include <libhat/Scanner.hpp>
+#include <libhat/scanner.hpp>
 
 #include <immintrin.h>
 

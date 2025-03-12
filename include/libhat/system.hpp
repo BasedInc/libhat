@@ -1,7 +1,8 @@
 #pragma once
 
-#include <libhat/Defines.hpp>
 #include <string>
+
+#include "defines.hpp"
 
 namespace hat {
     struct system_info {

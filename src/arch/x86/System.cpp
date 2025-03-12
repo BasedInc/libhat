@@ -1,7 +1,7 @@
-#include <libhat/Defines.hpp>
+#include <libhat/defines.hpp>
 #if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
 
-#include <libhat/System.hpp>
+#include <libhat/system.hpp>
 
 #include <array>
 #include <cstdint>

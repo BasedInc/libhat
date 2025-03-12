@@ -1,7 +1,7 @@
-#include <libhat/Defines.hpp>
+#include <libhat/defines.hpp>
 #ifdef LIBHAT_WINDOWS
 
-#include <libhat/Scanner.hpp>
+#include <libhat/scanner.hpp>
 
 namespace hat::experimental {
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <libhat/Platform.h>
+#include "../platform.h"
 
 #if defined(LIBHAT_WINDOWS)
     #if defined(LIBHAT_BUILD_SHARED_LIB)

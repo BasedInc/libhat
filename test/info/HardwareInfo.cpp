@@ -1,8 +1,4 @@
-#include <mutex>
-#include <random>
-#include <unordered_map>
-
-#include <libhat/System.hpp>
+#include <libhat/system.hpp>
 
 int main() {
     const auto& system = hat::get_system();

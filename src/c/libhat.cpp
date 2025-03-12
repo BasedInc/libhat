@@ -1,6 +1,6 @@
 #include <libhat/c/libhat.h>
 
-#include <libhat/Scanner.hpp>
+#include <libhat/scanner.hpp>
 #include <cstring>
 
 static signature_t* allocate_signature(const hat::signature_view signature) {

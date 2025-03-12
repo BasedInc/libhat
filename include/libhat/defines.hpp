@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Platform.h"
+#include "platform.h"
 
 // Macros wrapping intrinsics
 #if defined(LIBHAT_X86_64)

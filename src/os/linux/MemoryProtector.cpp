@@ -1,4 +1,4 @@
-#include <libhat/Defines.hpp>
+#include <libhat/defines.hpp>
 #ifdef LIBHAT_LINUX
 
 #include <charconv>
@@ -6,8 +6,8 @@
 #include <optional>
 #include <string>
 
-#include <libhat/MemoryProtector.hpp>
-#include <libhat/System.hpp>
+#include <libhat/memory_protector.hpp>
+#include <libhat/system.hpp>
 #include "../../Utils.hpp"
 
 #include <sys/mman.h>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "FixedString.hpp"
+#include "fixed_string.hpp"
 
 namespace hat {
 

@@ -1,7 +1,7 @@
-#include <libhat/Defines.hpp>
+#include <libhat/defines.hpp>
 #ifdef LIBHAT_UNIX
 
-#include <libhat/Process.hpp>
+#include <libhat/process.hpp>
 
 #include <dlfcn.h>
 

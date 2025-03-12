@@ -1,7 +1,7 @@
-#include <libhat/Scanner.hpp>
+#include <libhat/scanner.hpp>
 
-#include <libhat/Defines.hpp>
-#include <libhat/System.hpp>
+#include <libhat/defines.hpp>
+#include <libhat/system.hpp>
 
 #ifdef LIBHAT_HINT_X86_64
 #include "arch/x86/Frequency.hpp"

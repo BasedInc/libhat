@@ -1,7 +1,7 @@
-#include <libhat/Defines.hpp>
+#include <libhat/defines.hpp>
 #ifdef LIBHAT_UNIX
 
-#include <libhat/System.hpp>
+#include <libhat/system.hpp>
 #include <unistd.h>
 
 namespace hat {

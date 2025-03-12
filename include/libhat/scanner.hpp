@@ -7,10 +7,10 @@
 #include <memory>
 #include <utility>
 
-#include "Concepts.hpp"
-#include "Defines.hpp"
-#include "Process.hpp"
-#include "Signature.hpp"
+#include "concepts.hpp"
+#include "defines.hpp"
+#include "process.hpp"
+#include "signature.hpp"
 
 namespace hat {
 

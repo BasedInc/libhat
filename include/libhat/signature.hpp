@@ -7,8 +7,8 @@
 #include <string_view>
 #include <vector>
 
-#include "CompileTime.hpp"
-#include "FixedString.hpp"
+#include "strconv.hpp"
+#include "fixed_string.hpp"
 
 namespace hat {
 
