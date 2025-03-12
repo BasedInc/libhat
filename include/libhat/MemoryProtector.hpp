@@ -25,7 +25,7 @@ namespace hat {
     /// RAII wrapper for setting memory protection flags
     class memory_protector {
     public:
-        memory_protector(uintptr_t address, size_t size, protection flags);
+        [[nodiscard]] memory_protector(uintptr_t address, size_t size, protection flags);
 
         ~memory_protector() {
             if (this->set) {
