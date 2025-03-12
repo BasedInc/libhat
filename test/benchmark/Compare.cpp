@@ -3,7 +3,7 @@
 #include <unordered_map>
 
 #include <benchmark/benchmark.h>
-#include <libhat/Scanner.hpp>
+#include <libhat/scanner.hpp>
 
 #include "vendor/UC1.hpp"
 #include "vendor/UC2.hpp"
