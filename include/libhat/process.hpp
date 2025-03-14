@@ -21,6 +21,7 @@ namespace hat::process {
 
         /// Returns the memory region for a named section
         [[nodiscard]] std::span<std::byte> get_section_data(std::string_view name) const;
+
     private:
         explicit module(const uintptr_t baseAddress)
             : baseAddress(baseAddress) {}

@@ -26,83 +26,83 @@ namespace hat {
             std::copy_n(str, N, value);
         }
 
-        [[nodiscard]] constexpr iterator begin() {
+        [[nodiscard]] constexpr iterator begin() noexcept {
             return this->c_str();
         }
 
-        [[nodiscard]] constexpr iterator end() {
+        [[nodiscard]] constexpr iterator end() noexcept {
             return this->begin() + this->size();
         }
 
-        [[nodiscard]] constexpr const_iterator begin() const {
+        [[nodiscard]] constexpr const_iterator begin() const noexcept {
             return this->c_str();
         }
 
-        [[nodiscard]] constexpr const_iterator end() const {
+        [[nodiscard]] constexpr const_iterator end() const noexcept {
             return this->begin() + this->size();
         }
 
-        [[nodiscard]] constexpr const_iterator cbegin() const {
+        [[nodiscard]] constexpr const_iterator cbegin() const noexcept {
             return this->begin();
         }
 
-        [[nodiscard]] constexpr const_iterator cend() const {
+        [[nodiscard]] constexpr const_iterator cend() const noexcept {
             return this->end();
         }
 
-        [[nodiscard]] constexpr reference operator[](size_t pos) {
+        [[nodiscard]] constexpr reference operator[](size_t pos) noexcept {
             return this->value[pos];
         }
 
-        [[nodiscard]] constexpr reference at(size_t pos) {
+        [[nodiscard]] constexpr reference at(size_t pos) noexcept {
             return this->value[pos];
         }
 
-        [[nodiscard]] constexpr const_reference operator[](size_t pos) const {
+        [[nodiscard]] constexpr const_reference operator[](size_t pos) const noexcept {
             return this->value[pos];
         }
 
-        [[nodiscard]] constexpr const_reference at(size_t pos) const {
+        [[nodiscard]] constexpr const_reference at(size_t pos) const noexcept {
             return this->value[pos];
         }
 
-        [[nodiscard]] constexpr reference front() {
+        [[nodiscard]] constexpr reference front() noexcept {
             return this->value[0];
         }
 
-        [[nodiscard]] constexpr reference back() {
+        [[nodiscard]] constexpr reference back() noexcept {
             return this->value[size() - 1];
         }
 
-        [[nodiscard]] constexpr const_reference front() const {
+        [[nodiscard]] constexpr const_reference front() const noexcept {
             return this->value[0];
         }
 
-        [[nodiscard]] constexpr const_reference back() const {
+        [[nodiscard]] constexpr const_reference back() const noexcept {
             return this->value[size() - 1];
         }
 
-        [[nodiscard]] constexpr pointer c_str() {
+        [[nodiscard]] constexpr pointer c_str() noexcept {
             return static_cast<Char*>(this->value);
         }
 
-        [[nodiscard]] constexpr const_pointer c_str() const {
+        [[nodiscard]] constexpr const_pointer c_str() const noexcept {
             return static_cast<const Char*>(this->value);
         }
 
-        [[nodiscard]] constexpr pointer data() {
+        [[nodiscard]] constexpr pointer data() noexcept {
             return this->c_str();
         }
 
-        [[nodiscard]] constexpr const_pointer data() const {
+        [[nodiscard]] constexpr const_pointer data() const noexcept {
             return this->c_str();
         }
 
-        [[nodiscard]] constexpr size_t size() const {
+        [[nodiscard]] constexpr size_t size() const noexcept {
             return N;
         }
 
-        [[nodiscard]] constexpr bool empty() const {
+        [[nodiscard]] constexpr bool empty() const noexcept {
             return this->size() == 0;
         }
 

@@ -16,7 +16,7 @@
     #include <intrin.h>
 
     namespace hat::detail {
-        inline unsigned long bsf(unsigned long num) {
+        inline unsigned long bsf(unsigned long num) noexcept {
             unsigned long offset;
             _BitScanForward(&offset, num);
             return offset;
@@ -59,7 +59,7 @@
 #else
     #include <cstdlib>
     namespace hat::detail {
-        [[noreturn]] inline void unreachable_impl() {
+        [[noreturn]] inline void unreachable_impl() noexcept {
             std::abort();
         }
     }

@@ -12,12 +12,12 @@ namespace hat {
         Execute = 0b100
     };
 
-    constexpr protection operator|(protection lhs, protection rhs) {
+    constexpr protection operator|(protection lhs, protection rhs) noexcept {
         using U = std::underlying_type_t<protection>;
         return static_cast<protection>(static_cast<U>(lhs) | static_cast<U>(rhs));
     }
 
-    constexpr protection operator&(protection lhs, protection rhs) {
+    constexpr protection operator&(protection lhs, protection rhs) noexcept {
         using U = std::underlying_type_t<protection>;
         return static_cast<protection>(static_cast<U>(lhs) & static_cast<U>(rhs));
     }
@@ -39,12 +39,12 @@ namespace hat {
             oldProtection(o.oldProtection),
             set(std::exchange(o.set, false)) {}
 
-        memory_protector& operator=(memory_protector&& o) noexcept = delete;
+        memory_protector& operator=(memory_protector&& o) = delete;
         memory_protector(const memory_protector&) = delete;
         memory_protector& operator=(const memory_protector&) = delete;
 
         /// Returns true if the memory protect operation was successful
-        [[nodiscard]] bool is_set() const {
+        [[nodiscard]] bool is_set() const noexcept {
             return this->set;
         }
 
