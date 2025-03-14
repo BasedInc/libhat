@@ -14,24 +14,23 @@
 
 namespace hat {
 
-    template<typename T> requires (std::is_pointer_v<T> && sizeof(std::remove_pointer_t<T>) == 1)
+    template<typename T> requires (sizeof(T) == 1)
     class scan_result_base {
-        using rel_t = int32_t;
     public:
-        using underlying_type = T;
+        using underlying_type = T*;
 
-        constexpr scan_result_base() : result(nullptr) {}
-        constexpr scan_result_base(std::nullptr_t) : result(nullptr) {} // NOLINT(google-explicit-constructor)
-        constexpr scan_result_base(T result) : result(result) {}        // NOLINT(google-explicit-constructor)
+        constexpr scan_result_base() noexcept : result(nullptr) {}
+        explicit(false) constexpr scan_result_base(std::nullptr_t) noexcept : result(nullptr) {}
+        explicit(false) constexpr scan_result_base(const underlying_type result) noexcept : result(result) {}
 
         /// Reads an integer of the specified type located at an offset from the signature result
         template<std::integral Int>
-        [[nodiscard]] constexpr Int read(size_t offset) const {
+        [[nodiscard]] constexpr Int read(const size_t offset) const noexcept {
             if LIBHAT_IF_CONSTEVAL {
-                constexpr size_t sz = sizeof(Int);
+                constexpr size_t N = sizeof(Int);
                 return std::bit_cast<Int>([=, this]<size_t... Index>(std::index_sequence<Index...>) {
-                    return std::array<std::byte, sz>{(this->result + offset)[Index]...};
-                }(std::make_index_sequence<sz>{}));
+                    return std::array<T, N>{(this->result + offset)[Index]...};
+                }(std::make_index_sequence<N>{}));
             } else {
                 Int value;
                 std::memcpy(&value, this->result + offset, sizeof(Int));
@@ -41,7 +40,7 @@ namespace hat {
 
         /// Reads an integer of the specified type which represents an index into an array with the given element type
         template<std::integral Int, typename ArrayType>
-        [[nodiscard]] constexpr size_t index(size_t offset) const {
+        [[nodiscard]] constexpr size_t index(const size_t offset) const noexcept {
             return static_cast<size_t>(read<Int>(offset)) / sizeof(ArrayType);
         }
 
@@ -68,29 +67,31 @@ namespace hat {
         /// The "0x0" operand comes after the relative address. The absolute address referred to by the RIP relative
         /// address in this case is 0x12353BE + 0x7 = 0x12353C5. Simply using rel(2) would yield an incorrect result of
         /// 0x12353C4. In this case, rel(2, 1) would yield the expected 0x12353C5.
-        [[nodiscard]] constexpr T rel(size_t offset, size_t remaining = 0) const {
-            return this->result + this->read<rel_t>(offset) + offset + sizeof(rel_t) + remaining;
+        [[nodiscard]] constexpr underlying_type rel(size_t offset, size_t remaining = 0) const noexcept {
+            using rel32_t = int32_t;
+            return this->result + this->read<rel32_t>(offset) + offset + sizeof(rel32_t) + remaining;
         }
 
-        [[nodiscard]] constexpr bool has_result() const {
+        [[nodiscard]] constexpr bool has_result() const noexcept {
             return this->result != nullptr;
         }
 
-        [[nodiscard]] constexpr T operator*() const {
+        [[nodiscard]] constexpr underlying_type operator*() const noexcept {
             return this->result;
         }
 
-        [[nodiscard]] constexpr T get() const {
+        [[nodiscard]] constexpr underlying_type get() const noexcept {
             return this->result;
         }
 
         [[nodiscard]] constexpr auto operator<=>(const scan_result_base&) const noexcept = default;
+
     private:
-        T result;
+        underlying_type result;
     };
 
-    using scan_result = scan_result_base<std::byte*>;
-    using const_scan_result = scan_result_base<const std::byte*>;
+    using scan_result = scan_result_base<std::byte>;
+    using const_scan_result = scan_result_base<const std::byte>;
 
     enum class scan_alignment : uint8_t {
         X1 = 1,
