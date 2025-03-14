@@ -98,3 +98,5 @@ namespace hat {
 #endif
     };
 }
+
+#undef LIBHAT_RESULT_EXPECTED
