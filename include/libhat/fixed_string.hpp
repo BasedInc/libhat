@@ -136,7 +136,7 @@ namespace hat {
             return std::equal(this->begin(), this->end(), str.begin(), str.end());
         }
 
-        constexpr bool operator==(std::basic_string<Char> str) const {
+        constexpr bool operator==(const std::basic_string<Char>& str) const {
             return std::equal(this->begin(), this->end(), str.begin(), str.end());
         }
 
