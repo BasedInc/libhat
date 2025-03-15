@@ -9,6 +9,7 @@ project(libhat
     VERSION ${LIBHAT_VERSION}
     DESCRIPTION "A high-performance, modern, C++20 library designed around game hacking"
     HOMEPAGE_URL "https://github.com/BasedInc/libhat"
+    LANGUAGES C CXX
 )
 
 option(LIBHAT_STATIC_C_LIB "Build a static version of the C library" OFF)
