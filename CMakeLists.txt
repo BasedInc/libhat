@@ -1,9 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
 
-if(NOT CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 20)
-endif()
-
 set(LIBHAT_VERSION_MAJOR 0)
 set(LIBHAT_VERSION_MINOR 4)
 set(LIBHAT_VERSION_PATCH 0)
@@ -66,9 +62,12 @@ set(LIBHAT_SRC
 
 add_library(libhat STATIC ${LIBHAT_SRC})
 add_library(libhat::libhat ALIAS libhat)
+
 if(UNIX)
     set_target_properties(libhat PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
+
+target_compile_features(libhat PUBLIC cxx_std_20)
 
 target_include_directories(libhat PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
