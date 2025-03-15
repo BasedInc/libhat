@@ -6,6 +6,22 @@
 
 #include <immintrin.h>
 
+#ifdef _MSC_VER
+    #include <intrin.h>
+
+    namespace hat::detail {
+        inline unsigned long bsf(unsigned long num) noexcept {
+            unsigned long offset;
+            _BitScanForward(&offset, num);
+            return offset;
+        }
+    }
+
+    #define LIBHAT_BSF32(num) hat::detail::bsf(num)
+#else
+    #define LIBHAT_BSF32(num) __builtin_ctz(num)
+#endif
+
 namespace hat::detail {
 
     inline void load_signature_128(const signature_view signature, __m128i& bytes, __m128i& mask) {

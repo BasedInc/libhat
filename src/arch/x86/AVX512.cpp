@@ -63,7 +63,7 @@ namespace hat::detail {
             }
 
             while (mask) {
-                const auto offset = LIBHAT_TZCNT64(mask);
+                const auto offset = _tzcnt_u64(mask);
                 const auto i = reinterpret_cast<const std::byte*>(&it) + offset - cmpIndex;
                 if constexpr (veccmp) {
                     const auto data = _mm512_loadu_si512(i);
@@ -79,7 +79,7 @@ namespace hat::detail {
                         return i;
                     }
                 }
-                mask = LIBHAT_BLSR64(mask);
+                mask = _blsr_u64(mask);
             }
         }
 

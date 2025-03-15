@@ -2,32 +2,10 @@
 
 #include "platform.h"
 
-// Macros wrapping intrinsics
-#if defined(LIBHAT_X86_64)
-    #define LIBHAT_TZCNT64(num) _tzcnt_u64(num)
-    #define LIBHAT_BLSR64(num) _blsr_u64(num)
-#elif defined(LIBHAT_X86)
-    #include <bit>
-    #define LIBHAT_TZCNT64(num) std::countl_zero(num)
-    #define LIBHAT_BLSR64(num) num & (num - 1)
-#endif
-
 #ifdef _MSC_VER
-    #include <intrin.h>
-
-    namespace hat::detail {
-        inline unsigned long bsf(unsigned long num) noexcept {
-            unsigned long offset;
-            _BitScanForward(&offset, num);
-            return offset;
-        }
-    }
-
     #define LIBHAT_RETURN_ADDRESS() _ReturnAddress()
-    #define LIBHAT_BSF32(num) hat::detail::bsf(num)
 #else
     #define LIBHAT_RETURN_ADDRESS() __builtin_extract_return_addr(__builtin_return_address(0))
-    #define LIBHAT_BSF32(num) __builtin_ctz(num)
 #endif
 
 #if __cpp_if_consteval >= 202106L
