@@ -15,8 +15,8 @@ namespace hat {
     template<hat::integer T>
     constexpr div_t<T> div(const T numerator, const T denominator) {
         return {
-            numerator / denominator,
-            numerator % denominator
+            static_cast<T>(numerator / denominator),
+            static_cast<T>(numerator % denominator)
         };
     }
 }
