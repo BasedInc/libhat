@@ -15,8 +15,10 @@ namespace hat {
     template<hat::wfixed_string str>
     using wstring_literal = basic_string_literal<str>;
 
+#ifdef __cpp_lib_char8_t
     template<hat::u8fixed_string str>
     using u8string_literal = basic_string_literal<str>;
+#endif
 
     template<hat::u16fixed_string str>
     using u16string_literal = basic_string_literal<str>;
@@ -37,10 +39,12 @@ namespace hat::literals::string_literals {
         return wstring_literal<str>();
     }
 
+#ifdef __cpp_lib_char8_t
     template<hat::u8fixed_string str>
     consteval auto operator""_u8s() noexcept {
         return u8string_literal<str>();
     }
+#endif
 
     template<hat::u16fixed_string str>
     consteval auto operator""_u16s() noexcept {

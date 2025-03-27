@@ -173,7 +173,9 @@ namespace hat {
 
     LIBHAT_DEFINE_FIXED_STRING(fixed_string,    char)
     LIBHAT_DEFINE_FIXED_STRING(wfixed_string,   wchar_t)
+#ifdef __cpp_lib_char8_t
     LIBHAT_DEFINE_FIXED_STRING(u8fixed_string,  char8_t)
+#endif
     LIBHAT_DEFINE_FIXED_STRING(u16fixed_string, char16_t)
     LIBHAT_DEFINE_FIXED_STRING(u32fixed_string, char32_t)
 
