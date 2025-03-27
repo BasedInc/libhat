@@ -2,6 +2,7 @@
 
 #include "libhat/access.hpp"
 #include "libhat/concepts.hpp"
+#include "libhat/cstring_view.hpp"
 #include "libhat/defines.hpp"
 #include "libhat/fixed_string.hpp"
 #include "libhat/memory_protector.hpp"
