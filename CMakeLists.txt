@@ -12,6 +12,8 @@ project(libhat
     LANGUAGES C CXX
 )
 
+include(CheckCXXCompilerFlag)
+
 option(LIBHAT_STATIC_C_LIB "Build a static version of the C library" OFF)
 option(LIBHAT_SHARED_C_LIB "Build a shared version of the C library" OFF)
 option(LIBHAT_INSTALL_TARGET "Creates install rules for the libhat target" ON)
@@ -23,14 +25,17 @@ option(LIBHAT_TESTING_SDE "Run tests using Intel Software Development Emulator" 
 
 option(LIBHAT_HINT_X86_64 "Enables support for the x86_64 scan hint, requires a small (less than 1KB) data table" ON)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-#    set_source_files_properties(src/arch/x86/AVX2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
-#    set_source_files_properties(src/arch/x86/AVX512.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX512")
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set_source_files_properties(src/arch/x86/SSE.cpp PROPERTIES COMPILE_FLAGS "-msse4.1")
-    set_source_files_properties(src/arch/x86/AVX2.cpp PROPERTIES COMPILE_FLAGS "-mavx -mavx2 -mbmi")
-    set_source_files_properties(src/arch/x86/AVX512.cpp PROPERTIES COMPILE_FLAGS "-mavx512f -mavx512bw -mbmi")
-    set_source_files_properties(src/arch/x86/System.cpp PROPERTIES COMPILE_FLAGS "-mxsave")
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    # Just assume that the compiler accepts the required x86/x64 options if it'll accept -mmmx
+    # CMake architecture detection SUCKS!!!
+    check_cxx_compiler_flag("-mmmx" LIBHAT_COMPILER_X86_OPTIONS)
+
+    if(LIBHAT_COMPILER_X86_OPTIONS)
+        set_source_files_properties(src/arch/x86/SSE.cpp PROPERTIES COMPILE_FLAGS "-msse4.1")
+        set_source_files_properties(src/arch/x86/AVX2.cpp PROPERTIES COMPILE_FLAGS "-mavx -mavx2 -mbmi")
+        set_source_files_properties(src/arch/x86/AVX512.cpp PROPERTIES COMPILE_FLAGS "-mavx512f -mavx512bw -mbmi")
+        set_source_files_properties(src/arch/x86/System.cpp PROPERTIES COMPILE_FLAGS "-mxsave")
+    endif()
 endif()
 
 if(LIBHAT_TESTING AND LIBHAT_TESTING_ASAN)
