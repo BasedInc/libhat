@@ -6,6 +6,12 @@
 #include <ranges>
 #include <type_traits>
 
+namespace hat {
+
+    template<typename T>
+    concept integer = std::integral<T> && !std::is_same_v<std::decay_t<T>, bool>;
+}
+
 namespace hat::detail {
 
     template<typename Fn, typename Ret>
