@@ -77,7 +77,7 @@ namespace hat {
         mprotect(
             reinterpret_cast<void*>(detail::fast_align_down(address, pageSize)),
             static_cast<size_t>(detail::fast_align_up(size, pageSize)),
-            this->oldProtection
+            static_cast<int32_t>(this->oldProtection)
         );
     }
 }
