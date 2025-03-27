@@ -3,8 +3,12 @@
 
 #include <libhat/process.hpp>
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <Windows.h>
 
 #include <bit>
@@ -23,7 +27,7 @@ namespace hat::process {
             return false;
         }
 
-        if (size && *size < dosHeader->e_lfanew + sizeof(IMAGE_NT_HEADERS)) {
+        if (size && *size < static_cast<size_t>(dosHeader->e_lfanew) + sizeof(IMAGE_NT_HEADERS)) {
             return false;
         }
 
@@ -95,7 +99,7 @@ namespace hat::process {
         }
 
         std::wstring str;
-        str.resize(size);
+        str.resize(static_cast<size_t>(size));
 
         MultiByteToWideChar(CP_UTF8, 0, name.data(), static_cast<int>(name.size()), str.data(), size);
 
