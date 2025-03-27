@@ -40,11 +40,11 @@ namespace hat {
 
             value *= base;
             if (ch >= '0' && ch < '0' + digits) {
-                value += (ch - '0');
+                value += static_cast<Integer>(ch - '0');
             } else if (ch >= 'A' && ch < 'A' + letters) {
-                value += (ch - 'A' + 10);
+                value += static_cast<Integer>(ch - 'A' + 10);
             } else if (ch >= 'a' && ch < 'a' + letters) {
-                value += (ch - 'a' + 10);
+                value += static_cast<Integer>(ch - 'a' + 10);
             } else {
                 // Throws an exception at runtime AND prevents constexpr evaluation
                 return result_error{parse_int_error::illegal_char};

@@ -75,6 +75,16 @@ endif()
 
 target_compile_features(libhat PUBLIC cxx_std_20)
 
+if (MSVC)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_compile_options(libhat PRIVATE /clang:-Wall /clang:-Wextra /clang:-Wconversion /clang:-Werror)
+    else()
+        target_compile_options(libhat PRIVATE /W3 /WX)
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(libhat PRIVATE -Wall -Wextra -Wconversion -Werror)
+endif()
+
 target_include_directories(libhat PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
     $<INSTALL_INTERFACE:include>

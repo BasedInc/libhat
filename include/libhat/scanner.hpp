@@ -218,7 +218,7 @@ namespace hat {
                 return {validateRange(begin, end), {}, {}};
             }
 
-            const size_t vecAvailable = end - reinterpret_cast<const std::byte*>(vecBegin);
+            const size_t vecAvailable = static_cast<size_t>(end - reinterpret_cast<const std::byte*>(vecBegin));
             const size_t requiredAfter = veccmp ? sizeof(Vector) : signatureSize;
             const auto vecEnd = vecBegin + (vecAvailable >= requiredAfter ? (vecAvailable - requiredAfter) / sizeof(Vector) : 0);
 
