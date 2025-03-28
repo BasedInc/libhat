@@ -361,3 +361,13 @@ namespace hat::literals::cstring_view_literals {
         return {null_terminated, str, size};
     }
 }
+
+template<> struct std::hash<hat::cstring_view> : std::hash<std::string_view> {};
+template<> struct std::hash<hat::wcstring_view> : std::hash<std::wstring_view> {};
+
+#ifdef __cpp_lib_char8_t
+template<> struct std::hash<hat::u8cstring_view> : std::hash<std::u8string_view> {};
+#endif
+
+template<> struct std::hash<hat::u16cstring_view> : std::hash<std::u16string_view> {};
+template<> struct std::hash<hat::u32cstring_view> : std::hash<std::u32string_view> {};
