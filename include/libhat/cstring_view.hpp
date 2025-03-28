@@ -86,7 +86,7 @@ namespace hat {
         }
 
         [[nodiscard]] constexpr const_pointer c_str() const noexcept {
-            return this->impl.c_str();
+            return this->impl.data();
         }
 
         [[nodiscard]] constexpr size_type size() const noexcept {
