@@ -371,3 +371,9 @@ template<> struct std::hash<hat::u8cstring_view> : std::hash<std::u8string_view>
 
 template<> struct std::hash<hat::u16cstring_view> : std::hash<std::u16string_view> {};
 template<> struct std::hash<hat::u32cstring_view> : std::hash<std::u32string_view> {};
+
+template<typename CharT, typename Traits>
+inline constexpr bool std::ranges::enable_borrowed_range<hat::basic_cstring_view<CharT, Traits>> = true;
+
+template<typename CharT, typename Traits>
+inline constexpr bool std::ranges::enable_view<hat::basic_cstring_view<CharT, Traits>> = true;
