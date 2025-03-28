@@ -299,4 +299,36 @@ namespace hat {
 #endif
     using u16cstring_view = basic_cstring_view<char16_t>;
     using u32cstring_view = basic_cstring_view<char32_t>;
+
+    namespace detail {
+
+        template<typename Traits>
+        struct comparison_category {
+            using type = std::weak_ordering;
+        };
+
+        template<typename Traits> requires requires { typename Traits::comparison_category; }
+        struct comparison_category<Traits> {
+            using type = typename Traits::comparison_category;
+        };
+
+        template<typename Traits>
+        using comparison_category_t = typename comparison_category<Traits>::type;
+    }
+}
+
+template<typename CharT, typename Traits>
+constexpr bool operator==(
+    hat::basic_cstring_view<CharT, Traits> lhs,
+    std::type_identity_t<std::basic_string_view<CharT, Traits>> rhs) noexcept
+{
+    return std::basic_string_view<CharT, Traits>{lhs} == rhs;
+}
+
+template<typename CharT, typename Traits>
+constexpr hat::detail::comparison_category_t<Traits> operator<=>(
+    hat::basic_cstring_view<CharT, Traits> lhs,
+    std::type_identity_t<std::basic_string_view<CharT, Traits>> rhs) noexcept
+{
+    return std::basic_string_view<CharT, Traits>{lhs} <=> rhs;
 }
