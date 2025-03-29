@@ -14,5 +14,6 @@
 #include "libhat/string_literal.hpp"
 #include "libhat/system.hpp"
 #include "libhat/type_traits.hpp"
+#include "libhat/utility.hpp"
 
 #include "libhat/experimental.hpp"

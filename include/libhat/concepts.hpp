@@ -1,12 +1,16 @@
 #pragma once
 
-#include <concepts>
-#include <cstddef>
-#include <iterator>
-#include <ranges>
-#include <type_traits>
+#ifndef LIBHAT_MODULE
+    #include <concepts>
+    #include <cstddef>
+    #include <iterator>
+    #include <ranges>
+    #include <type_traits>
+#endif
 
-namespace hat {
+#include "export.hpp"
+
+LIBHAT_EXPORT namespace hat {
 
     template<typename T>
     concept integer = std::integral<T> && !std::is_same_v<std::decay_t<T>, bool>;

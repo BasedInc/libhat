@@ -1,8 +1,12 @@
 #pragma once
 
-#include <type_traits>
+#ifndef LIBHAT_MODULE
+    #include <type_traits>
+#endif
 
-namespace hat {
+#include "export.hpp"
+
+LIBHAT_EXPORT namespace hat {
 
     template<typename To, typename From>
     struct constness_as : std::type_identity<std::remove_const_t<To>> {};

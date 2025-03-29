@@ -1,16 +1,19 @@
 #pragma once
 
-#include <array>
-#include <bit>
-#include <optional>
-#include <ranges>
-#include <string_view>
-#include <vector>
+#ifndef LIBHAT_MODULE
+    #include <array>
+    #include <bit>
+    #include <optional>
+    #include <ranges>
+    #include <string_view>
+    #include <vector>
+#endif
 
+#include "export.hpp"
 #include "strconv.hpp"
 #include "fixed_string.hpp"
 
-namespace hat {
+LIBHAT_EXPORT namespace hat {
 
     /// Effectively std::optional<std::byte>, but with the added flexibility of being able to use std::bit_cast on
     /// instances of the class in constant expressions.
@@ -149,7 +152,7 @@ namespace hat {
     }
 }
 
-namespace hat::literals::signature_literals {
+LIBHAT_EXPORT namespace hat::inline literals::inline signature_literals {
     template<hat::fixed_string str>
     consteval auto operator""_sig() noexcept {
         return hat::compile_signature<str>();
