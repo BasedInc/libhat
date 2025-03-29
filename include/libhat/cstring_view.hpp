@@ -322,14 +322,6 @@ namespace hat {
 }
 
 template<typename CharT, typename Traits>
-constexpr bool operator==(
-    hat::basic_cstring_view<CharT, Traits> lhs,
-    std::type_identity_t<std::basic_string_view<CharT, Traits>> rhs) noexcept
-{
-    return std::basic_string_view<CharT, Traits>{lhs} == rhs;
-}
-
-template<typename CharT, typename Traits>
 constexpr hat::detail::comparison_category_t<Traits> operator<=>(
     hat::basic_cstring_view<CharT, Traits> lhs,
     std::type_identity_t<std::basic_string_view<CharT, Traits>> rhs) noexcept
