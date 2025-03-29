@@ -15,6 +15,18 @@ namespace hat {
         no_allocator() = delete;
     };
 
+    namespace detail {
+        template <typename Traits, typename Alloc>
+        struct owned_type {
+            using type = typename Traits::template owned_t<Alloc>;
+        };
+
+        template <typename Traits>
+        struct owned_type<Traits, no_allocator> {
+            using type = typename Traits::owned_t;
+        };
+    }
+
     struct in_place_viewed_t{};
     struct in_place_owned_t{};
 
@@ -40,12 +52,14 @@ namespace hat {
         using allocator_type = Allocator;
 
         using traits_t = Traits;
-        using viewed_t = T;
-        using owned_t = typename traits_t::template owned_t<allocator_type>;
 
-        static constexpr bool uses_allocator = !std::is_same_v<typename Traits::default_allocator_t, no_allocator>;
+        static constexpr bool uses_allocator = !std::is_same_v<typename traits_t::default_allocator_t, no_allocator>;
 
         static_assert(uses_allocator || std::is_same_v<allocator_type, no_allocator>, "The traits for this cow do not support allocators");
+        static_assert(!uses_allocator || !std::is_same_v<allocator_type, no_allocator>, "The traits for this cow do not accept no_allocator");
+
+        using viewed_t = T;
+        using owned_t = typename detail::owned_type<traits_t, allocator_type>::type;
 
     private:
         static constexpr bool default_construct_alloc = !uses_allocator || std::is_default_constructible_v<allocator_type>;
