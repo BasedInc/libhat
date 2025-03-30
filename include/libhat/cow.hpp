@@ -1,4 +1,5 @@
 #pragma once
+
 #include <algorithm>
 #include <memory_resource>
 #include <span>
@@ -16,12 +17,12 @@ namespace hat {
     };
 
     namespace detail {
-        template <typename Traits, typename Alloc>
+        template<typename Traits, typename Alloc>
         struct owned_type {
             using type = typename Traits::template owned_t<Alloc>;
         };
 
-        template <typename Traits>
+        template<typename Traits>
         struct owned_type<Traits, no_allocator> {
             using type = typename Traits::owned_t;
         };
@@ -35,7 +36,7 @@ namespace hat {
     /// Construct a cow's owned type in place.
     static constexpr in_place_owned_t in_place_owned;
 
-    template <typename T>
+    template<typename T>
     struct cow_traits;
 
     /**
@@ -45,7 +46,7 @@ namespace hat {
      * @tparam Traits A traits type describing how to convert T to an owned container, among other things.
      * @tparam Allocator An allocator to use for the owned container.
      */
-    template <typename T, typename Traits = cow_traits<T>, typename Allocator = typename Traits::default_allocator_t>
+    template<typename T, typename Traits = cow_traits<T>, typename Allocator = typename Traits::default_allocator_t>
     requires std::is_trivially_copyable_v<T>
     struct cow {
         // Required by STL
@@ -99,30 +100,30 @@ namespace hat {
         constexpr cow(cow&&) noexcept(!std::is_nothrow_move_constructible_v<impl_t>) = default;
 
         // In-place constructor for viewed_t for not no_allocator, default initializes the allocator
-        template <typename... Args>
+        template<typename... Args>
         requires (uses_allocator)
         constexpr explicit cow(in_place_viewed_t, Args&&... args) noexcept(std::is_nothrow_constructible_v<viewed_t, Args&&...>) requires(default_construct_alloc)
             : impl{ std::in_place_index<0>, std::piecewise_construct, std::forward_as_tuple<Args...>(args...), std::forward_as_tuple(allocator_type{}) } {}
 
         // In-place constructor for viewed_t for not_allocator, takes in an allocator
-        template <typename... Args>
+        template<typename... Args>
         requires (uses_allocator)
         constexpr cow(std::allocator_arg_t, const allocator_type& alloc, in_place_viewed_t, Args&&... args) noexcept(std::is_nothrow_constructible_v<viewed_t, Args&&...>)
             : impl{ std::in_place_index<0>, std::piecewise_construct, std::forward_as_tuple<Args...>(args...), std::forward_as_tuple(alloc) } {}
 
         // In-place constructor for viewed_t with no_allocator
-        template <typename... Args>
+        template<typename... Args>
         requires (!uses_allocator)
         constexpr explicit cow(in_place_viewed_t, Args&&... args) noexcept(std::is_nothrow_constructible_v<viewed_t, Args&&...>)
             : impl{ std::in_place_index<0>, std::forward<Args>(args)... } {}
 
         // In-place constructor for owned_t, doesn't take an allocator
-        template <typename... Args>
+        template<typename... Args>
         constexpr explicit cow(in_place_owned_t, Args&&... args) noexcept(std::is_nothrow_constructible_v<owned_t, Args&&...>)
             : impl{ std::in_place_type<owned_t>, std::forward<Args>(args)... } {}
 
         // In-place constructor for owned_t that takes an allocator. Needs some hacks to push the allocator into the underlying owned type.
-        template <typename... Args>
+        template<typename... Args>
         constexpr explicit cow(std::allocator_arg_t, const allocator_type& alloc, in_place_owned_t, Args&&... args) noexcept(std::is_nothrow_constructible_v<owned_t, Args&&...>)
             : cow(owned_from_tuple_hack{}, std::uses_allocator_construction_args<owned_t>(alloc, std::forward<Args>(args)...)) {}
 
@@ -139,12 +140,12 @@ namespace hat {
         constexpr cow(owned_t owned, const allocator_type& alloc) noexcept(std::is_nothrow_move_constructible_v<owned_t>) : cow(std::allocator_arg, alloc, in_place_owned, std::move(owned)) {}
 
         // Convert U to viewed_t and construct, doesn't take an allocator
-        template <std::convertible_to<viewed_t> U>
+        template<std::convertible_to<viewed_t> U>
         requires traits_t::template allow_viewed_conversion<U>
         constexpr explicit(false) cow(U&& val) requires(default_construct_alloc) : cow(viewed_t{std::forward<U>(val)}) {}
 
         // Convert U to viewed_t and construct, takes an allocator
-        template <std::convertible_to<viewed_t> U>
+        template<std::convertible_to<viewed_t> U>
         requires traits_t::template allow_viewed_conversion<U>
         constexpr explicit(false) cow(U&& val, const allocator_type& alloc) : cow(viewed_t{std::forward<U>(val)}, alloc) {}
 
@@ -226,7 +227,7 @@ namespace hat {
             std::ignore = this->owned();
         }
 
-        template <typename... Args>
+        template<typename... Args>
         constexpr const viewed_t& emplace_viewed(Args&&... args) noexcept(std::is_nothrow_constructible_v<viewed_t, Args&&...>) {
             if constexpr (uses_allocator) {
                 // TODO: Since the allocator won't be in use anymore, it might make sense to allow to change the allocator
@@ -240,7 +241,7 @@ namespace hat {
             }
         }
 
-        template <typename... Args>
+        template<typename... Args>
         constexpr owned_t& emplace_owned(Args&&... args) noexcept(noexcept(this->impl.template emplace<owned_t>(std::forward<Args>(args)...))) {
             // TODO: Maybe allow to change the allocator here?
             return this->impl.template emplace<owned_t>(std::forward<Args>(args)...);
@@ -259,45 +260,45 @@ namespace hat {
 
         struct owned_from_tuple_hack {};
 
-        template <typename... Args>
+        template<typename... Args>
         constexpr explicit cow(owned_from_tuple_hack, std::tuple<Args...> args) : cow(std::move(args), std::make_index_sequence<sizeof...(Args)>{}) {}
 
-        template <typename... Args, size_t... Idxs>
+        template<typename... Args, size_t... Idxs>
         constexpr explicit cow(std::tuple<Args...> args, std::index_sequence<Idxs...>) : cow(in_place_owned, std::get<Idxs>(std::move(args))...) {}
     };
 
-    template <typename CharT, typename Traits>
+    template<typename CharT, typename Traits>
     struct cow_traits<std::basic_string_view<CharT, Traits>> {
         using default_allocator_t = std::allocator<CharT>;
 
         using viewed_t = std::basic_string_view<CharT, Traits>;
 
-        template <typename Alloc>
+        template<typename Alloc>
         using owned_t = std::basic_string<CharT, Traits, Alloc>;
 
-        template <typename>
+        template<typename>
         static constexpr bool allow_viewed_conversion = true;
 
-        template <typename Alloc>
+        template<typename Alloc>
         static constexpr viewed_t into_viewed(const owned_t<Alloc>& owned) noexcept {
             return owned;
         }
 
-        template <typename Alloc>
+        template<typename Alloc>
         static constexpr owned_t<Alloc> into_owned(const viewed_t& viewed, Alloc alloc) {
             return std::make_obj_using_allocator<owned_t<Alloc>>(alloc, viewed);
         }
 
-        template <typename Alloc>
+        template<typename Alloc>
         static constexpr Alloc get_allocator(const owned_t<Alloc>& owned) noexcept {
             return owned.get_allocator();
         }
     };
 
-    template <typename CharT, typename Traits>
+    template<typename CharT, typename Traits>
     cow(std::basic_string_view<CharT, Traits> str) -> cow<std::basic_string_view<CharT, Traits>>;
 
-    template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
+    template<typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
     using basic_cow_string = cow<std::basic_string_view<CharT, Traits>, cow_traits<std::basic_string_view<CharT, Traits>>, Alloc>;
 
     using cow_string = basic_cow_string<char>;
@@ -307,38 +308,38 @@ namespace hat {
     using cow_wstring = basic_cow_string<wchar_t>;
 
 
-    template <typename CharT, typename Traits>
+    template<typename CharT, typename Traits>
     struct cow_traits<basic_cstring_view<CharT, Traits>> {
         using default_allocator_t = std::allocator<CharT>;
 
         using viewed_t = basic_cstring_view<CharT, Traits>;
 
-        template <typename Alloc>
+        template<typename Alloc>
         using owned_t = std::basic_string<CharT, Traits, Alloc>;
 
-        template <typename>
+        template<typename>
         static constexpr bool allow_viewed_conversion = true;
 
-        template <typename Alloc>
+        template<typename Alloc>
         static constexpr viewed_t into_viewed(const owned_t<Alloc>& owned) noexcept {
             return owned;
         }
 
-        template <typename Alloc>
+        template<typename Alloc>
         static constexpr owned_t<Alloc> into_owned(const viewed_t& viewed, Alloc alloc) {
             return std::make_obj_using_allocator<owned_t<Alloc>>(alloc, viewed);
         }
 
-        template <typename Alloc>
+        template<typename Alloc>
         static constexpr Alloc get_allocator(const owned_t<Alloc>& owned) noexcept {
             return owned.get_allocator();
         }
     };
 
-    template <typename CharT, typename Traits>
+    template<typename CharT, typename Traits>
     cow(basic_cstring_view<CharT, Traits>) -> cow<basic_cstring_view<CharT, Traits>>;
 
-    template <typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
+    template<typename CharT, typename Traits = std::char_traits<CharT>, typename Alloc = std::allocator<CharT>>
     using basic_cow_cstring = cow<basic_cstring_view<CharT, Traits>, cow_traits<basic_cstring_view<CharT, Traits>>, Alloc>;
 
     using cow_cstring = basic_cow_cstring<char>;
@@ -348,39 +349,39 @@ namespace hat {
     using cow_wcstring = basic_cow_cstring<wchar_t>;
 
 
-    template <typename T>
+    template<typename T>
     struct cow_traits<std::span<T>> {
         using default_allocator_t = std::allocator<std::remove_const_t<T>>;
 
         using viewed_t = std::span<T>;
 
-        template <typename Alloc>
+        template<typename Alloc>
         using owned_t = std::vector<std::remove_const_t<T>, Alloc>;
 
-        template <typename>
+        template<typename>
         static constexpr bool allow_viewed_conversion = true;
 
-        template <typename Alloc>
+        template<typename Alloc>
         static constexpr viewed_t into_viewed(const owned_t<Alloc>& owned) noexcept {
             return owned;
         }
 
-        template <typename Alloc>
+        template<typename Alloc>
         static constexpr owned_t<Alloc> into_owned(const viewed_t& viewed, Alloc alloc) {
             return std::make_obj_using_allocator<owned_t<Alloc>>(alloc, viewed.begin(), viewed.end());
         }
 
-        template <typename Alloc>
+        template<typename Alloc>
         static constexpr Alloc get_allocator(const owned_t<Alloc>& owned) noexcept {
             return owned.get_allocator();
         }
     };
 
-    template <typename T, typename Alloc = std::allocator<std::remove_const_t<T>>>
+    template<typename T, typename Alloc = std::allocator<std::remove_const_t<T>>>
     using cow_span = cow<std::span<T>, cow_traits<std::span<T>>, Alloc>;
 
     namespace pmr {
-        template <typename CharT, typename Traits = std::char_traits<CharT>>
+        template<typename CharT, typename Traits = std::char_traits<CharT>>
         using basic_cow_string = cow<std::basic_string_view<CharT, Traits>, cow_traits<std::basic_string_view<CharT, Traits>>, std::pmr::polymorphic_allocator<CharT>>;
 
         using cow_string = basic_cow_string<char>;
@@ -390,7 +391,7 @@ namespace hat {
         using cow_wstring = basic_cow_string<wchar_t>;
 
 
-        template <typename CharT, typename Traits = std::char_traits<CharT>>
+        template<typename CharT, typename Traits = std::char_traits<CharT>>
         using basic_cow_cstring = cow<basic_cstring_view<CharT, Traits>, cow_traits<basic_cstring_view<CharT, Traits>>, std::pmr::polymorphic_allocator<CharT>>;
 
         using cow_cstring = basic_cow_cstring<char>;
@@ -400,7 +401,7 @@ namespace hat {
         using cow_wcstring = basic_cow_cstring<wchar_t>;
 
 
-        template <typename T>
+        template<typename T>
         using cow_span = cow_span<T, std::pmr::polymorphic_allocator<std::remove_const_t<T>>>;
     }
 }
