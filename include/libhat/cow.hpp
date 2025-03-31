@@ -2,6 +2,7 @@
 
 #ifndef LIBHAT_MODULE
     #include <algorithm>
+    #include <memory>
     #include <memory_resource>
     #include <span>
     #include <string>
