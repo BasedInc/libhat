@@ -52,15 +52,15 @@ namespace hat {
         // Required by STL
         using allocator_type = Allocator;
 
-        using traits_t = Traits;
+        using traits_type = Traits;
 
-        static constexpr bool uses_allocator = !std::is_same_v<typename traits_t::default_allocator_t, no_allocator>;
+        static constexpr bool uses_allocator = !std::is_same_v<typename traits_type::default_allocator_t, no_allocator>;
 
         static_assert(uses_allocator || std::is_same_v<allocator_type, no_allocator>, "The traits for this cow do not support allocators");
         static_assert(!uses_allocator || !std::is_same_v<allocator_type, no_allocator>, "The traits for this cow do not accept no_allocator");
 
         using viewed_t = T;
-        using owned_t = typename detail::owned_type<traits_t, allocator_type>::type;
+        using owned_t = typename detail::owned_type<traits_type, allocator_type>::type;
 
     private:
         static constexpr bool default_construct_alloc = !uses_allocator || std::is_default_constructible_v<allocator_type>;
@@ -141,12 +141,12 @@ namespace hat {
 
         // Convert U to viewed_t and construct, doesn't take an allocator
         template<std::convertible_to<viewed_t> U>
-        requires traits_t::template allow_viewed_conversion<U>
+        requires traits_type::template allow_viewed_conversion<U>
         constexpr explicit(false) cow(U&& val) requires(default_construct_alloc) : cow(viewed_t{std::forward<U>(val)}) {}
 
         // Convert U to viewed_t and construct, takes an allocator
         template<std::convertible_to<viewed_t> U>
-        requires traits_t::template allow_viewed_conversion<U>
+        requires traits_type::template allow_viewed_conversion<U>
         constexpr explicit(false) cow(U&& val, const allocator_type& alloc) : cow(viewed_t{std::forward<U>(val)}, alloc) {}
 
         constexpr cow& operator=(const cow&) noexcept(std::is_nothrow_copy_assignable_v<impl_t>) requires(!uses_allocator) = default;
@@ -186,41 +186,41 @@ namespace hat {
             return std::holds_alternative<owned_t>(this->impl);
         }
 
-        [[nodiscard]] constexpr viewed_t viewed() const noexcept(noexcept(traits_t::into_viewed(std::declval<const owned_t&>()))) {
+        [[nodiscard]] constexpr viewed_t viewed() const noexcept(noexcept(traits_type::into_viewed(std::declval<const owned_t&>()))) {
             if (this->is_viewed()) {
                 return this->viewed_unchecked();
             }
 
-            return traits_t::into_viewed(std::get<owned_t>(this->impl));
+            return traits_type::into_viewed(std::get<owned_t>(this->impl));
         }
 
-        [[nodiscard]] constexpr owned_t& owned() & noexcept(noexcept(traits_t::into_owned(std::declval<viewed_t&>()))) requires(!uses_allocator) {
+        [[nodiscard]] constexpr owned_t& owned() & noexcept(noexcept(traits_type::into_owned(std::declval<viewed_t&>()))) requires(!uses_allocator) {
             if (this->is_owned()) {
                 return std::get<owned_t>(this->impl);
             }
 
-            return this->impl.template emplace<owned_t>(traits_t::into_owned(this->viewed_unchecked()));
+            return this->impl.template emplace<owned_t>(traits_type::into_owned(this->viewed_unchecked()));
         }
 
-        [[nodiscard]] constexpr owned_t& owned() & noexcept(noexcept(traits_t::into_owned(std::declval<viewed_t&>(), std::declval<allocator_type>()))) requires(uses_allocator) {
+        [[nodiscard]] constexpr owned_t& owned() & noexcept(noexcept(traits_type::into_owned(std::declval<viewed_t&>(), std::declval<allocator_type>()))) requires(uses_allocator) {
             if (this->is_owned()) {
                 return std::get<owned_t>(this->impl);
             }
 
             auto& [viewed, allocator] = std::get<0>(this->impl);
-            return this->impl.template emplace<owned_t>(traits_t::into_owned(viewed, allocator));
+            return this->impl.template emplace<owned_t>(traits_type::into_owned(viewed, allocator));
         }
 
         [[nodiscard]] constexpr owned_t&& owned() && noexcept(noexcept(this->owned())) {
             return std::move(this->owned());
         }
 
-        [[nodiscard]] constexpr allocator_type get_allocator() const noexcept(noexcept(traits_t::get_allocator(std::declval<const owned_t&>()))) requires(uses_allocator) {
+        [[nodiscard]] constexpr allocator_type get_allocator() const noexcept(noexcept(traits_type::get_allocator(std::declval<const owned_t&>()))) requires(uses_allocator) {
             if (this->is_viewed()) {
                 return std::get<0>(this->impl).second;
             }
 
-            return traits_t::get_allocator(std::get<owned_t>(this->impl));
+            return traits_type::get_allocator(std::get<owned_t>(this->impl));
         }
 
         constexpr void ensure_owned() {
