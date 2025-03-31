@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "compressed_pair.hpp"
+#include "concepts.hpp"
 #include "cstring_view.hpp"
 
 namespace hat {
@@ -409,7 +410,10 @@ namespace hat {
     };
 
     template<typename T, typename Alloc = std::allocator<std::remove_const_t<T>>>
-    using cow_span = cow<std::span<T>, cow_traits<std::span<T>>, Alloc>;
+    using cow_span = cow<std::span<std::add_const_t<T>>, cow_traits<std::span<std::add_const_t<T>>>, Alloc>;
+
+    template<detail::non_const T, typename Alloc = std::allocator<T>>
+    using cow_writable_span = cow<std::span<T>, cow_traits<std::span<T>>, Alloc>;
 
     namespace pmr {
         template<typename CharT, typename Traits = std::char_traits<CharT>>
@@ -434,5 +438,8 @@ namespace hat {
 
         template<typename T>
         using cow_span = cow_span<T, std::pmr::polymorphic_allocator<std::remove_const_t<T>>>;
+
+        template<detail::non_const T>
+        using cow_writable_span = cow_writable_span<T, std::pmr::polymorphic_allocator<T>>;
     }
 }
