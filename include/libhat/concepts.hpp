@@ -42,4 +42,7 @@ namespace hat::detail {
 
     template<typename T>
     concept char_iterator = std::is_same_v<std::iter_value_t<T>, char>;
+
+    template<typename T>
+    concept non_const = !std::is_const_v<T>;
 }
