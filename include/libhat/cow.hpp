@@ -47,7 +47,7 @@ namespace hat {
      * @tparam Traits A traits type describing how to convert T to an owned container, among other things.
      * @tparam Allocator An allocator to use for the owned container.
      */
-    template<typename T, typename Traits = cow_traits<T>, typename Allocator = typename Traits::default_allocator_t>
+    template<typename T, typename Traits = cow_traits<T>, typename Allocator = typename Traits::default_allocator_type>
     requires std::is_trivially_copyable_v<T>
     struct cow {
         // Required by STL
@@ -55,7 +55,7 @@ namespace hat {
 
         using traits_type = Traits;
 
-        static constexpr bool uses_allocator = !std::is_same_v<typename traits_type::default_allocator_t, no_allocator>;
+        static constexpr bool uses_allocator = !std::is_same_v<typename traits_type::default_allocator_type, no_allocator>;
 
         static_assert(uses_allocator || std::is_same_v<allocator_type, no_allocator>, "The traits for this cow do not support allocators");
         static_assert(!uses_allocator || !std::is_same_v<allocator_type, no_allocator>, "The traits for this cow do not accept no_allocator");
@@ -300,7 +300,7 @@ namespace hat {
 
     template<typename CharT, typename Traits>
     struct cow_traits<std::basic_string_view<CharT, Traits>> {
-        using default_allocator_t = std::allocator<CharT>;
+        using default_allocator_type = std::allocator<CharT>;
 
         using viewed_type = std::basic_string_view<CharT, Traits>;
 
@@ -341,7 +341,7 @@ namespace hat {
 
     template<typename CharT, typename Traits>
     struct cow_traits<basic_cstring_view<CharT, Traits>> {
-        using default_allocator_t = std::allocator<CharT>;
+        using default_allocator_type = std::allocator<CharT>;
 
         using viewed_type = basic_cstring_view<CharT, Traits>;
 
@@ -382,7 +382,7 @@ namespace hat {
 
     template<typename T>
     struct cow_traits<std::span<T>> {
-        using default_allocator_t = std::allocator<std::remove_const_t<T>>;
+        using default_allocator_type = std::allocator<std::remove_const_t<T>>;
 
         using viewed_type = std::span<T>;
 
