@@ -12,6 +12,7 @@ module;
     #include <execution>
     #include <iterator>
     #include <memory>
+    #include <memory_resource>
     #include <new>
     #include <optional>
     #include <ranges>

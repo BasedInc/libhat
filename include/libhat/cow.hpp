@@ -1,42 +1,49 @@
 #pragma once
 
-#include <algorithm>
-#include <memory_resource>
-#include <span>
-#include <string>
-#include <string_view>
-#include <variant>
-#include <vector>
+#ifndef LIBHAT_MODULE
+    #include <algorithm>
+    #include <memory_resource>
+    #include <span>
+    #include <string>
+    #include <string_view>
+    #include <variant>
+    #include <vector>
+#endif
 
 #include "compressed_pair.hpp"
 #include "concepts.hpp"
 #include "cstring_view.hpp"
+#include "export.hpp"
 
-namespace hat {
+LIBHAT_EXPORT namespace hat {
+
     /// Tag type that tells `cow` that allocator support is not needed.
     struct no_allocator {
         no_allocator() = delete;
     };
+}
 
-    namespace detail {
-        template<typename Traits, typename Alloc>
-        struct owned_type {
-            using type = typename Traits::template owned_type<Alloc>;
-        };
+namespace hat::detail {
+    template<typename Traits, typename Alloc>
+    struct owned_type {
+        using type = typename Traits::template owned_type<Alloc>;
+    };
 
-        template<typename Traits>
-        struct owned_type<Traits, no_allocator> {
-            using type = typename Traits::owned_type;
-        };
-    }
+    template<typename Traits>
+    struct owned_type<Traits, no_allocator> {
+        using type = typename Traits::owned_type;
+    };
+}
+
+LIBHAT_EXPORT namespace hat {
 
     struct in_place_viewed_t{};
     struct in_place_owned_t{};
 
     /// Construct a cow's viewed type in place.
-    static constexpr in_place_viewed_t in_place_viewed;
+    constexpr in_place_viewed_t in_place_viewed;
     /// Construct a cow's owned type in place.
-    static constexpr in_place_owned_t in_place_owned;
+    constexpr in_place_owned_t in_place_owned;
 
     template<typename T>
     struct cow_traits;
