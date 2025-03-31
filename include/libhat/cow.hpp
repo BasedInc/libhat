@@ -62,12 +62,22 @@ namespace hat {
         using viewed_t = T;
         using owned_t = typename detail::owned_type<traits_type, allocator_type>::type;
 
+        static_assert(!uses_allocator || std::uses_allocator_v<owned_t, Allocator>, "Traits implementation is incorrect: the owned type does not support the given allocator.");
+
     private:
         static constexpr bool default_construct_alloc = !uses_allocator || std::is_default_constructible_v<allocator_type>;
 
         using impl_t = std::variant<
             std::conditional_t<uses_allocator, std::pair<viewed_t, allocator_type>, viewed_t>,
             owned_t>;
+
+        constexpr viewed_t& viewed_unchecked() {
+            if constexpr (uses_allocator) {
+                return std::get<0>(this->impl).first;
+            } else {
+                return std::get<0>(this->impl);
+            }
+        }
 
         constexpr const viewed_t& viewed_unchecked() const {
             if constexpr (uses_allocator) {
@@ -157,7 +167,11 @@ namespace hat {
                 this->impl = other.impl;
             } else {
                 if (other.is_viewed()) {
-                    this->impl.template emplace<0>(other.viewed_unchecked(), this->get_allocator());
+                    if (this->is_viewed()) {
+                        this->viewed_unchecked() = other.viewed_unchecked();
+                    } else {
+                        this->impl.template emplace<0>(other.viewed_unchecked(), this->get_allocator());
+                    }
                 } else {
                     this->impl.template emplace<1>(std::make_obj_using_allocator<owned_t>(this->get_allocator(), std::get<owned_t>(other.impl)));
                 }
@@ -170,7 +184,12 @@ namespace hat {
                 this->impl = std::move(other.impl);
             } else {
                 if (other.is_viewed()) {
-                    this->impl.template emplace<0>(other.viewed_unchecked(), this->get_allocator());
+                    // NOTE: This relies on T being trivially_copyable (which is explicitly required right now)
+                    if (this->is_viewed()) {
+                        this->viewed_unchecked() = other.viewed_unchecked();
+                    } else {
+                        this->impl.template emplace<0>(other.viewed_unchecked(), this->get_allocator());
+                    }
                 } else {
                     this->impl.template emplace<1>(std::make_obj_using_allocator<owned_t>(this->get_allocator(), std::get<owned_t>(std::move(other.impl))));
                 }
@@ -230,12 +249,13 @@ namespace hat {
         template<typename... Args>
         constexpr const viewed_t& emplace_viewed(Args&&... args) noexcept(std::is_nothrow_constructible_v<viewed_t, Args&&...>) {
             if constexpr (uses_allocator) {
-                // TODO: Since the allocator won't be in use anymore, it might make sense to allow to change the allocator
                 // If we are holding an owned value, we need to take the allocator back out.
                 return this->impl.template emplace<0>(
                     std::piecewise_construct,
                     std::forward_as_tuple<Args...>(args...),
                     std::forward_as_tuple(this->get_allocator())).first;
+
+                // TODO: Since the allocator won't be in use anymore, it might make sense to allow to change the allocator
             } else {
                 return this->impl.template emplace<0>(std::forward<Args>(args)...);
             }
@@ -243,8 +263,18 @@ namespace hat {
 
         template<typename... Args>
         constexpr owned_t& emplace_owned(Args&&... args) noexcept(noexcept(this->impl.template emplace<owned_t>(std::forward<Args>(args)...))) {
-            // TODO: Maybe allow to change the allocator here?
-            return this->impl.template emplace<owned_t>(std::forward<Args>(args)...);
+            if constexpr (uses_allocator) {
+                // I deeply apologize for this diabolical hack to preserve the current allocator.
+                return [&]<class... AlArgs>(std::tuple<AlArgs...> tup) -> owned_t& {
+                    return [&]<size_t... Idxs>(std::index_sequence<Idxs...>) -> owned_t& {
+                        return this->impl.template emplace<owned_t>(std::get<Idxs>(std::move(tup))...);
+                    }(std::make_index_sequence<sizeof...(AlArgs)>{});
+                }(std::uses_allocator_construction_args<owned_t>(this->get_allocator(), std::forward<Args>(args)...));
+
+                // TODO: Maybe allow to change the allocator?
+            } else {
+                return this->impl.template emplace<owned_t>(std::forward<Args>(args)...);
+            }
         }
 
         // ReSharper disable once CppNonExplicitConversionOperator
