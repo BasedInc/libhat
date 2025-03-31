@@ -8,6 +8,7 @@
 #include <variant>
 #include <vector>
 
+#include "compressed_pair.hpp"
 #include "cstring_view.hpp"
 
 namespace hat {
@@ -68,7 +69,7 @@ namespace hat {
         static constexpr bool default_construct_alloc = !uses_allocator || std::is_default_constructible_v<allocator_type>;
 
         using impl_t = std::variant<
-            std::conditional_t<uses_allocator, std::pair<viewed_type, allocator_type>, viewed_type>,
+            std::conditional_t<uses_allocator, detail::compressed_pair<viewed_type, allocator_type>, viewed_type>,
             owned_type>;
 
         constexpr viewed_type& viewed_unchecked() {
