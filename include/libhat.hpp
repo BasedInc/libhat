@@ -3,6 +3,7 @@
 #include "libhat/access.hpp"
 #include "libhat/compressed_pair.hpp"
 #include "libhat/concepts.hpp"
+#include "libhat/cow.hpp"
 #include "libhat/cstring_view.hpp"
 #include "libhat/defines.hpp"
 #include "libhat/fixed_string.hpp"
@@ -15,5 +16,6 @@
 #include "libhat/string_literal.hpp"
 #include "libhat/system.hpp"
 #include "libhat/type_traits.hpp"
+#include "libhat/utility.hpp"
 
 #include "libhat/experimental.hpp"

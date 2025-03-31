@@ -1,12 +1,16 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-#include <optional>
-#include <span>
-#include <string_view>
+#ifndef LIBHAT_MODULE
+    #include <cstddef>
+    #include <cstdint>
+    #include <optional>
+    #include <span>
+    #include <string_view>
+#endif
 
-namespace hat::process {
+#include "export.hpp"
+
+LIBHAT_EXPORT namespace hat::process {
 
     class module {
     public:

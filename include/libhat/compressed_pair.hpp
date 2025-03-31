@@ -1,9 +1,11 @@
 #pragma once
 
+#ifndef LIBHAT_MODULE
+    #include <tuple>
+#endif
+
 #include "defines.hpp"
 #include "type_traits.hpp"
-
-#include <tuple>
 
 namespace hat::detail {
 

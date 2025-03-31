@@ -1,10 +1,13 @@
 #pragma once
 
-#include <string>
+#ifndef LIBHAT_MODULE
+    #include <string>
+#endif
 
 #include "defines.hpp"
+#include "export.hpp"
 
-namespace hat {
+LIBHAT_EXPORT namespace hat {
     struct system_info {
         size_t page_size{};
 
@@ -18,7 +21,7 @@ namespace hat {
 }
 
 #if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
-namespace hat {
+LIBHAT_EXPORT namespace hat {
 
     struct system_info_x86 : hat::system_info {
         std::string cpu_vendor{};
@@ -46,7 +49,7 @@ namespace hat {
     using system_info_impl = system_info_x86;
 }
 #elif defined(LIBHAT_ARM) || defined(LIBHAT_AARCH64)
-namespace hat {
+LIBHAT_EXPORT namespace hat {
 
     struct system_info_arm : hat::system_info {
     private:
@@ -59,7 +62,7 @@ namespace hat {
 }
 #endif
 
-namespace hat {
+LIBHAT_EXPORT namespace hat {
 
     const system_info_impl& get_system();
 }

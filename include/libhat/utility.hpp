@@ -1,8 +1,9 @@
 #pragma once
 
 #include "concepts.hpp"
+#include "export.hpp"
 
-namespace hat {
+LIBHAT_EXPORT namespace hat {
 
     template<hat::integer T>
     struct div_t {

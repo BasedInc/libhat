@@ -1,18 +1,24 @@
 #pragma once
 
-#include <variant>
+#ifndef LIBHAT_MODULE
+    #include <variant>
+#endif
 
 #if __cpp_lib_expected >= 202202L
     #define LIBHAT_CONSTEXPR_RESULT constexpr
     #define LIBHAT_RESULT_EXPECTED
-    #include <expected>
+    #ifndef LIBHAT_MODULE
+        #include <expected>
+    #endif
 #elif __cpp_lib_variant >= 202106L
     #define LIBHAT_CONSTEXPR_RESULT constexpr
 #else
     #define LIBHAT_CONSTEXPR_RESULT inline
 #endif
 
-namespace hat {
+#include "export.hpp"
+
+LIBHAT_EXPORT namespace hat {
 
     template<class E>
     class result_error {

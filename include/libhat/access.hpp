@@ -1,11 +1,14 @@
 #pragma once
 
-#include <cstdint>
-#include <concepts>
+#ifndef LIBHAT_MODULE
+    #include <cstdint>
+    #include <concepts>
+#endif
 
+#include "export.hpp"
 #include "type_traits.hpp"
 
-namespace hat {
+LIBHAT_EXPORT namespace hat {
 
     template<typename MemberType, typename Base>
     auto& member_at(Base* ptr, std::integral auto offset) noexcept {
