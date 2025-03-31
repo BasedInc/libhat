@@ -1,6 +1,7 @@
 #pragma once
 
 #include "libhat/access.hpp"
+#include "libhat/compressed_pair.hpp"
 #include "libhat/concepts.hpp"
 #include "libhat/cstring_view.hpp"
 #include "libhat/defines.hpp"
