@@ -50,8 +50,8 @@ set(LIBHAT_SRC
     src/System.cpp
 
     src/os/linux/MemoryProtector.cpp
+    src/os/linux/Process.cpp
 
-    src/os/unix/Process.cpp
     src/os/unix/System.cpp
 
     src/os/win32/MemoryProtector.cpp
