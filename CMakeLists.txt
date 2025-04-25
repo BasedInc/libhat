@@ -19,7 +19,7 @@ option(LIBHAT_SHARED_C_LIB "Build a shared version of the C library" OFF)
 option(LIBHAT_INSTALL_TARGET "Creates install rules for the libhat target" ON)
 option(LIBHAT_DISABLE_SSE "Disables SSE scanning" OFF)
 option(LIBHAT_DISABLE_AVX512 "Disables AVX512 scanning" OFF)
-option(LIBHAT_TESTING "Enable tests" OFF)
+option(LIBHAT_TESTING "Enable tests" ${PROJECT_IS_TOP_LEVEL})
 option(LIBHAT_TESTING_ASAN "Enable address sanitizer when testing" ON)
 option(LIBHAT_TESTING_SDE "Run tests using Intel Software Development Emulator" ON)
 
