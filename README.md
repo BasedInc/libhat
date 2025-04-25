@@ -47,17 +47,17 @@ Below is a summary of the support of libhat OS APIs on various platforms:
 
 |                                | Windows | Linux | macOS |
 |--------------------------------|:-------:|:-----:|:-----:|
-| `hat::get_system`              |    ✔    |   ✔   |   ✔   |
-| `hat::memory_protector`        |    ✔    |   ✔   |       |
-| `hp::get_process_module`       |    ✔    |   ✔   |       |
-| `hp::get_module`               |    ✔    |   ✔   |       |
-| `hp::module_at`                |    ✔    |       |       |
-| `hp::is_readable`              |    ✔    |   ✔   |       |
-| `hp::is_writable`              |    ✔    |   ✔   |       |
-| `hp::is_executable`            |    ✔    |   ✔   |       |
-| `hp::module::get_module_data`  |    ✔    |       |       |
-| `hp::module::get_section_data` |    ✔    |       |       |
-| `hp::module::for_each_segment` |    ✔    |   ✔   |       |
+| `hat::get_system`              |    ✅    |   ✅   |   ✅   |
+| `hat::memory_protector`        |    ✅    |   ✅   |       |
+| `hp::get_process_module`       |    ✅    |   ✅   |       |
+| `hp::get_module`               |    ✅    |   ✅   |       |
+| `hp::module_at`                |    ✅    |       |       |
+| `hp::is_readable`              |    ✅    |   ✅   |       |
+| `hp::is_writable`              |    ✅    |   ✅   |       |
+| `hp::is_executable`            |    ✅    |   ✅   |       |
+| `hp::module::get_module_data`  |    ✅    |       |       |
+| `hp::module::get_section_data` |    ✅    |       |       |
+| `hp::module::for_each_segment` |    ✅    |   ✅   |       |
 
 ## Quick start
 ### Pattern scanning
