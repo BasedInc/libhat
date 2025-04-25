@@ -8,6 +8,8 @@
 
 #include <memory>
 
+#include "Common.hpp"
+
 namespace hat::process {
 
     hat::process::module get_process_module() {
@@ -52,6 +54,37 @@ namespace hat::process {
             &callback);
 
         return module;
+    }
+
+    static bool regionHasFlags(const std::span<const std::byte> region, const uint32_t flags) {
+        auto addr = std::bit_cast<uintptr_t>(region.data());
+        const auto end = addr + region.size();
+
+        iter_mapped_regions([&](const uintptr_t b, const uintptr_t e, const uint32_t prot) {
+            if (addr >= b && addr < e) {
+                if (!(prot & flags)) {
+                    return false;
+                }
+                addr = e;
+            } else if (addr >= e) {
+                return false;
+            }
+            return addr < end;
+        });
+
+        return addr >= end;
+    }
+
+    bool is_readable(const std::span<const std::byte> region) {
+        return regionHasFlags(region, PROT_READ);
+    }
+
+    bool is_writable(const std::span<const std::byte> region) {
+        return regionHasFlags(region, PROT_WRITE);
+    }
+
+    bool is_executable(const std::span<const std::byte> region) {
+        return regionHasFlags(region, PROT_EXEC);
     }
 }
 
