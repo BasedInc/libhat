@@ -20,6 +20,44 @@ namespace hat::process {
         return *module;
     }
 
+    void module::for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const {
+        auto phdrCallback = [&](const dl_phdr_info& info) {
+            const auto addr = std::bit_cast<uintptr_t>(info.dlpi_addr);
+            if (addr != this->address()) {
+                return 0;
+            }
+
+            for (size_t i = 0; i < info.dlpi_phnum; i++) {
+                auto& header = info.dlpi_phdr[i];
+                if (header.p_type != PT_LOAD) {
+                    continue;
+                }
+
+                const std::span data{
+                    reinterpret_cast<std::byte*>(this->address() + header.p_vaddr),
+                    header.p_memsz
+                };
+
+                hat::protection prot{};
+                if (header.p_flags & PF_R) prot |= hat::protection::Read;
+                if (header.p_flags & PF_W) prot |= hat::protection::Write;
+                if (header.p_flags & PF_X) prot |= hat::protection::Execute;
+
+                if (!callback(data, prot)) {
+                    break;
+                }
+            }
+
+            return 1;
+        };
+
+        dl_iterate_phdr(
+            [](dl_phdr_info* info, size_t, void* data) {
+                return (*static_cast<decltype(phdrCallback)*>(data))(*info);
+            },
+            &phdrCallback);
+    }
+
     std::optional<hat::process::module> get_module(const std::string_view name) {
         using Handle = std::unique_ptr<void, decltype([](void* handle) {
             dlclose(handle);
