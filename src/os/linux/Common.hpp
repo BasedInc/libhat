@@ -44,15 +44,3 @@ static void iter_mapped_regions(std::predicate<uintptr_t, uintptr_t, uint32_t> a
         }
     }
 }
-
-static std::optional<uint32_t> get_page_prot(const uintptr_t address) {
-    std::optional<uint32_t> result;
-    iter_mapped_regions([&](const uintptr_t begin, const uintptr_t end, uint32_t prot) {
-        if (address >= begin && address < end) {
-            result = prot;
-            return false;
-        }
-        return true;
-    });
-    return result;
-}
