@@ -3,6 +3,7 @@ A modern, high-performance library for C++20 designed around game hacking
 
 ## Feature overview
 - Windows x86/x64 support
+- Partial Linux and macOS support
 - Vectorized scanning for byte patterns
 - RAII memory protector
 - Convenience wrappers over OS APIs
@@ -44,19 +45,19 @@ BM_Throughput_UC2/256MiB     616449240 ns    331250000 ns            5      415.
 
 Below is a summary of the support of libhat OS APIs on various platforms:
 
-|                                | Windows | Linux | Mac OSX |
-|--------------------------------|:-------:|:-----:|:-------:|
-| `hat::get_system`              |    ✔    |   ✔   |    ✔    |
-| `hat::memory_protector`        |    ✔    |   ✔   |         |
-| `hp::get_process_module`       |    ✔    |   ✔   |         |
-| `hp::get_module`               |    ✔    |   ✔   |         |
-| `hp::module_at`                |    ✔    |       |         |
-| `hp::is_readable`              |    ✔    |   ✔   |         |
-| `hp::is_writable`              |    ✔    |   ✔   |         |
-| `hp::is_executable`            |    ✔    |   ✔   |         |
-| `hp::module::get_module_data`  |    ✔    |       |         |
-| `hp::module::get_section_data` |    ✔    |       |         |
-| `hp::module::for_each_segment` |    ✔    |   ✔   |         |
+|                                | Windows | Linux | macOS |
+|--------------------------------|:-------:|:-----:|:-----:|
+| `hat::get_system`              |    ✔    |   ✔   |   ✔   |
+| `hat::memory_protector`        |    ✔    |   ✔   |       |
+| `hp::get_process_module`       |    ✔    |   ✔   |       |
+| `hp::get_module`               |    ✔    |   ✔   |       |
+| `hp::module_at`                |    ✔    |       |       |
+| `hp::is_readable`              |    ✔    |   ✔   |       |
+| `hp::is_writable`              |    ✔    |   ✔   |       |
+| `hp::is_executable`            |    ✔    |   ✔   |       |
+| `hp::module::get_module_data`  |    ✔    |       |       |
+| `hp::module::get_section_data` |    ✔    |       |       |
+| `hp::module::for_each_segment` |    ✔    |   ✔   |       |
 
 ## Quick start
 ### Pattern scanning

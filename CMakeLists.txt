@@ -83,7 +83,7 @@ if (MSVC)
     endif()
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(libhat PRIVATE -Wall -Wextra -Wconversion -Werror
-            # temp fix for Mac OSX CI failing due to incorrect LIBHAT_COMPILER_X86_OPTIONS value
+            # temp fix for macOS CI failing due to incorrect LIBHAT_COMPILER_X86_OPTIONS value
             -Wno-unused-command-line-argument
     )
 endif()
