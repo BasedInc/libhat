@@ -7,6 +7,7 @@
 #include "libhat/cstring_view.hpp"
 #include "libhat/defines.hpp"
 #include "libhat/fixed_string.hpp"
+#include "libhat/memory.hpp"
 #include "libhat/memory_protector.hpp"
 #include "libhat/process.hpp"
 #include "libhat/result.hpp"

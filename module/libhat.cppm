@@ -10,6 +10,7 @@ module;
     #include <cstdlib>
     #include <cstring>
     #include <execution>
+    #include <functional>
     #include <iterator>
     #include <memory>
     #include <memory_resource>
