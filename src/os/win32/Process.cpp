@@ -141,5 +141,26 @@ namespace hat::process {
         }
         return {};
     }
+
+    void hat::process::module::for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const {
+        const auto& ntHeaders = getNTHeaders(*this);
+
+        const auto* sectionHeader = IMAGE_FIRST_SECTION(&ntHeaders);
+        for (WORD i = 0; i < ntHeaders.FileHeader.NumberOfSections; i++, sectionHeader++) {
+            const std::span data{
+                reinterpret_cast<std::byte*>(this->address() + sectionHeader->VirtualAddress),
+                sectionHeader->Misc.VirtualSize
+            };
+
+            hat::protection prot{};
+            if (sectionHeader->Characteristics & IMAGE_SCN_MEM_READ) prot |= hat::protection::Read;
+            if (sectionHeader->Characteristics & IMAGE_SCN_MEM_WRITE) prot |= hat::protection::Write;
+            if (sectionHeader->Characteristics & IMAGE_SCN_MEM_EXECUTE) prot |= hat::protection::Execute;
+
+            if (!callback(data, prot)) {
+                break;
+            }
+        }
+    }
 }
 #endif

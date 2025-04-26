@@ -8,24 +8,9 @@
 #endif
 
 #include "export.hpp"
+#include "memory.hpp"
 
 LIBHAT_EXPORT namespace hat {
-
-    enum class protection : uint8_t {
-        Read    = 0b001,
-        Write   = 0b010,
-        Execute = 0b100
-    };
-
-    constexpr protection operator|(protection lhs, protection rhs) noexcept {
-        using U = std::underlying_type_t<protection>;
-        return static_cast<protection>(static_cast<U>(lhs) | static_cast<U>(rhs));
-    }
-
-    constexpr protection operator&(protection lhs, protection rhs) noexcept {
-        using U = std::underlying_type_t<protection>;
-        return static_cast<protection>(static_cast<U>(lhs) & static_cast<U>(rhs));
-    }
 
     /// RAII wrapper for setting memory protection flags
     class memory_protector {

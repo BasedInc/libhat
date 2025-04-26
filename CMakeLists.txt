@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 set(LIBHAT_VERSION_MAJOR 0)
-set(LIBHAT_VERSION_MINOR 4)
+set(LIBHAT_VERSION_MINOR 5)
 set(LIBHAT_VERSION_PATCH 0)
 set(LIBHAT_VERSION ${LIBHAT_VERSION_MAJOR}.${LIBHAT_VERSION_MINOR}.${LIBHAT_VERSION_PATCH})
 
@@ -19,7 +19,7 @@ option(LIBHAT_SHARED_C_LIB "Build a shared version of the C library" OFF)
 option(LIBHAT_INSTALL_TARGET "Creates install rules for the libhat target" ON)
 option(LIBHAT_DISABLE_SSE "Disables SSE scanning" OFF)
 option(LIBHAT_DISABLE_AVX512 "Disables AVX512 scanning" OFF)
-option(LIBHAT_TESTING "Enable tests" OFF)
+option(LIBHAT_TESTING "Enable tests" ${PROJECT_IS_TOP_LEVEL})
 option(LIBHAT_TESTING_ASAN "Enable address sanitizer when testing" ON)
 option(LIBHAT_TESTING_SDE "Run tests using Intel Software Development Emulator" ON)
 
@@ -83,7 +83,7 @@ if (MSVC)
     endif()
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(libhat PRIVATE -Wall -Wextra -Wconversion -Werror
-            # temp fix for Mac OSX CI failing due to incorrect LIBHAT_COMPILER_X86_OPTIONS value
+            # temp fix for macOS CI failing due to incorrect LIBHAT_COMPILER_X86_OPTIONS value
             -Wno-unused-command-line-argument
     )
 endif()

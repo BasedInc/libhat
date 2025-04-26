@@ -3,12 +3,14 @@
 #ifndef LIBHAT_MODULE
     #include <cstddef>
     #include <cstdint>
+    #include <functional>
     #include <optional>
     #include <span>
     #include <string_view>
 #endif
 
 #include "export.hpp"
+#include "memory.hpp"
 
 LIBHAT_EXPORT namespace hat::process {
 
@@ -25,6 +27,11 @@ LIBHAT_EXPORT namespace hat::process {
 
         /// Returns the memory region for a named section
         [[nodiscard]] std::span<std::byte> get_section_data(std::string_view name) const;
+
+        /// Invokes the callback for each memory segment defined by this module as long as it returns true. Depending on
+        /// the platform, a segment may be represented by multiple linker sections. The returned byte range is not
+        /// guaranteed to have page aligned begin and end addresses.
+        void for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const;
 
     private:
         explicit module(const uintptr_t baseAddress)
