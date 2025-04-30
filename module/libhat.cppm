@@ -1,5 +1,7 @@
 module;
 
+#include <version>
+
 #ifndef LIBHAT_USE_STD_MODULE
     #include <algorithm>
     #include <array>
@@ -32,8 +34,6 @@ module;
         #include <intrin.h>
     #endif
 #endif
-
-#include <version>
 
 export module libhat;
 
