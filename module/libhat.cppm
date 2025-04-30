@@ -2,6 +2,10 @@ module;
 
 #include <version>
 
+#if _MSC_VER
+    #include <intrin.h>
+#endif
+
 #ifndef LIBHAT_USE_STD_MODULE
     #include <algorithm>
     #include <array>
@@ -29,9 +33,6 @@ module;
     #include <vector>
     #if __cpp_lib_expected >= 202202L
         #include <expected>
-    #endif
-    #if _MSC_VER
-        #include <intrin.h>
     #endif
 #endif
 
