@@ -42,9 +42,9 @@ LIBHAT_EXPORT namespace hat {
     struct in_place_owned_t{};
 
     /// Construct a cow's viewed type in place.
-    constexpr in_place_viewed_t in_place_viewed;
+    inline constexpr in_place_viewed_t in_place_viewed{};
     /// Construct a cow's owned type in place.
-    constexpr in_place_owned_t in_place_owned;
+    inline constexpr in_place_owned_t in_place_owned{};
 
     template<typename T>
     struct cow_traits;

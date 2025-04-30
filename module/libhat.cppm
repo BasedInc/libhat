@@ -25,8 +25,11 @@ module;
     #include <utility>
     #include <variant>
     #include <vector>
-    #if __has_include(<expected>)
+    #if __cpp_lib_expected >= 202202L
         #include <expected>
+    #endif
+    #if _MSC_VER
+        #include <intrin.h>
     #endif
 #endif
 

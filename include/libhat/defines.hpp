@@ -3,6 +3,9 @@
 #include "platform.h"
 
 #ifdef _MSC_VER
+    #ifndef LIBHAT_MODULE
+        #include <intrin.h>
+    #endif
     #define LIBHAT_RETURN_ADDRESS() _ReturnAddress()
 #else
     #define LIBHAT_RETURN_ADDRESS() __builtin_extract_return_addr(__builtin_return_address(0))
