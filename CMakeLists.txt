@@ -140,7 +140,7 @@ if(LIBHAT_MODULE_TARGET)
     target_compile_definitions(libhat_module PRIVATE
         "$<$<BOOL:${LIBHAT_USE_STD_MODULE}>:LIBHAT_USE_STD_MODULE>"
     )
-    add_library(libhat::libhat-module ALIAS libhat_module)
+    add_library(libhat::libhat_module ALIAS libhat_module)
 
     if(LIBHAT_EXAMPLES)
         add_subdirectory(example/modules)
