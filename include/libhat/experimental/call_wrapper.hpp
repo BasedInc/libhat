@@ -1,10 +1,13 @@
 #pragma once
 
-#include <new>
-#include <utility>
+#ifndef LIBHAT_MODULE
+    #include <new>
+    #include <utility>
+#endif
 
 #include "../concepts.hpp"
 #include "../defines.hpp"
+#include "../export.hpp"
 
 namespace hat::detail {
 
@@ -85,7 +88,7 @@ namespace hat::detail {
     };
 }
 
-namespace hat::experimental {
+LIBHAT_EXPORT namespace hat::experimental {
 
     template<
         detail::function           Fn,

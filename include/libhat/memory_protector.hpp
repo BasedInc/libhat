@@ -1,13 +1,16 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-#include <type_traits>
-#include <utility>
+#ifndef LIBHAT_MODULE
+    #include <cstddef>
+    #include <cstdint>
+    #include <type_traits>
+    #include <utility>
+#endif
 
+#include "export.hpp"
 #include "memory.hpp"
 
-namespace hat {
+LIBHAT_EXPORT namespace hat {
 
     /// RAII wrapper for setting memory protection flags
     class memory_protector {

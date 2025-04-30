@@ -1,6 +1,10 @@
 #pragma once
 
-#include <type_traits>
+#ifndef LIBHAT_MODULE
+    #include <type_traits>
+#endif
+
+#include "export.hpp"
 
 namespace hat::detail {
 
@@ -8,7 +12,7 @@ namespace hat::detail {
     void implicitly_default_construct(const T&);
 }
 
-namespace hat {
+LIBHAT_EXPORT namespace hat {
 
     template<typename T>
     struct is_implicitly_default_constructible : std::false_type {};

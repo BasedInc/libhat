@@ -1,12 +1,15 @@
 #pragma once
 
-#include <string_view>
-#include <type_traits>
+#ifndef LIBHAT_MODULE
+    #include <string_view>
+    #include <type_traits>
+#endif
 
 #include "concepts.hpp"
+#include "export.hpp"
 #include "result.hpp"
 
-namespace hat {
+LIBHAT_EXPORT namespace hat {
 
     enum class parse_int_error {
         invalid_base,

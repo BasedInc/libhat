@@ -1,15 +1,18 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-#include <functional>
-#include <optional>
-#include <span>
-#include <string_view>
+#ifndef LIBHAT_MODULE
+    #include <cstddef>
+    #include <cstdint>
+    #include <functional>
+    #include <optional>
+    #include <span>
+    #include <string_view>
+#endif
 
+#include "export.hpp"
 #include "memory.hpp"
 
-namespace hat::process {
+LIBHAT_EXPORT namespace hat::process {
 
     class module {
     public:

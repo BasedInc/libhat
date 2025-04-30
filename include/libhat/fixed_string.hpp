@@ -1,10 +1,15 @@
 #pragma once
 
-#include <algorithm>
-#include <string>
-#include <string_view>
+#ifndef LIBHAT_MODULE
+    #include <algorithm>
+    #include <string>
+    #include <string_view>
+    #include <version>
+#endif
 
-namespace hat {
+#include "export.hpp"
+
+LIBHAT_EXPORT namespace hat {
 
     template<typename Char, size_t N, template<size_t> typename Derived>
     struct basic_fixed_string {

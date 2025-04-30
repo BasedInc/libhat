@@ -1,9 +1,13 @@
 #pragma once
 
-#include <cstdint>
-#include <type_traits>
+#ifndef LIBHAT_MODULE
+    #include <cstdint>
+    #include <type_traits>
+#endif
 
-namespace hat {
+#include "export.hpp"
+
+LIBHAT_EXPORT namespace hat {
 
     enum class protection : uint8_t {
         Read    = 0b001,

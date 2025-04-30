@@ -1,9 +1,12 @@
 #pragma once
 
-#include <string>
-#include <string_view>
+#ifndef LIBHAT_MODULE
+    #include <string>
+    #include <string_view>
+    #include <version>
+#endif
 
-namespace hat {
+LIBHAT_EXPORT namespace hat {
 
     inline constexpr struct null_terminated_t{} null_terminated{};
 
@@ -303,25 +306,25 @@ namespace hat {
 #endif
     using u16cstring_view = basic_cstring_view<char16_t>;
     using u32cstring_view = basic_cstring_view<char32_t>;
-
-    namespace detail {
-
-        template<typename Traits>
-        struct comparison_category {
-            using type = std::weak_ordering;
-        };
-
-        template<typename Traits> requires requires { typename Traits::comparison_category; }
-        struct comparison_category<Traits> {
-            using type = typename Traits::comparison_category;
-        };
-
-        template<typename Traits>
-        using comparison_category_t = typename comparison_category<Traits>::type;
-    }
 }
 
-template<typename CharT, typename Traits>
+namespace hat::detail {
+
+    template<typename Traits>
+    struct comparison_category {
+        using type = std::weak_ordering;
+    };
+
+    template<typename Traits> requires requires { typename Traits::comparison_category; }
+    struct comparison_category<Traits> {
+        using type = typename Traits::comparison_category;
+    };
+
+    template<typename Traits>
+    using comparison_category_t = typename comparison_category<Traits>::type;
+}
+
+LIBHAT_EXPORT template<typename CharT, typename Traits>
 constexpr hat::detail::comparison_category_t<Traits> operator<=>(
     hat::basic_cstring_view<CharT, Traits> lhs,
     std::type_identity_t<std::basic_string_view<CharT, Traits>> rhs) noexcept
@@ -329,7 +332,7 @@ constexpr hat::detail::comparison_category_t<Traits> operator<=>(
     return std::basic_string_view<CharT, Traits>{lhs} <=> rhs;
 }
 
-namespace hat::literals::cstring_view_literals {
+LIBHAT_EXPORT namespace hat::inline literals::inline cstring_view_literals {
 
     [[nodiscard]] constexpr cstring_view operator""_csv(const char* str, size_t size) {
         return {null_terminated, str, size};

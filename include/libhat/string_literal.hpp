@@ -1,8 +1,9 @@
 #pragma once
 
+#include "export.hpp"
 #include "fixed_string.hpp"
 
-namespace hat {
+LIBHAT_EXPORT namespace hat {
 
     template<auto str>
     struct basic_string_literal {
@@ -27,7 +28,7 @@ namespace hat {
     using u32string_literal = basic_string_literal<str>;
 }
 
-namespace hat::literals::string_literals {
+LIBHAT_EXPORT namespace hat::inline literals::inline string_literals {
 
     template<hat::fixed_string str>
     consteval auto operator""_s() noexcept {
