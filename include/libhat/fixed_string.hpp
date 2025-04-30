@@ -4,6 +4,7 @@
     #include <algorithm>
     #include <string>
     #include <string_view>
+    #include <version>
 #endif
 
 #include "export.hpp"

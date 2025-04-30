@@ -3,6 +3,7 @@
 #ifndef LIBHAT_MODULE
     #include <string>
     #include <string_view>
+    #include <version>
 #endif
 
 LIBHAT_EXPORT namespace hat {
