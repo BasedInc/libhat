@@ -133,7 +133,7 @@ if(LIBHAT_MODULE_TARGET)
     target_compile_features(libhat_module PUBLIC cxx_std_20)
     target_link_libraries(libhat_module PRIVATE libhat::libhat)
     target_sources(libhat_module PUBLIC
-        FILE_SET cxx_modules
+        FILE_SET CXX_MODULES
         TYPE CXX_MODULES
         FILES module/libhat.cppm
     )
