@@ -22,6 +22,9 @@ option(LIBHAT_DISABLE_AVX512 "Disables AVX512 scanning" OFF)
 option(LIBHAT_TESTING "Enable tests" ${PROJECT_IS_TOP_LEVEL})
 option(LIBHAT_TESTING_ASAN "Enable address sanitizer when testing" ON)
 option(LIBHAT_TESTING_SDE "Run tests using Intel Software Development Emulator" ON)
+option(LIBHAT_MODULE_TARGET "Create target for the module interface" OFF)
+option(LIBHAT_USE_STD_MODULE "Compile the module target using the std module" OFF)
+option(LIBHAT_EXAMPLES "Include example targets" ${PROJECT_IS_TOP_LEVEL})
 
 option(LIBHAT_HINT_X86_64 "Enables support for the x86_64 scan hint, requires a small (less than 1KB) data table" ON)
 
@@ -123,6 +126,25 @@ if(LIBHAT_STATIC_C_LIB OR LIBHAT_SHARED_C_LIB)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
         $<INSTALL_INTERFACE:include>
     )
+endif()
+
+if(LIBHAT_MODULE_TARGET)
+    add_library(libhat_module)
+    target_compile_features(libhat_module PUBLIC cxx_std_20)
+    target_link_libraries(libhat_module PRIVATE libhat::libhat)
+    target_sources(libhat_module PUBLIC
+        FILE_SET cxx_modules
+        TYPE CXX_MODULES
+        FILES module/libhat.cppm
+    )
+    target_compile_definitions(libhat_module PRIVATE
+        "$<$<BOOL:${LIBHAT_USE_STD_MODULE}>:LIBHAT_USE_STD_MODULE>"
+    )
+    add_library(libhat::libhat-module ALIAS libhat_module)
+
+    if(LIBHAT_EXAMPLES)
+        add_subdirectory(example/modules)
+    endif()
 endif()
 
 if(LIBHAT_TESTING)
