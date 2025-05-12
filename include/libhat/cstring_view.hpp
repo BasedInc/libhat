@@ -6,6 +6,8 @@
     #include <version>
 #endif
 
+#include "export.hpp"
+
 LIBHAT_EXPORT namespace hat {
 
     inline constexpr struct null_terminated_t{} null_terminated{};
