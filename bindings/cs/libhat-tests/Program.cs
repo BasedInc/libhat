@@ -11,9 +11,9 @@ new Random().NextBytes(randomBytes);
 
 var pattern = randomBytes.AsSpan().Slice(0x1000, 0x10).ToArray().AsPattern();
 var scanner = new Scanner(Marshal.UnsafeAddrOfPinnedArrayElement(randomBytes, 0), (uint)randomBytes.Length);
-var address = scanner.FindPattern(pattern);
+var result = scanner.FindPattern(pattern);
 
-Console.WriteLine($"found pattern at 0x{address:X}");
+if (result != null) Console.WriteLine($"found pattern at 0x{result.Address:X}");
 
 Console.WriteLine("\nscanning in module:");
 
@@ -21,6 +21,6 @@ var modulePattern = new Pattern("48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 48
 
 var module = Process.GetCurrentProcess().MainModule!;
 var moduleScanner = new Scanner(module);
-var moduleAddress = moduleScanner.FindPattern(modulePattern);
+var moduleResult = moduleScanner.FindPattern(modulePattern);
 
-Console.WriteLine($"found pattern at 0x{moduleAddress:X}");
+if (moduleResult != null) Console.WriteLine($"found pattern at 0x{moduleResult.Address:X}");
