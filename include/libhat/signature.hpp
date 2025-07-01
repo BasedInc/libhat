@@ -62,14 +62,26 @@ LIBHAT_EXPORT namespace hat {
     using fixed_signature = std::array<signature_element, N>;
 
     /// Convert raw byte storage into a signature
-    [[nodiscard]] constexpr signature bytes_to_signature(std::span<const std::byte> bytes) {
-        return {bytes.begin(), bytes.end()};
+    template<size_t N>
+    [[nodiscard]] constexpr auto bytes_to_signature(std::span<const std::byte, N> bytes) {
+        if constexpr (N == std::dynamic_extent) {
+            return signature{bytes.begin(), bytes.end()};
+        } else {
+            fixed_signature<N> result;
+            std::ranges::copy(bytes, result.begin());
+            return result;
+        }
     }
 
     template<typename T>
-    [[nodiscard]] constexpr signature object_to_signature(const T& value) {
-        using bytes = std::array<std::byte, sizeof(T)>;
-        return bytes_to_signature(std::bit_cast<bytes>(value));
+    [[nodiscard]] constexpr auto object_to_signature(const T& value) {
+        constexpr size_t N = sizeof(T);
+        using view = std::span<const std::byte, N>;
+        if LIBHAT_IF_CONSTEVAL {
+            return bytes_to_signature(view{std::bit_cast<std::array<std::byte, N>>(value)});
+        } else {
+            return bytes_to_signature(view{reinterpret_cast<const std::byte*>(&value), N});
+        }
     }
 
     template<typename Char>

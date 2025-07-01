@@ -23,8 +23,8 @@ namespace hat::experimental {
         typeDesc -= 2 * sizeof(void*);
 
         // The actual xref refers to an offset from the base module
-        const auto loffset = static_cast<uint32_t>(typeDesc - reinterpret_cast<std::byte*>(mod.address()));
-        auto locator = object_to_signature(loffset);
+        const auto loffset = object_to_signature(static_cast<uint32_t>(typeDesc - reinterpret_cast<std::byte*>(mod.address())));
+        hat::signature locator{loffset.begin(), loffset.end()};
         // FIXME: These appear to be the values just for basic classes with single inheritance. We should be using a
         //        different method to differentiate the object locator from the base class descriptor.
         #ifdef LIBHAT_X86_64
