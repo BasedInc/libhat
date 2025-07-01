@@ -10,6 +10,7 @@
     #include <vector>
 #endif
 
+#include "defines.hpp"
 #include "export.hpp"
 #include "strconv.hpp"
 #include "fixed_string.hpp"
