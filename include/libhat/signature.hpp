@@ -1,6 +1,7 @@
 #pragma once
 
 #ifndef LIBHAT_MODULE
+    #include <algorithm>
     #include <array>
     #include <bit>
     #include <optional>
@@ -93,42 +94,70 @@ LIBHAT_EXPORT namespace hat {
         empty_signature,
     };
 
-    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_parse_error> parse_signature(std::string_view str) {
-        signature sig{};
+    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<size_t, signature_parse_error> parse_signature_to(std::output_iterator<signature_element> auto out, std::string_view str) {
+        size_t written = 0;
         bool containsByte = false;
         for (const auto& word : str | std::views::split(' ')) {
             if (word.empty()) {
                 continue;
             }
             if (word[0] == '?') {
-                sig.emplace_back(std::nullopt);
+                *out++ = signature_element{std::nullopt};
+                written++;
             } else {
                 const auto sv = std::string_view{word.begin(), word.end()};
                 const auto parsed = parse_int<uint8_t>(sv, 16);
                 if (parsed.has_value()) {
-                    sig.emplace_back(static_cast<std::byte>(parsed.value()));
+                    *out++ = signature_element{static_cast<std::byte>(parsed.value())};
+                    written++;
                 } else {
                     return result_error{signature_parse_error::parse_error};
                 }
                 containsByte = true;
             }
         }
-        if (sig.empty()) {
+        if (written == 0) {
             return result_error{signature_parse_error::empty_signature};
         }
         if (!containsByte) {
             return result_error{signature_parse_error::missing_byte};
         }
-        return sig;
+        return written;
     }
+
+    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_parse_error> parse_signature(std::string_view str) {
+        signature sig{};
+        auto result = parse_signature_to(std::back_inserter(sig), str);
+
+        if (result.has_value()) {
+            return sig;
+        }
+
+        return result_error{result.error()};
+    }
+}
+
+namespace hat::detail {
+
+    template<size_t N>
+    [[nodiscard]] consteval std::pair<std::array<signature_element, N>, size_t> compile_signature_max_size(std::string_view str) {
+        std::array<signature_element, N> array;
+        auto size = parse_signature_to(array.begin(), str);
+        return {array, size.value()};
+    }
+}
+
+LIBHAT_EXPORT namespace hat {
 
     /// Parses a signature string at compile time and returns the result as a fixed_signature
     template<fixed_string str>
     [[nodiscard]] consteval auto compile_signature() {
-        const auto sig = parse_signature(str.c_str()).value();
-        constexpr auto N = parse_signature(str.c_str()).value().size();
-        fixed_signature<N> arr{};
-        std::ranges::move(sig, arr.begin());
+#if __cpp_constexpr >= 202211L
+        static
+#endif
+        constexpr auto pair = detail::compile_signature_max_size<str.size() / 2 + 1>(str.to_view());
+        fixed_signature<pair.second> arr{};
+        std::move(pair.first.begin(), pair.first.begin() + pair.second, arr.begin());
         return arr;
     }
 
