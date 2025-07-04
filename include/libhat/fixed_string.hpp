@@ -7,6 +7,7 @@
     #include <version>
 #endif
 
+#include "cstring_view.hpp"
 #include "export.hpp"
 
 LIBHAT_EXPORT namespace hat {
@@ -159,6 +160,14 @@ LIBHAT_EXPORT namespace hat {
 
         constexpr std::basic_string_view<Char> to_view() const {
             return {this->begin(), this->end()};
+        }
+
+        constexpr operator std::basic_string_view<Char>() const {
+            return {this->begin(), this->end()};
+        }
+
+        constexpr operator hat::basic_cstring_view<Char>() const {
+            return {hat::null_terminated, this->c_str(), this->size()};
         }
 
         Char value[N + 1]{};
