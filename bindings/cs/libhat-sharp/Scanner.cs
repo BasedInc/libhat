@@ -58,21 +58,29 @@ public unsafe class Scanner
 	}
 	
 	/// <summary>
+	/// Creates a scanner for a <see cref="Memory{T}"/> of bytes.
+	/// </summary>
+	/// <param name="buffer">The buffer to scan in.</param>
+	public Scanner(Memory<byte> buffer) : this(buffer.Span) { }
+	
+	/// <summary>
 	/// Scans for a pattern.
 	/// </summary>
 	/// <param name="pattern">The pattern to scan for.</param>
 	/// <param name="alignment">The byte alignment of the result.</param>
-	/// <returns>The address of the pattern if found, otherwise, 0.</returns>
-	public nint FindPattern(Pattern pattern, ScanAlignment alignment = ScanAlignment.X1)
+	/// <returns>A <see cref="ScanResult"/> containing the result of the scan if found, otherwise null.</returns>
+	public ScanResult? FindPattern(Pattern pattern, ScanAlignment alignment = ScanAlignment.X1)
 	{
 		if (_buffer is not null && _size is not null)
 		{
-			return Functions.libhat_find_pattern(pattern.Signature, _buffer.Value, _size.Value, alignment);
+			var result = Functions.libhat_find_pattern(pattern.Signature, _buffer.Value, _size.Value, alignment);
+			return result == 0 ? null : new ScanResult(result);
 		}
 
 		if (_section is not null && _module is not null)
 		{
-			return Functions.libhat_find_pattern_mod(pattern.Signature, _module.Value, _section, alignment);
+			var result = Functions.libhat_find_pattern_mod(pattern.Signature, _module.Value, _section, alignment);
+			return result == 0 ? null : new ScanResult(result);
 		}
 		
 		throw new InvalidOperationException("Scanner is not initialized.");
