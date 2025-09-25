@@ -123,13 +123,13 @@ LIBHAT_EXPORT namespace hat {
         template<typename... Args>
         requires (uses_allocator)
         constexpr explicit cow(in_place_viewed_t, Args&&... args) noexcept(std::is_nothrow_constructible_v<viewed_type, Args&&...>) requires(default_construct_alloc)
-            : impl{ std::in_place_index<0>, std::piecewise_construct, std::forward_as_tuple<Args...>(args...), std::forward_as_tuple(allocator_type{}) } {}
+            : impl{ std::in_place_index<0>, std::piecewise_construct, std::forward_as_tuple(std::forward<Args>(args)...), std::forward_as_tuple(allocator_type{}) } {}
 
         // In-place constructor for viewed_type for not_allocator, takes in an allocator
         template<typename... Args>
         requires (uses_allocator)
         constexpr cow(std::allocator_arg_t, const allocator_type& alloc, in_place_viewed_t, Args&&... args) noexcept(std::is_nothrow_constructible_v<viewed_type, Args&&...>)
-            : impl{ std::in_place_index<0>, std::piecewise_construct, std::forward_as_tuple<Args...>(args...), std::forward_as_tuple(alloc) } {}
+            : impl{ std::in_place_index<0>, std::piecewise_construct, std::forward_as_tuple(std::forward<Args>(args)...), std::forward_as_tuple(alloc) } {}
 
         // In-place constructor for viewed_type with no_allocator
         template<typename... Args>
@@ -262,7 +262,7 @@ LIBHAT_EXPORT namespace hat {
                 // If we are holding an owned value, we need to take the allocator back out.
                 return this->impl.template emplace<0>(
                     std::piecewise_construct,
-                    std::forward_as_tuple<Args...>(args...),
+                    std::forward_as_tuple(std::forward<Args>(args)...),
                     std::forward_as_tuple(this->get_allocator())).first;
 
                 // TODO: Since the allocator won't be in use anymore, it might make sense to allow to change the allocator
