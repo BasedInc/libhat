@@ -203,7 +203,7 @@ LIBHAT_EXPORT namespace hat::inline literals::inline signature_literals {
 
 #if __cpp_constexpr >= 202211L
     template<hat::fixed_string str>
-    consteval auto operator""_sigv() noexcept {
+    constexpr auto operator""_sigv() noexcept {
         static constexpr auto sig = hat::compile_signature<str>();
         return hat::signature_view{sig};
     }
