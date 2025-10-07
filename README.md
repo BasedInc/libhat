@@ -82,7 +82,7 @@ hat::scan_result result = hat::find_pattern(pattern, ".text");
 // Or another module loaded into the process
 std::optional<hat::process::module> ntdll = hat::process::get_module("ntdll.dll");
 assert(ntdll.has_value());
-hat::scan_result result = hat::find_pattern(pattern, *ntdll, ".text");
+hat::scan_result result = hat::find_pattern(pattern, ".text", *ntdll);
 
 // Get the address pointed at by the pattern
 const std::byte* address = result.get();
