@@ -22,7 +22,7 @@ LIBHAT_EXPORT namespace hat {
     struct signature_element {
         constexpr signature_element() noexcept {}
         constexpr signature_element(std::nullopt_t) noexcept {}
-        constexpr signature_element(const std::byte valueIn) noexcept : val(valueIn), present(true) {}
+        constexpr signature_element(const std::byte valueIn) noexcept : value_{valueIn}, mask_{0xFF} {}
 
         constexpr signature_element& operator=(std::nullopt_t) noexcept {
             return *this = signature_element{};
@@ -36,24 +36,49 @@ LIBHAT_EXPORT namespace hat {
             *this = std::nullopt;
         }
 
-        [[nodiscard]] constexpr bool has_value() const noexcept {
-            return this->present;
-        }
-
         [[nodiscard]] constexpr std::byte value() const noexcept {
-            return this->val;
+            return this->value_;
         }
 
-        [[nodiscard]] constexpr operator bool() const noexcept {
-            return this->has_value();
+        [[nodiscard]] constexpr std::byte mask() const noexcept {
+            return this->mask_;
         }
 
         [[nodiscard]] constexpr std::byte operator*() const noexcept {
             return this->value();
         }
+
+        [[nodiscard]] constexpr bool all() const noexcept {
+            return this->mask_ == std::byte{0xFF};
+        }
+
+        [[nodiscard]] constexpr bool any() const noexcept {
+            return this->mask_ != std::byte{0x00};
+        }
+
+        [[nodiscard]] constexpr bool none() const noexcept {
+            return this->mask_ == std::byte{0x00};
+        }
+
+        [[nodiscard]] constexpr bool has(const uint8_t digit) const noexcept {
+            const uint8_t m = std::to_integer<uint8_t>(this->mask_);
+            return (m & (1u << digit)) != 0;
+        }
+
+        [[nodiscard]] constexpr bool at(const uint8_t digit) const noexcept {
+            const uint8_t v = std::to_integer<uint8_t>(this->value_);
+            return (v & (1u << digit)) != 0;
+        }
+
+        [[nodiscard]] constexpr std::strong_ordering operator<=>(const signature_element& other) const noexcept = default;
+
+        [[nodiscard]] constexpr bool operator==(const std::byte byte) const noexcept {
+            return (byte & this->mask_) == this->value_;
+        }
+
     private:
-        std::byte val{};
-        bool present = false;
+        std::byte value_{};
+        std::byte mask_{};
     };
 
     using signature = std::vector<signature_element>;
@@ -179,14 +204,28 @@ LIBHAT_EXPORT namespace hat {
         std::string ret;
         ret.reserve(signature.size() * 3);
         for (auto& element : signature) {
-            if (element.has_value()) {
+            const bool a = (element.mask() & std::byte{0xF0}) == std::byte{0xF0};
+            const bool b = (element.mask() & std::byte{0x0F}) == std::byte{0x0F};
+            if (a || b) {
                 ret += {
-                    hex[static_cast<size_t>(element.value() >> 4) & 0xFu],
-                    hex[static_cast<size_t>(element.value() >> 0) & 0xFu],
+                    a ? hex[static_cast<size_t>(element.value() >> 4) & 0xFu] : '?',
+                    b ? hex[static_cast<size_t>(element.value() >> 0) & 0xFu] : '?',
                     ' '
                 };
-            } else {
+            } else if (element.none()) {
                 ret += "? ";
+            } else {
+                ret += {
+                    element.has(7) ? (element.at(7) ? '1' : '0') : '?',
+                    element.has(6) ? (element.at(6) ? '1' : '0') : '?',
+                    element.has(5) ? (element.at(5) ? '1' : '0') : '?',
+                    element.has(4) ? (element.at(4) ? '1' : '0') : '?',
+                    element.has(3) ? (element.at(3) ? '1' : '0') : '?',
+                    element.has(2) ? (element.at(2) ? '1' : '0') : '?',
+                    element.has(1) ? (element.at(1) ? '1' : '0') : '?',
+                    element.has(0) ? (element.at(0) ? '1' : '0') : '?',
+                    ' '
+                };
             }
         }
         ret.pop_back();

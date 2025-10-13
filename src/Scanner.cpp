@@ -27,7 +27,7 @@ namespace hat::detail {
                 auto& a = *it;
                 auto& b = *std::next(it);
 
-                if (a.has_value() && b.has_value()) {
+                if (a.all() && b.all()) {
                     const auto score = getScore(a.value(), b.value());
                     if (!bestPair || score > bestPair->second) {
                         bestPair.emplace(i, score);
@@ -48,7 +48,7 @@ namespace hat::detail {
                 auto& a = *it;
                 auto& b = *std::next(it);
 
-                if (a.has_value() && b.has_value()) {
+                if (a.all() && b.all()) {
                     this->pairIndex = i;
                     break;
                 }
