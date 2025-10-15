@@ -27,20 +27,20 @@ LIBHAT_EXPORT namespace hat {
         const int digits = base < 10 ? base : 10;
         const int letters = base > 10 ? base - 10 : 0;
 
-        for (auto iter = begin; iter != end; iter++) {
-            const char ch = *iter;
-
-            if constexpr (std::is_signed_v<Integer>) {
-                if (iter == begin) {
-                    if (ch == '+') {
-                        continue;
-                    } else if (ch == '-') {
-                        sign = -1;
-                        continue;
-                    }
+        auto iter = begin;
+        if constexpr (std::is_signed_v<Integer>) {
+            if (iter != end) {
+                if (*iter == '+') {
+                    iter++;
+                } else if (*iter == '-') {
+                    sign = -1;
+                    iter++;
                 }
             }
+        }
 
+        for (; iter != end; iter++) {
+            const char ch = *iter;
             value *= base;
             if (ch >= '0' && ch < '0' + digits) {
                 value += static_cast<Integer>(ch - '0');
@@ -49,7 +49,6 @@ LIBHAT_EXPORT namespace hat {
             } else if (ch >= 'a' && ch < 'a' + letters) {
                 value += static_cast<Integer>(ch - 'a' + 10);
             } else {
-                // Throws an exception at runtime AND prevents constexpr evaluation
                 return result_error{parse_int_error::illegal_char};
             }
         }

@@ -20,9 +20,10 @@ LIBHAT_EXPORT namespace hat {
     /// Effectively std::optional<std::byte>, but with the added flexibility of being able to use std::bit_cast on
     /// instances of the class in constant expressions.
     struct signature_element {
-        constexpr signature_element() noexcept {}
+        constexpr signature_element() noexcept = default;
         constexpr signature_element(std::nullopt_t) noexcept {}
-        constexpr signature_element(const std::byte valueIn) noexcept : value_{valueIn}, mask_{0xFF} {}
+        constexpr signature_element(const std::byte value) noexcept : value_{value}, mask_{0xFF} {}
+        constexpr signature_element(const std::byte value, const std::byte mask) noexcept : value_{value}, mask_{mask} {}
 
         constexpr signature_element& operator=(std::nullopt_t) noexcept {
             return *this = signature_element{};
@@ -61,12 +62,12 @@ LIBHAT_EXPORT namespace hat {
         }
 
         [[nodiscard]] constexpr bool has(const uint8_t digit) const noexcept {
-            const uint8_t m = std::to_integer<uint8_t>(this->mask_);
+            const auto m = std::to_integer<uint8_t>(this->mask_);
             return (m & (1u << digit)) != 0;
         }
 
         [[nodiscard]] constexpr bool at(const uint8_t digit) const noexcept {
-            const uint8_t v = std::to_integer<uint8_t>(this->value_);
+            const auto v = std::to_integer<uint8_t>(this->value_);
             return (v & (1u << digit)) != 0;
         }
 
@@ -132,26 +133,68 @@ LIBHAT_EXPORT namespace hat {
         empty_signature,
     };
 
-    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<size_t, signature_parse_error> parse_signature_to(std::output_iterator<signature_element> auto out, std::string_view str) {
+    namespace detail {
+
+        LIBHAT_CONSTEXPR_RESULT std::optional<signature_element> parse_signature_element(const std::string_view str, const uint8_t base) {
+            uint8_t value{};
+            uint8_t mask{};
+            for (auto& ch : str) {
+                value *= base;
+                mask *= base;
+                if (ch != '?') {
+                    auto digit = hat::parse_int<uint8_t>(&ch, &ch + 1, base);
+                    if (!digit.has_value()) [[unlikely]] {
+                        return std::nullopt;
+                    }
+                    value += digit.value();
+                    mask += base - 1;
+                }
+            }
+
+            return signature_element{std::byte{value}, std::byte{mask}};
+        }
+    }
+
+    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<size_t, signature_parse_error> parse_signature_to(std::output_iterator<signature_element> auto out, const std::string_view str) {
         size_t written = 0;
         bool containsByte = false;
-        for (const auto& word : str | std::views::split(' ')) {
-            if (word.empty()) {
-                continue;
-            }
-            if (word[0] == '?') {
-                *out++ = signature_element{std::nullopt};
-                written++;
-            } else {
-                const auto sv = std::string_view{word.begin(), word.end()};
-                const auto parsed = parse_int<uint8_t>(sv, 16);
-                if (parsed.has_value()) {
-                    *out++ = signature_element{static_cast<std::byte>(parsed.value())};
+
+        for (auto&& sub : str | std::views::split(' ')) {
+            const std::string_view word{sub.begin(), sub.end()};
+            switch (word.size()) {
+                case 0: {
+                    continue;
+                }
+                case 1: {
+                    if (word.front() != '?') {
+                        return result_error{signature_parse_error::parse_error};
+                    }
+                    *out++ = signature_element{std::nullopt};
                     written++;
-                } else {
+                    break;
+                }
+                case 2:
+                case 8: {
+                    const auto base = word.size() == 2 ? 16 : 2;
+                    auto element = detail::parse_signature_element(word, base);
+                    if (element) {
+                        *out++ = *element;
+                        written++;
+
+                        if (!containsByte && element->any()) {
+                            if (!element->all()) {
+                                return result_error{signature_parse_error::missing_byte};
+                            }
+                            containsByte = true;
+                        }
+                    } else {
+                        return result_error{signature_parse_error::parse_error};
+                    }
+                    break;
+                }
+                default: {
                     return result_error{signature_parse_error::parse_error};
                 }
-                containsByte = true;
             }
         }
         if (written == 0) {
