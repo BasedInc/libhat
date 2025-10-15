@@ -175,7 +175,7 @@ LIBHAT_EXPORT namespace hat {
                 }
                 case 2:
                 case 8: {
-                    const auto base = word.size() == 2 ? 16 : 2;
+                    const uint8_t base = word.size() == 2 ? 16 : 2;
                     auto element = detail::parse_signature_element(word, base);
                     if (element) {
                         *out++ = *element;
