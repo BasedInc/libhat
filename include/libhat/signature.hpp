@@ -147,7 +147,7 @@ LIBHAT_EXPORT namespace hat {
                         return std::nullopt;
                     }
                     value += digit.value();
-                    mask += base - 1;
+                    mask += static_cast<uint8_t>(base - 1);
                 }
             }
 
