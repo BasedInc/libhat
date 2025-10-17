@@ -23,7 +23,7 @@ LIBHAT_EXPORT namespace hat {
         constexpr signature_element() noexcept = default;
         constexpr signature_element(std::nullopt_t) noexcept {}
         constexpr signature_element(const std::byte value) noexcept : value_{value}, mask_{0xFF} {}
-        constexpr signature_element(const std::byte value, const std::byte mask) noexcept : value_{value}, mask_{mask} {}
+        constexpr signature_element(const std::byte value, const std::byte mask) noexcept : value_{value & mask}, mask_{mask} {}
 
         constexpr signature_element& operator=(std::nullopt_t) noexcept {
             return *this = signature_element{};
