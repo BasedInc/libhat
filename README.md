@@ -72,16 +72,53 @@ Below is a summary of the support of libhat OS APIs on various platforms:
 | `hp::module::for_each_segment` |    ✅    |   ✅   |       |
 
 ## Quick start
-### Pattern scanning
+### Defining patterns
+libhat's signature syntax consists of space-delimited tokens and is backwards compatible with IDA syntax:
+
+- 8 character sequences are interpreted as binary
+- 2 character sequences are interpreted as hex
+- 1 character must be a wildcard (`?`)
+
+Any digit can be substituted for a wildcard, for example:
+- `????1111` is a binary sequence, and matches any byte with all ones in the lower nibble
+- `A?` is a hex sequence, and matches any byte of the form `1010????`
+- Both `????????` and `??` are equivalent to `?`, and will match any byte
+
+A complete pattern might look like `AB ? 12 ?3`. This matches any 4-byte
+subrange `s` for which all the following conditions are met:
+- `s[0] == 0xAB`
+- `s[2] == 0x12`
+- `s[3] & 0x0F == 0x03`
+
+Due to how various scanning algorithms are implemented, there are some restrictions when defining a pattern:
+
+1) A pattern must contain at least one fully masked byte (i.e. `AB` or `10011001`)
+2) The first byte with a non-zero mask must have a full mask
+   - `?1 02` is disallowed
+   - `01 02` is allowed
+   - `?? 01` is allowed
+
+In code, there are a few to initialize a signature from its string representation:
+
 ```cpp
 #include <libhat/scanner.hpp>
 
 // Parse a pattern's string representation to an array of bytes at compile time
 constexpr hat::fixed_signature pattern = hat::compile_signature<"48 8D 05 ? ? ? ? E8">();
 
-// ...or parse it at runtime
+// Parse using the UDLs at compile time
+using namespace hat::literals;
+constexpr hat::fixed_signature pattern = "48 8D 05 ? ? ? ? E8"_sig; // stack owned
+constexpr hat::signature_view pattern = "48 8D 05 ? ? ? ? E8"_sigv; // static lifetime
+
+// Parse it at runtime
 using parsed_t = hat::result<hat::signature, hat::signature_parse_error>;
 parsed_t runtime_pattern = hat::parse_signature("48 8D 05 ? ? ? ? E8");
+```
+
+### Scanning patterns
+```cpp
+#include <libhat/scanner.hpp>
 
 // Scan for this pattern using your CPU's vectorization features
 auto begin = /* a contiguous iterator over std::byte */;
@@ -107,6 +144,21 @@ const std::byte* address = result.get();
 //   48 8D 05 BE 53 23 01    lea  rax, [rip+0x12353be]
 //
 const std::byte* relative_address = result.rel(3);
+```
+
+libhat has a few optimizations for searching for patterns in `x86_64` machine code:
+```cpp
+#include <libhat/scanner.hpp>
+
+// If a byte pattern matches at the start of a function, the result will be aligned on 16-bytes.
+// This can be indicated via the defaulted `alignment` parameter (all overloads have this parameter):
+std::span<std::byte> range   = /* ... */;
+hat::signature_view  pattern = /* ... */;
+hat::scan_result     result  = hat::find_pattern(range, pattern, hat::scan_alignment::X16);
+
+// Additionally, x86_64 contains a non-uniform distribution of byte pairs. By passing the `x86_64`
+// scan hint, the search can be based on the least common byte pair that is found in the pattern.
+hat::scan_result result  = hat::find_pattern(range, pattern, hat::scan_alignment::X1, hat::scan_hint::x86_64);
 ```
 
 ### Accessing offsets
