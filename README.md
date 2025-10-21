@@ -109,7 +109,7 @@ constexpr hat::fixed_signature pattern = hat::compile_signature<"48 8D 05 ? ? ? 
 // Parse using the UDLs at compile time
 using namespace hat::literals;
 constexpr hat::fixed_signature pattern = "48 8D 05 ? ? ? ? E8"_sig; // stack owned
-constexpr hat::signature_view pattern = "48 8D 05 ? ? ? ? E8"_sigv; // static lifetime
+constexpr hat::signature_view pattern = "48 8D 05 ? ? ? ? E8"_sigv; // static lifetime (requires C++23)
 
 // Parse it at runtime
 using parsed_t = hat::result<hat::signature, hat::signature_parse_error>;
