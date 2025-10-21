@@ -98,7 +98,7 @@ Due to how various scanning algorithms are implemented, there are some restricti
    - `01 02` is allowed
    - `?? 01` is allowed
 
-In code, there are a few to initialize a signature from its string representation:
+In code, there are a few ways to initialize a signature from its string representation:
 
 ```cpp
 #include <libhat/scanner.hpp>
