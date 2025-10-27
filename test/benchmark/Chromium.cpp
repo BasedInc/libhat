@@ -9,7 +9,13 @@
 #define WIDE_STR_(x) L ## #x
 #define WIDE_STR(x) WIDE_STR_(x)
 
-static constexpr auto DllMainSignature = hat::compile_signature<"48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ?? 49 8B F8">();
+static const hat::signature DllMainSignature = [] {
+    auto result = hat::parse_signature("48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ?? 49 8B F8");
+    if (!result.has_value()) {
+        std::terminate();
+    }
+    return result.value();
+}();
 
 static std::span<const std::byte> get_file_data() {
     static std::vector<std::byte> data = []{
