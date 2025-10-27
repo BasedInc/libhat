@@ -8,18 +8,15 @@
 
 namespace hat::detail {
 
-    inline void load_signature_512(const signature_view signature, __m512i& bytes, uint64_t& mask) {
+    inline void load_signature_512(const signature_view signature, __m512i& bytes, __m512i& mask) {
         std::byte byteBuffer[64]{}; // The remaining signature bytes
-        uint64_t maskBuffer{}; // A bitmask for the signature bytes we care about
+        std::byte maskBuffer[64]{}; // A bitmask for the signature bytes we care about
         for (size_t i = 0; i < signature.size(); i++) {
-            auto e = signature[i];
-            if (e.has_value()) {
-                byteBuffer[i] = *e;
-                maskBuffer |= (1ull << i);
-            }
+            byteBuffer[i] = signature[i].value();
+            maskBuffer[i] = signature[i].mask();
         }
         bytes = _mm512_loadu_si512(&byteBuffer);
-        mask = maskBuffer;
+        mask = _mm512_loadu_si512(&maskBuffer);
     }
 
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
@@ -37,7 +34,7 @@ namespace hat::detail {
         }
 
         __m512i signatureBytes;
-        uint64_t signatureMask;
+        __m512i signatureMask;
         if constexpr (veccmp) {
             load_signature_512(signature, signatureBytes, signatureMask);
         }
@@ -67,14 +64,13 @@ namespace hat::detail {
                 const auto i = reinterpret_cast<const std::byte*>(&it) + offset - cmpIndex;
                 if constexpr (veccmp) {
                     const auto data = _mm512_loadu_si512(i);
-                    const auto invalid = _mm512_mask_cmpneq_epi8_mask(signatureMask, signatureBytes, data);
+                    const auto neqBits = _mm512_xor_si512(data, signatureBytes);
+                    const auto invalid = _mm512_test_epi64_mask(neqBits, signatureMask);
                     if (!invalid) LIBHAT_UNLIKELY {
                         return i;
                     }
                 } else {
-                    auto match = std::equal(signature.begin(), signature.end(), i, [](auto opt, auto byte) {
-                        return !opt.has_value() || *opt == byte;
-                    });
+                    const auto match = std::equal(signature.begin(), signature.end(), i);
                     if (match) LIBHAT_UNLIKELY {
                         return i;
                     }

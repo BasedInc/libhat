@@ -20,9 +20,10 @@ LIBHAT_EXPORT namespace hat {
     /// Effectively std::optional<std::byte>, but with the added flexibility of being able to use std::bit_cast on
     /// instances of the class in constant expressions.
     struct signature_element {
-        constexpr signature_element() noexcept {}
+        constexpr signature_element() noexcept = default;
         constexpr signature_element(std::nullopt_t) noexcept {}
-        constexpr signature_element(const std::byte valueIn) noexcept : val(valueIn), present(true) {}
+        constexpr signature_element(const std::byte value) noexcept : value_{value}, mask_{0xFF} {}
+        constexpr signature_element(const std::byte value, const std::byte mask) noexcept : value_{value & mask}, mask_{mask} {}
 
         constexpr signature_element& operator=(std::nullopt_t) noexcept {
             return *this = signature_element{};
@@ -36,24 +37,49 @@ LIBHAT_EXPORT namespace hat {
             *this = std::nullopt;
         }
 
-        [[nodiscard]] constexpr bool has_value() const noexcept {
-            return this->present;
-        }
-
         [[nodiscard]] constexpr std::byte value() const noexcept {
-            return this->val;
+            return this->value_;
         }
 
-        [[nodiscard]] constexpr operator bool() const noexcept {
-            return this->has_value();
+        [[nodiscard]] constexpr std::byte mask() const noexcept {
+            return this->mask_;
         }
 
         [[nodiscard]] constexpr std::byte operator*() const noexcept {
             return this->value();
         }
+
+        [[nodiscard]] constexpr bool all() const noexcept {
+            return this->mask_ == std::byte{0xFF};
+        }
+
+        [[nodiscard]] constexpr bool any() const noexcept {
+            return this->mask_ != std::byte{0x00};
+        }
+
+        [[nodiscard]] constexpr bool none() const noexcept {
+            return this->mask_ == std::byte{0x00};
+        }
+
+        [[nodiscard]] constexpr bool has(const uint8_t digit) const noexcept {
+            const auto m = std::to_integer<uint8_t>(this->mask_);
+            return (m & (1u << digit)) != 0;
+        }
+
+        [[nodiscard]] constexpr bool at(const uint8_t digit) const noexcept {
+            const auto v = std::to_integer<uint8_t>(this->value_);
+            return (v & (1u << digit)) != 0;
+        }
+
+        [[nodiscard]] constexpr std::strong_ordering operator<=>(const signature_element& other) const noexcept = default;
+
+        [[nodiscard]] constexpr bool operator==(const std::byte byte) const noexcept {
+            return (byte & this->mask_) == this->value_;
+        }
+
     private:
-        std::byte val{};
-        bool present = false;
+        std::byte value_{};
+        std::byte mask_{};
     };
 
     using signature = std::vector<signature_element>;
@@ -107,26 +133,68 @@ LIBHAT_EXPORT namespace hat {
         empty_signature,
     };
 
-    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<size_t, signature_parse_error> parse_signature_to(std::output_iterator<signature_element> auto out, std::string_view str) {
+    namespace detail {
+
+        LIBHAT_CONSTEXPR_RESULT std::optional<signature_element> parse_signature_element(const std::string_view str, const uint8_t base) {
+            uint8_t value{};
+            uint8_t mask{};
+            for (auto& ch : str) {
+                value *= base;
+                mask *= base;
+                if (ch != '?') {
+                    auto digit = hat::parse_int<uint8_t>(&ch, &ch + 1, base);
+                    if (!digit.has_value()) [[unlikely]] {
+                        return std::nullopt;
+                    }
+                    value += digit.value();
+                    mask += static_cast<uint8_t>(base - 1);
+                }
+            }
+
+            return signature_element{std::byte{value}, std::byte{mask}};
+        }
+    }
+
+    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<size_t, signature_parse_error> parse_signature_to(std::output_iterator<signature_element> auto out, const std::string_view str) {
         size_t written = 0;
         bool containsByte = false;
-        for (const auto& word : str | std::views::split(' ')) {
-            if (word.empty()) {
-                continue;
-            }
-            if (word[0] == '?') {
-                *out++ = signature_element{std::nullopt};
-                written++;
-            } else {
-                const auto sv = std::string_view{word.begin(), word.end()};
-                const auto parsed = parse_int<uint8_t>(sv, 16);
-                if (parsed.has_value()) {
-                    *out++ = signature_element{static_cast<std::byte>(parsed.value())};
+
+        for (auto&& sub : str | std::views::split(' ')) {
+            const std::string_view word{sub.begin(), sub.end()};
+            switch (word.size()) {
+                case 0: {
+                    continue;
+                }
+                case 1: {
+                    if (word.front() != '?') {
+                        return result_error{signature_parse_error::parse_error};
+                    }
+                    *out++ = signature_element{std::nullopt};
                     written++;
-                } else {
+                    break;
+                }
+                case 2:
+                case 8: {
+                    const uint8_t base = word.size() == 2 ? 16 : 2;
+                    auto element = detail::parse_signature_element(word, base);
+                    if (element) {
+                        *out++ = *element;
+                        written++;
+
+                        if (!containsByte && element->any()) {
+                            if (!element->all()) {
+                                return result_error{signature_parse_error::missing_byte};
+                            }
+                            containsByte = true;
+                        }
+                    } else {
+                        return result_error{signature_parse_error::parse_error};
+                    }
+                    break;
+                }
+                default: {
                     return result_error{signature_parse_error::parse_error};
                 }
-                containsByte = true;
             }
         }
         if (written == 0) {
@@ -179,14 +247,28 @@ LIBHAT_EXPORT namespace hat {
         std::string ret;
         ret.reserve(signature.size() * 3);
         for (auto& element : signature) {
-            if (element.has_value()) {
+            const bool a = (element.mask() & std::byte{0xF0}) == std::byte{0xF0};
+            const bool b = (element.mask() & std::byte{0x0F}) == std::byte{0x0F};
+            if (a || b) {
                 ret += {
-                    hex[static_cast<size_t>(element.value() >> 4) & 0xFu],
-                    hex[static_cast<size_t>(element.value() >> 0) & 0xFu],
+                    a ? hex[static_cast<size_t>(element.value() >> 4) & 0xFu] : '?',
+                    b ? hex[static_cast<size_t>(element.value() >> 0) & 0xFu] : '?',
                     ' '
                 };
-            } else {
+            } else if (element.none()) {
                 ret += "? ";
+            } else {
+                ret += {
+                    element.has(7) ? (element.at(7) ? '1' : '0') : '?',
+                    element.has(6) ? (element.at(6) ? '1' : '0') : '?',
+                    element.has(5) ? (element.at(5) ? '1' : '0') : '?',
+                    element.has(4) ? (element.at(4) ? '1' : '0') : '?',
+                    element.has(3) ? (element.at(3) ? '1' : '0') : '?',
+                    element.has(2) ? (element.at(2) ? '1' : '0') : '?',
+                    element.has(1) ? (element.at(1) ? '1' : '0') : '?',
+                    element.has(0) ? (element.at(0) ? '1' : '0') : '?',
+                    ' '
+                };
             }
         }
         ret.pop_back();

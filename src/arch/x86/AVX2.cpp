@@ -12,11 +12,8 @@ namespace hat::detail {
         std::byte byteBuffer[32]{}; // The remaining signature bytes
         std::byte maskBuffer[32]{}; // A bitmask for the signature bytes we care about
         for (size_t i = 0; i < signature.size(); i++) {
-            auto e = signature[i];
-            if (e.has_value()) {
-                byteBuffer[i] = *e;
-                maskBuffer[i] = std::byte{0xFFu};
-            }
+            byteBuffer[i] = signature[i].value();
+            maskBuffer[i] = signature[i].mask();
         }
         bytes = _mm256_loadu_si256(reinterpret_cast<__m256i*>(&byteBuffer));
         mask = _mm256_loadu_si256(reinterpret_cast<__m256i*>(&maskBuffer));
@@ -70,15 +67,13 @@ namespace hat::detail {
                 const auto i = reinterpret_cast<const std::byte*>(&it) + offset - cmpIndex;
                 if constexpr (veccmp) {
                     const auto data = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(i));
-                    const auto cmpToSig = _mm256_cmpeq_epi8(signatureBytes, data);
-                    const auto matched = _mm256_testc_si256(cmpToSig, signatureMask);
-                    if (matched) LIBHAT_UNLIKELY {
+                    const auto neqBits = _mm256_xor_si256(data, signatureBytes);
+                    const auto match = _mm256_testz_si256(neqBits, signatureMask);
+                    if (match) LIBHAT_UNLIKELY {
                         return i;
                     }
                 } else {
-                    auto match = std::equal(signature.begin(), signature.end(), i, [](auto opt, auto byte) {
-                        return !opt.has_value() || *opt == byte;
-                    });
+                    const auto match = std::equal(signature.begin(), signature.end(), i);
                     if (match) LIBHAT_UNLIKELY {
                         return i;
                     }

@@ -269,9 +269,7 @@ namespace hat::detail {
                 break;
             }
             // Compare everything after the first byte
-            auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
-                return !opt.has_value() || *opt == byte;
-            });
+            auto match = std::equal(signature.begin() + 1, signature.end(), i + 1);
             if (match) LIBHAT_UNLIKELY {
                 return i;
             }
@@ -293,9 +291,7 @@ namespace hat::detail {
 
         for (auto i = scanBegin; i != scanEnd; i += 16) {
             if (*i == firstByte) {
-                auto match = std::equal(signature.begin() + 1, signature.end(), i + 1, [](auto opt, auto byte) {
-                    return !opt.has_value() || *opt == byte;
-                });
+                auto match = std::equal(signature.begin() + 1, signature.end(), i + 1);
                 if (match) LIBHAT_UNLIKELY {
                     return i;
                 }
@@ -318,7 +314,7 @@ namespace hat::detail {
         // Truncate the leading wildcards from the signature
         size_t offset = 0;
         for (const auto& elem : signature) {
-            if (elem.has_value()) {
+            if (elem.any()) {
                 break;
             }
             offset++;
