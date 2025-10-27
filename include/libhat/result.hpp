@@ -6,12 +6,14 @@
 
 #if __cpp_lib_expected >= 202202L
     #define LIBHAT_CONSTEXPR_RESULT constexpr
+    #define LIBHAT_HAS_CONSTEXPR_RESULT
     #define LIBHAT_RESULT_EXPECTED
     #ifndef LIBHAT_MODULE
         #include <expected>
     #endif
 #elif __cpp_lib_variant >= 202106L
     #define LIBHAT_CONSTEXPR_RESULT constexpr
+    #define LIBHAT_HAS_CONSTEXPR_RESULT
 #else
     #define LIBHAT_CONSTEXPR_RESULT inline
 #endif

@@ -220,16 +220,19 @@ LIBHAT_EXPORT namespace hat {
 
 namespace hat::detail {
 
+#ifdef LIBHAT_HAS_CONSTEXPR_RESULT
     template<size_t N>
     [[nodiscard]] consteval std::pair<std::array<signature_element, N>, size_t> compile_signature_max_size(std::string_view str) {
         std::array<signature_element, N> array;
         auto size = parse_signature_to(array.begin(), str);
         return {array, size.value()};
     }
+#endif
 }
 
 LIBHAT_EXPORT namespace hat {
 
+#ifdef LIBHAT_HAS_CONSTEXPR_RESULT
     /// Parses a signature string at compile time and returns the result as a fixed_signature
     template<fixed_string str>
     [[nodiscard]] consteval auto compile_signature() {
@@ -241,6 +244,7 @@ LIBHAT_EXPORT namespace hat {
         std::move(pair.first.begin(), pair.first.begin() + pair.second, arr.begin());
         return arr;
     }
+#endif
 
     [[nodiscard]] constexpr std::string to_string(const signature_view signature) {
         constexpr std::string_view hex{"0123456789ABCDEF"};
@@ -278,6 +282,7 @@ LIBHAT_EXPORT namespace hat {
 
 LIBHAT_EXPORT namespace hat::inline literals::inline signature_literals {
 
+#ifdef LIBHAT_HAS_CONSTEXPR_RESULT
     template<hat::fixed_string str>
     consteval auto operator""_sig() noexcept {
         return hat::compile_signature<str>();
@@ -289,5 +294,7 @@ LIBHAT_EXPORT namespace hat::inline literals::inline signature_literals {
         static constexpr auto sig = hat::compile_signature<str>();
         return hat::signature_view{sig};
     }
+#endif
+
 #endif
 }
