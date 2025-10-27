@@ -1,0 +1,8 @@
+cmake-build-*/
+.cmake-build-*/
+.cpmcache/
+
+*.exe
+*.dll
+
+/.idea/
