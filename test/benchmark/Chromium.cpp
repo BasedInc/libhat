@@ -1,4 +1,5 @@
 #include <fstream>
+#include <filesystem>
 
 #include <benchmark/benchmark.h>
 #include <libhat/scanner.hpp>
@@ -12,7 +13,8 @@ static constexpr auto DllMainSignature = hat::compile_signature<"48 89 5C 24 08 
 
 static std::span<const std::byte> get_file_data() {
     static std::vector<std::byte> data = []{
-        std::ifstream file(WIDE_STR(CHROME_DLL_PATH), std::ios::binary);
+        const std::filesystem::path path{WIDE_STR(CHROME_DLL_PATH)};
+        std::ifstream file(path, std::ios::binary);
         if (!file.is_open()) {
             std::terminate();
         }
