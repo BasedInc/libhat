@@ -43,7 +43,7 @@ jobs:
       - name: Configure
         env:
           CXX: ${{matrix.compiler.exe}}-${{matrix.compiler.version}}
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING=ON
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING=ON -DLIBHAT_TESTING_SAMPLE_BIN=OFF
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
@@ -76,7 +76,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=${{startsWith(matrix.target, 'ARM') && 'OFF' || 'ON'}} -A ${{matrix.target}} -T ${{matrix.toolset}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=${{startsWith(matrix.target, 'ARM') && 'OFF' || 'ON'}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF -A ${{matrix.target}} -T ${{matrix.toolset}}
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
