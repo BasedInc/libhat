@@ -27,7 +27,7 @@ option(LIBHAT_MODULE_TARGET "Create target for the module interface" OFF)
 option(LIBHAT_USE_STD_MODULE "Compile the module target using the std module" OFF)
 option(LIBHAT_EXAMPLES "Include example targets" ${PROJECT_IS_TOP_LEVEL})
 
-option(LIBHAT_HINT_X86_64 "Enables support for the x86_64 scan hint, requires a small (less than 1KB) data table" ON)
+option(LIBHAT_HINT_X86_64 "Enables support for the x86_64 scan hint, requires a small (2KB) data table" ON)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     # Just assume that the compiler accepts the required x86/x64 options if it'll accept -mmmx

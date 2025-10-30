@@ -17,11 +17,16 @@ namespace hat::detail {
         if (x86_64 && !pair0 && scanner.vectorSize && this->alignment == hat::scan_alignment::X1) {
             static constexpr auto getScore = [](const std::byte a, const std::byte b) {
                 constexpr auto& pairs = hat::detail::x86_64::pairs_x1;
-                const auto it = std::ranges::find(pairs, std::pair{a, b});
-                return static_cast<size_t>(it - pairs.begin());
+                const std::pair pair{a, b};
+                const auto it = std::ranges::lower_bound(pairs, pair);
+                const auto index = static_cast<uint16_t>(it - pairs.begin());
+                if (it != pairs.end() && *it == pair) {
+                    return hat::detail::x86_64::scores_x1[index];
+                }
+                return index;
             };
 
-            std::optional<std::pair<size_t, size_t>> bestPair{};
+            std::optional<std::pair<size_t, uint16_t>> bestPair{};
             for (auto it = this->signature.begin(); it != std::prev(this->signature.end()); it++) {
                 const auto i = static_cast<size_t>(it - this->signature.begin());
                 auto& a = *it;
