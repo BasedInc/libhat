@@ -116,6 +116,16 @@ LIBHAT_EXPORT namespace hat {
         using U = std::underlying_type_t<scan_hint>;
         return static_cast<scan_hint>(static_cast<U>(lhs) & static_cast<U>(rhs));
     }
+
+    constexpr scan_hint& operator|=(scan_hint& lhs, const scan_hint rhs) {
+        lhs = lhs | rhs;
+        return lhs;
+    }
+
+    constexpr scan_hint& operator&=(scan_hint& lhs, const scan_hint rhs) {
+        lhs = lhs & rhs;
+        return lhs;
+    }
 }
 
 namespace hat::detail {
