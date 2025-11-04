@@ -125,13 +125,26 @@ LIBHAT_EXPORT namespace hat {
     }
 
     template<typename Char>
-    [[nodiscard]] constexpr result<signature, signature_error> string_to_signature(std::basic_string_view<Char> str) {
-        const auto bytes = std::as_bytes(std::span{str});
-        return bytes_to_signature(bytes);
+    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_error> string_to_signature(std::basic_string_view<Char> str) {
+        if (str.empty()) {
+            return result_error{signature_error::empty_signature};
+        }
+
+        signature result;
+        result.resize(str.size() * sizeof(Char));
+
+        auto it = result.begin();
+        for (Char ch : str) {
+            const auto bytes = std::bit_cast<std::array<std::byte, sizeof(Char)>>(ch);
+            std::ranges::copy(bytes, it);
+            it += bytes.size();
+        }
+
+        return result;
     }
 
     template<typename Char>
-    [[nodiscard]] constexpr result<signature, signature_error> string_to_signature(std::basic_string<Char> str) {
+    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_error> string_to_signature(std::basic_string<Char> str) {
         return string_to_signature(std::basic_string_view<Char>{str});
     }
 
