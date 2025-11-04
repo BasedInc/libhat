@@ -20,10 +20,13 @@ LIBHAT_API libhat_status_t libhat_parse_signature(const char* signatureStr, sign
     if (!result.has_value()) {
         *signatureOut = nullptr;
         switch (result.error()) {
-            using enum hat::signature_parse_error;
-            case missing_byte:    return libhat_err_sig_nobyte;
-            case parse_error:     return libhat_err_sig_invalid;
-            case empty_signature: return libhat_err_sig_empty;
+            using enum hat::signature_error;
+            case missing_masked_byte:  return libhat_err_sig_missing_masked_byte;
+            case element_parse_error:  return libhat_err_sig_element_parse_error;
+            case empty_signature:      return libhat_err_sig_empty_signature;
+            case expected_wildcard:    return libhat_err_sig_expected_wildcard;
+            case invalid_token_length: return libhat_err_sig_invalid_token_length;
+            case illegal_first_byte:   return libhat_err_sig_illegal_first_byte;
         }
         return libhat_err_unknown;
     }

@@ -29,9 +29,12 @@ extern "C" {
 typedef enum libhat_status_t {
     libhat_success,         // The operation was successful
     libhat_err_unknown,
-    libhat_err_sig_invalid, // The signature contained an invalid byte
-    libhat_err_sig_empty,   // The signature is empty
-    libhat_err_sig_nobyte,  // The signature did not contain a present byte, only wildcards
+    libhat_err_sig_missing_masked_byte,
+    libhat_err_sig_element_parse_error,
+    libhat_err_sig_empty_signature,
+    libhat_err_sig_expected_wildcard,
+    libhat_err_sig_invalid_token_length,
+    libhat_err_sig_illegal_first_byte,
 } libhat_status_t;
 
 typedef enum scan_alignment {
