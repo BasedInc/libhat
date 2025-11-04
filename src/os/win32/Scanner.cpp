@@ -9,7 +9,7 @@ namespace hat::experimental {
     scan_result find_vtable<compiler_type::MSVC>(const std::string& className, hat::process::module mod) {
         // Tracing cross-references
         // Type Descriptor => Object Locator => VTable
-        auto sig = string_to_signature(".?AV" + className + "@@");
+        auto sig = string_to_signature(".?AV" + className + "@@").value();
 
         // TODO: Have a better solution for this
         // 3rd character may be 'V' for classes and 'U' for structs
@@ -53,7 +53,7 @@ namespace hat::experimental {
     scan_result find_vtable<compiler_type::GNU>(const std::string& className, hat::process::module mod) {
         // Tracing cross-references
         // Type Descriptor Name => Type Info => VTable
-        const auto sig = string_to_signature(std::to_string(className.size()) + className + "\0");
+        const auto sig = string_to_signature(std::to_string(className.size()) + className + "\0").value();
         const auto typeName = *find_pattern(sig, ".rdata", mod);
         if (!typeName) {
             return nullptr;

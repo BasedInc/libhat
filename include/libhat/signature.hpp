@@ -88,16 +88,29 @@ LIBHAT_EXPORT namespace hat {
     template<size_t N>
     using fixed_signature = std::array<signature_element, N>;
 
+    enum class signature_error {
+        missing_masked_byte,
+        element_parse_error,
+        empty_signature,
+        expected_wildcard,
+        invalid_token_length,
+        illegal_first_byte,
+    };
+
     /// Convert raw byte storage into a signature
-    template<size_t N>
+    template<size_t N> requires (N != std::dynamic_extent && N > 0)
     [[nodiscard]] constexpr auto bytes_to_signature(std::span<const std::byte, N> bytes) {
-        if constexpr (N == std::dynamic_extent) {
-            return signature{bytes.begin(), bytes.end()};
-        } else {
-            fixed_signature<N> result;
-            std::ranges::copy(bytes, result.begin());
-            return result;
+        fixed_signature<N> result;
+        std::ranges::copy(bytes, result.begin());
+        return result;
+    }
+
+    /// Convert raw byte storage into a signature
+    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_error> bytes_to_signature(std::span<const std::byte> bytes) {
+        if (bytes.empty()) {
+            return result_error{signature_error::empty_signature};
         }
+        return signature{bytes.begin(), bytes.end()};
     }
 
     template<typename T>
@@ -112,26 +125,15 @@ LIBHAT_EXPORT namespace hat {
     }
 
     template<typename Char>
-    [[nodiscard]] constexpr signature string_to_signature(std::basic_string_view<Char> str) {
+    [[nodiscard]] constexpr result<signature, signature_error> string_to_signature(std::basic_string_view<Char> str) {
         const auto bytes = std::as_bytes(std::span{str});
-        signature sig{};
-        sig.reserve(bytes.size());
-        for (std::byte byte : bytes) {
-            sig.emplace_back(byte);
-        }
-        return sig;
+        return bytes_to_signature(bytes);
     }
 
     template<typename Char>
-    [[nodiscard]] constexpr signature string_to_signature(std::basic_string<Char> str) {
+    [[nodiscard]] constexpr result<signature, signature_error> string_to_signature(std::basic_string<Char> str) {
         return string_to_signature(std::basic_string_view<Char>{str});
     }
-
-    enum class signature_parse_error {
-        missing_byte,
-        parse_error,
-        empty_signature,
-    };
 
     namespace detail {
 
@@ -155,7 +157,7 @@ LIBHAT_EXPORT namespace hat {
         }
     }
 
-    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<size_t, signature_parse_error> parse_signature_to(std::output_iterator<signature_element> auto out, const std::string_view str) {
+    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<size_t, signature_error> parse_signature_to(std::output_iterator<signature_element> auto out, const std::string_view str) {
         size_t written = 0;
         bool containsByte = false;
 
@@ -167,7 +169,7 @@ LIBHAT_EXPORT namespace hat {
                 }
                 case 1: {
                     if (word.front() != '?') {
-                        return result_error{signature_parse_error::parse_error};
+                        return result_error{signature_error::expected_wildcard};
                     }
                     *out++ = signature_element{std::nullopt};
                     written++;
@@ -183,30 +185,30 @@ LIBHAT_EXPORT namespace hat {
 
                         if (!containsByte && element->any()) {
                             if (!element->all()) {
-                                return result_error{signature_parse_error::missing_byte};
+                                return result_error{signature_error::illegal_first_byte};
                             }
                             containsByte = true;
                         }
                     } else {
-                        return result_error{signature_parse_error::parse_error};
+                        return result_error{signature_error::element_parse_error};
                     }
                     break;
                 }
                 default: {
-                    return result_error{signature_parse_error::parse_error};
+                    return result_error{signature_error::invalid_token_length};
                 }
             }
         }
         if (written == 0) {
-            return result_error{signature_parse_error::empty_signature};
+            return result_error{signature_error::empty_signature};
         }
         if (!containsByte) {
-            return result_error{signature_parse_error::missing_byte};
+            return result_error{signature_error::missing_masked_byte};
         }
         return written;
     }
 
-    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_parse_error> parse_signature(std::string_view str) {
+    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_error> parse_signature(std::string_view str) {
         signature sig{};
         auto result = parse_signature_to(std::back_inserter(sig), str);
 
