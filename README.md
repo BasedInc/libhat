@@ -5,14 +5,57 @@ A modern, high-performance library for C++20 designed around game hacking
 - Windows x86/x64 support
 - Partial Linux and macOS support
 - Vectorized scanning for byte patterns
+  - SSE and AVX2 on x86/x64
+  - AVX-512 on x64
 - RAII memory protector
 - Convenience wrappers over OS APIs
-- Language bindings (C, C#, etc.)
+- Language bindings (C, C#, Java)
 
 ## Versioning
 This project adheres to [semantic versioning](https://semver.org/spec/v2.0.0.html). Any declaration that
 is within a `detail` or `experimental` namespace is not considered part of the public API, and usage
 may break at any time without the MAJOR version number being incremented.
+
+## Integration
+
+The best supported way to use libhat is via [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)
+or [CPM](https://github.com/cpm-cmake/CPM.cmake) in a CMake project:
+
+```cmake
+FetchContent_Declare(
+    libhat
+    GIT_REPOSITORY https://github.com/BasedInc/libhat.git
+    GIT_TAG        v0.8.0
+)
+FetchContent_MakeAvailable(libhat)
+
+target_link_libraries(my_target libhat::libhat)
+```
+
+```cmake
+CPMAddPackage("gh:BasedInc/libhat#v0.8.0")
+
+target_link_libraries(my_target libhat::libhat)
+```
+
+If you are using [xmake](https://xmake.io/), an [official package](https://github.com/xmake-io/xmake-repo/blob/dev/packages/l/libhat) is available:
+```lua
+add_requires("libhat v0.7.0")
+
+target("my_target")
+    add_packages("libhat")
+```
+
+If you are using [MSBuild](https://learn.microsoft.com/en-us/visualstudio/msbuild) or another build system, a
+[vcpkg port](https://github.com/microsoft/vcpkg/tree/master/ports/libhat) is available:
+
+```json
+{
+  "dependencies": [
+    "libhat"
+  ]
+}
+```
 
 ## Benchmarks
 The table below compares the single threaded throughput in bytes/s (real time) between
@@ -55,7 +98,7 @@ BM_Throughput_UC2/256MiB                 261157833 ns    261160714 ns           
 
 ## Platforms
 
-Below is a summary of the support of libhat OS APIs on various platforms:
+Below is a summary of the current support for libhat's platform-dependent APIs:
 
 |                                | Windows | Linux | macOS |
 |--------------------------------|:-------:|:-----:|:-----:|
@@ -161,7 +204,7 @@ hat::scan_result     result  = hat::find_pattern(range, pattern, hat::scan_align
 hat::scan_result result  = hat::find_pattern(range, pattern, hat::scan_alignment::X1, hat::scan_hint::x86_64);
 ```
 
-### Accessing offsets
+### Accessing members
 ```cpp
 #include <libhat/access.hpp>
 
