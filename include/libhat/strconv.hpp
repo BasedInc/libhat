@@ -1,6 +1,7 @@
 #pragma once
 
 #ifndef LIBHAT_MODULE
+    #include <cstdint>
     #include <string_view>
     #include <type_traits>
 #endif

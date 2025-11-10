@@ -2,6 +2,7 @@
 
 #ifndef LIBHAT_MODULE
     #include <tuple>
+    #include <utility>
 #endif
 
 #include "defines.hpp"
