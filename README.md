@@ -5,7 +5,7 @@ A modern, high-performance library for C++20 designed around game hacking
 - Windows x86/x64 support
 - Partial Linux and macOS support
 - Vectorized scanning for byte patterns
-  - SSE and AVX2 on x86/x64
+  - SSE 4.1 and AVX2 on x86/x64
   - AVX-512 on x64
 - RAII memory protector
 - Convenience wrappers over OS APIs
