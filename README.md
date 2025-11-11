@@ -25,7 +25,7 @@ or [CPM](https://github.com/cpm-cmake/CPM.cmake) in a CMake project:
 FetchContent_Declare(
     libhat
     GIT_REPOSITORY https://github.com/BasedInc/libhat.git
-    GIT_TAG        v0.8.0
+    GIT_TAG        v0.9.0
 )
 FetchContent_MakeAvailable(libhat)
 
@@ -33,7 +33,7 @@ target_link_libraries(my_target libhat::libhat)
 ```
 
 ```cmake
-CPMAddPackage("gh:BasedInc/libhat#v0.8.0")
+CPMAddPackage("gh:BasedInc/libhat#v0.9.0")
 
 target_link_libraries(my_target libhat::libhat)
 ```
