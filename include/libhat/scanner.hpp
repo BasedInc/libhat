@@ -433,8 +433,8 @@ LIBHAT_EXPORT namespace hat {
                 i = end;
                 break;
             }
-            const auto addr = const_cast<typename detail::result_type_for<In>::underlying_type>(result.get() - offset);
-            *out++ = addr;
+            const auto addr = const_cast<typename detail::result_type_for<In>::underlying_type>(result.get());
+            *out++ = addr - offset;
             i = addr + detail::to_stride(alignment);
         }
 
@@ -485,8 +485,8 @@ LIBHAT_EXPORT namespace hat {
             if (!result.has_result()) {
                 break;
             }
-            const auto addr = const_cast<typename detail::result_type_for<In>::underlying_type>(result.get() - offset);
-            *out++ = addr;
+            const auto addr = const_cast<typename detail::result_type_for<In>::underlying_type>(result.get());
+            *out++ = addr - offset;
             i = addr + detail::to_stride(alignment);
             matches++;
         }
