@@ -40,7 +40,7 @@ target_link_libraries(my_target libhat::libhat)
 
 If you are using [xmake](https://xmake.io/), an [official package](https://github.com/xmake-io/xmake-repo/blob/dev/packages/l/libhat) is available:
 ```lua
-add_requires("libhat v0.7.0")
+add_requires("libhat v0.9.0")
 
 target("my_target")
     add_packages("libhat")
