@@ -7,8 +7,21 @@
         #include <intrin.h>
     #endif
     #define LIBHAT_RETURN_ADDRESS() _ReturnAddress()
+    // _mm_prefetch is defined in xmmintrin.h which is included by intrin.h usually, 
+    // but strict standards mode might affect it.
+    // However, _mm_prefetch is a compiler intrinsic for MSVC.
+    #ifndef LIBHAT_MODULE
+        #if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
+            #if !defined(_XMMINTRIN_H_INCLUDED)
+                #include <xmmintrin.h>
+            #endif
+        #endif
+    #endif
+    #define LIBHAT_PREFETCH(addr) _mm_prefetch(reinterpret_cast<const char*>(addr), _MM_HINT_T0)
 #else
+    #include <xmmintrin.h>
     #define LIBHAT_RETURN_ADDRESS() __builtin_extract_return_addr(__builtin_return_address(0))
+    #define LIBHAT_PREFETCH(addr) _mm_prefetch(reinterpret_cast<const char*>(addr), _MM_HINT_T0)
 #endif
 
 #if __cpp_if_consteval >= 202106L

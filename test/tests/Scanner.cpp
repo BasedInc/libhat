@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <libhat/scanner.hpp>
+#include <libhat/system.hpp>
 #include <format>
 
 template<hat::detail::scan_mode Mode, size_t SignatureSize, size_t MaxBufferSize>
@@ -24,6 +25,27 @@ concept FindPatternTestCallback = std::invocable<T,
 template<hat::detail::scan_mode Mode, size_t SignatureSize, size_t MaxBufferSize>
 class FindPatternTest<FindPatternParameters<Mode, SignatureSize, MaxBufferSize>> : public ::testing::Test {
 protected:
+    void SetUp() override {
+#if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
+        if constexpr (Mode == hat::detail::scan_mode::AVX512) {
+            const auto& ext = hat::get_system().extensions;
+            if (!ext.avx512f || !ext.avx512bw) {
+                GTEST_SKIP() << "AVX512 not supported on this system";
+            }
+        } else if constexpr (Mode == hat::detail::scan_mode::AVX2) {
+             const auto& ext = hat::get_system().extensions;
+             if (!ext.avx2) {
+                 GTEST_SKIP() << "AVX2 not supported on this system";
+             }
+        } else if constexpr (Mode == hat::detail::scan_mode::SSE) {
+             const auto& ext = hat::get_system().extensions;
+             if (!ext.sse41) {
+                 GTEST_SKIP() << "SSE4.1 not supported on this system";
+             }
+        }
+#endif
+    }
+
     void run_cases(
         const hat::scan_alignment alignment,
         FindPatternTestCallback auto&& callback

@@ -40,6 +40,13 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         set_source_files_properties(src/arch/x86/AVX512.cpp PROPERTIES COMPILE_FLAGS "-mavx512f -mavx512bw -mbmi")
         set_source_files_properties(src/arch/x86/System.cpp PROPERTIES COMPILE_FLAGS "-mxsave")
     endif()
+elseif(MSVC AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Enable AVX2 code generation for AVX2.cpp to allow VEX encoding and optimizations
+    set_source_files_properties(src/arch/x86/AVX2.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX2")
+    # Enable AVX512 if supported by the MSVC version (VS2019 16.10+)
+    if(MSVC_VERSION GREATER_EQUAL 1929)
+        set_source_files_properties(src/arch/x86/AVX512.cpp PROPERTIES COMPILE_FLAGS "/arch:AVX512")
+    endif()
 endif()
 
 if(LIBHAT_TESTING AND LIBHAT_TESTING_ASAN)
@@ -78,6 +85,14 @@ if(UNIX)
 endif()
 
 target_compile_features(libhat PUBLIC cxx_std_20)
+
+include(CheckIPOSupported)
+check_ipo_supported(RESULT result OUTPUT output)
+if(result)
+    set_property(TARGET libhat PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+else()
+    message(STATUS "IPO is not supported: ${output}")
+endif()
 
 if (MSVC)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

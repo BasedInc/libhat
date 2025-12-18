@@ -96,6 +96,23 @@ BM_Throughput_UC2/128MiB                 130954740 ns    130087209 ns           
 BM_Throughput_UC2/256MiB                 261157833 ns    261160714 ns           21      980.250Mi/s
 ```
 
+### Signature Caching (Optimization)
+If you're scanning for the same thing over and over (like a maniac), use the `hat::scanner` class. It pre-compiles the signature and remembers all the smart stuff so you don't have to re-calculate it every time.
+
+```cpp
+#include <libhat/scanner.hpp>
+
+// 1. Compile the signature once (do the hard work)
+hat::scanner scanner(pattern);
+
+// 2. Reuse it everywhere
+auto result1 = scanner.find(buffer1_begin, buffer1_end);
+auto result2 = scanner.find(buffer2_begin, buffer2_end);
+
+// 3. Go full speed with parallel scanning
+auto result3 = scanner.find(std::execution::par, buffer3_begin, buffer3_end);
+```
+
 ## Platforms
 
 Below is a summary of the current support for libhat's platform-dependent APIs:
@@ -167,6 +184,10 @@ parsed_t runtime_pattern = hat::parse_signature("48 8D 05 ? ? ? ? E8");
 auto begin = /* a contiguous iterator over std::byte */;
 auto end = /* ... */;
 hat::scan_result result = hat::find_pattern(begin, end, pattern);
+
+// Use the parallel scanner for large buffers (re-uses context for efficiency)
+hat::scanner scanner(pattern);
+hat::scan_result result = scanner.find(std::execution::par, begin, end);
 
 // Scan a section in the process's base module
 hat::scan_result result = hat::find_pattern(pattern, ".text");

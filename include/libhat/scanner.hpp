@@ -5,8 +5,11 @@
     #include <array>
     #include <cstring>
     #include <execution>
+    #include <future>
     #include <memory>
+    #include <thread>
     #include <utility>
+    #include <vector>
 #endif
 
 #include "concepts.hpp"
@@ -163,7 +166,7 @@ namespace hat::detail {
 
         template<scan_mode mode = scan_mode::Auto>
         static constexpr scan_context create(signature_view signature, scan_alignment alignment, scan_hint hints);
-    private:
+        
         scan_context() = default;
     };
 
@@ -227,6 +230,7 @@ namespace hat::detail {
         };
 
         const auto preBegin = begin;
+        // Optimization: Ensure vector alignment logic is sound and possibly help compiler with assumptions
         const auto vecBegin = reinterpret_cast<const Vector*>(align_pointer_as<Vector>(preBegin + cmpOffset));
         if (reinterpret_cast<const std::byte*>(vecBegin) > end) LIBHAT_UNLIKELY {
             return {validateRange(begin, end), {}, {}};
@@ -245,6 +249,7 @@ namespace hat::detail {
         const auto postBegin = reinterpret_cast<const std::byte*>(vecEnd) - cmpOffset;
         const auto postEnd = end;
 
+        // Optimization: Use subspan instead of constructor if possible, but span constructor is cheap.
         return {
             validateRange(preBegin, preEnd),
             std::span{vecBegin, vecEnd},
@@ -264,6 +269,18 @@ namespace hat::detail {
         const auto firstByte = *signature[0];
         const auto scanEnd = end - signature.size() + 1;
 
+        size_t secondIndex = 0;
+        std::byte secondValue{};
+        bool useSecond = false;
+        
+        if (!LIBHAT_IF_CONSTEVAL && context.pairIndex.has_value()) {
+            secondIndex = *context.pairIndex;
+            if (secondIndex > 0) {
+                 secondValue = signature[secondIndex].value();
+                 useSecond = true;
+            }
+        }
+
         for (auto i = begin; i != scanEnd; i++) {
             // Use std::find to efficiently find the first byte
             if LIBHAT_IF_CONSTEVAL {
@@ -278,6 +295,11 @@ namespace hat::detail {
             if (i == scanEnd) LIBHAT_UNLIKELY {
                 break;
             }
+
+            if (useSecond && i[secondIndex] != secondValue) {
+                continue;
+            }
+
             // Compare everything after the first byte
             auto match = std::equal(signature.begin() + 1, signature.end(), i + 1);
             if (match) LIBHAT_UNLIKELY {
@@ -300,6 +322,7 @@ namespace hat::detail {
         }
 
         for (auto i = scanBegin; i != scanEnd; i += 16) {
+            LIBHAT_PREFETCH(i + 128);
             if (*i == firstByte) {
                 auto match = std::equal(signature.begin() + 1, signature.end(), i + 1);
                 if (match) LIBHAT_UNLIKELY {
@@ -357,6 +380,107 @@ namespace hat::detail {
 
 LIBHAT_EXPORT namespace hat {
 
+    /// A pre-compiled scanner for a specific signature.
+    /// Basically, we do all the hard work (CPU checks, hint parsing) once, so you can just spam find() later.
+    class scanner {
+    public:
+        // We gotta own the signature data, otherwise it might go poof and we'll be sad.
+        explicit scanner(const signature_view sig_view, const scan_alignment alignment = scan_alignment::X1, const scan_hint hints = scan_hint::none)
+            : storage(sig_view.begin(), sig_view.end())
+        {
+             init(alignment, hints);
+        }
+
+        // Move it in if you got it.
+        explicit scanner(signature sig, const scan_alignment alignment = scan_alignment::X1, const scan_hint hints = scan_hint::none)
+            : storage(std::move(sig))
+        {
+             init(alignment, hints);
+        }
+
+        template<detail::byte_input_iterator Iter>
+        [[nodiscard]] auto find(Iter beginIt, Iter endIt) const -> detail::result_type_for<Iter> {
+            const auto begin = std::to_address(beginIt) + this->offset;
+            const auto end = std::to_address(endIt);
+
+            if (begin >= end || this->context.signature.size() > static_cast<size_t>(std::distance(begin, end))) {
+                return {nullptr};
+            }
+
+            const auto result = this->context.scan(begin, end);
+            return result.has_result()
+                ? const_cast<typename detail::result_type_for<Iter>::underlying_type>(result.get() - this->offset)
+                : nullptr;
+        }
+
+        /// Multi-threaded goodness. Goes brrr.
+        template<detail::byte_input_iterator Iter>
+        [[nodiscard]] auto find(
+            const std::execution::parallel_policy&,
+            const Iter beginIt,
+            const Iter endIt
+        ) const -> detail::result_type_for<Iter> {
+            const auto begin = std::to_address(beginIt) + this->offset;
+            const auto end = std::to_address(endIt);
+
+            const size_t len = static_cast<size_t>(std::distance(begin, end));
+            const size_t sig_len = this->context.signature.size();
+
+            if (begin >= end || sig_len > len) {
+                return {nullptr};
+            }
+
+            // If the buffer is tiny, don't bother spinning up threads. It's not worth the paperwork.
+            constexpr size_t PARALLEL_THRESHOLD = 1024 * 1024; // 1MB
+            const size_t num_threads = std::thread::hardware_concurrency();
+
+            if (len < PARALLEL_THRESHOLD || num_threads <= 1) {
+                return find(beginIt, endIt);
+            }
+
+            const size_t chunk_size = len / num_threads;
+            std::vector<std::future<const_scan_result>> futures;
+            futures.reserve(num_threads);
+
+            // Context is read-only, so sharing it is chill.
+            for (size_t i = 0; i < num_threads; ++i) {
+                auto chunk_begin = begin + i * chunk_size;
+                auto chunk_end = (i == num_threads - 1) ? end : (chunk_begin + chunk_size + sig_len - 1);
+                
+                // Safety first!
+                if (chunk_end > end) chunk_end = end;
+
+                futures.push_back(std::async(std::launch::async, [this, chunk_begin, chunk_end]() {
+                    return this->context.scan(chunk_begin, chunk_end);
+                }));
+            }
+
+            for (auto& f : futures) {
+                const auto result = f.get();
+                if (result.has_result()) {
+                    return const_cast<typename detail::result_type_for<Iter>::underlying_type>(result.get() - this->offset);
+                }
+            }
+
+            return {nullptr};
+        }
+
+    private:
+        void init(const scan_alignment alignment, const scan_hint hints) {
+             // Make a view from our stash
+             signature_view view{this->storage};
+             auto [off, trunc] = detail::truncate(view);
+             this->offset = off;
+             // Point the context to our stashed data
+             this->context = detail::scan_context::create(trunc, alignment, hints);
+        }
+
+        // My precious signature data
+        signature storage;
+        size_t offset;
+        detail::scan_context context;
+    };
+
     /// Root implementation of find_pattern
     template<detail::byte_input_iterator Iter>
     [[nodiscard]] constexpr auto find_pattern(
@@ -379,6 +503,63 @@ LIBHAT_EXPORT namespace hat {
         return result.has_result()
             ? const_cast<typename detail::result_type_for<Iter>::underlying_type>(result.get() - offset)
             : nullptr;
+    }
+
+    /// Parallel implementation of find_pattern
+    template<detail::byte_input_iterator Iter>
+    [[nodiscard]] auto find_pattern(
+        const std::execution::parallel_policy&,
+        const Iter            beginIt,
+        const Iter            endIt,
+        const signature_view  signature,
+        const scan_alignment  alignment = scan_alignment::X1,
+        const scan_hint       hints = scan_hint::none
+    ) -> detail::result_type_for<Iter> {
+        const auto [offset, trunc] = detail::truncate(signature);
+        const auto begin = std::to_address(beginIt) + offset;
+        const auto end = std::to_address(endIt);
+
+        const size_t len = static_cast<size_t>(std::distance(begin, end));
+        const size_t sig_len = trunc.size();
+
+        if (begin >= end || sig_len > len) {
+            return {nullptr};
+        }
+
+        // Fallback to single-threaded for small buffers or if signature is too large for splitting effectively
+        constexpr size_t PARALLEL_THRESHOLD = 1024 * 1024; // 1MB
+        const size_t num_threads = std::thread::hardware_concurrency();
+
+        if (len < PARALLEL_THRESHOLD || num_threads <= 1) {
+            return find_pattern(beginIt, endIt, signature, alignment, hints);
+        }
+
+        const size_t chunk_size = len / num_threads;
+        std::vector<std::future<const_scan_result>> futures;
+        futures.reserve(num_threads);
+
+        const auto context = detail::scan_context::create(trunc, alignment, hints);
+
+        for (size_t i = 0; i < num_threads; ++i) {
+            auto chunk_begin = begin + i * chunk_size;
+            auto chunk_end = (i == num_threads - 1) ? end : (chunk_begin + chunk_size + sig_len - 1);
+            
+            // Ensure we don't go past end
+            if (chunk_end > end) chunk_end = end;
+
+            futures.push_back(std::async(std::launch::async, [=]() {
+                return context.scan(chunk_begin, chunk_end);
+            }));
+        }
+
+        for (auto& f : futures) {
+            const auto result = f.get();
+            if (result.has_result()) {
+                return const_cast<typename detail::result_type_for<Iter>::underlying_type>(result.get() - offset);
+            }
+        }
+
+        return {nullptr};
     }
 
     /// Range overload of find_pattern

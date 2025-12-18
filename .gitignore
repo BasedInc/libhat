@@ -6,3 +6,7 @@ cmake-build-*/
 *.dll
 
 /.idea/
+
+build/
+out/
+.vs/

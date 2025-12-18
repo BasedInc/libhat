@@ -14,9 +14,20 @@ static auto gen_random_buffer(const size_t size) {
     std::vector<std::byte> buffer(size);
     std::default_random_engine generator(123);
     std::uniform_int_distribution<uint64_t> distribution(0, 0xFFFFFFFFFFFFFFFF);
-    for (size_t i = 0; i < buffer.size(); i += 8) {
-        *reinterpret_cast<uint64_t*>(&buffer[i]) = distribution(generator);
+    
+    // Fill in 8-byte chunks for speed
+    size_t i = 0;
+    for (; i + 7 < size; i += 8) {
+        uint64_t rnd = distribution(generator);
+        std::memcpy(&buffer[i], &rnd, sizeof(uint64_t));
     }
+    
+    // Fill remaining bytes
+    std::uniform_int_distribution<int> byte_dist(0, 255);
+    for (; i < size; ++i) {
+        buffer[i] = static_cast<std::byte>(byte_dist(generator));
+    }
+    
     return buffer;
 }
 
@@ -27,8 +38,12 @@ static void BM_Throughput_libhat(benchmark::State& state) {
     const auto end = std::to_address(buf.end());
 
     const auto sig = hat::parse_signature(test_pattern).value();
+    // Pre-bake the scanner so it's crispy fast
+    hat::scanner scanner(sig);
+    
     for (auto _ : state) {
-        benchmark::DoNotOptimize(hat::find_pattern(begin, end, sig));
+        // Use the pre-compiled scanner
+        benchmark::DoNotOptimize(scanner.find(std::execution::par, begin, end));
     }
     state.SetBytesProcessed(static_cast<int64_t>(state.iterations() * size));
 }

@@ -75,3 +75,6 @@ endif()
 
 add_executable(libhat_hwinfo info/HardwareInfo.cpp)
 target_link_libraries(libhat_hwinfo PRIVATE libhat)
+
+add_library(MinecraftBedrock-Test SHARED MinecraftBedrock-Test.cpp)
+target_link_libraries(MinecraftBedrock-Test PRIVATE libhat)

@@ -9,14 +9,14 @@
 namespace hat::detail {
 
     inline void load_signature_512(const signature_view signature, __m512i& bytes, __m512i& mask) {
-        std::byte byteBuffer[64]{}; // The remaining signature bytes
-        std::byte maskBuffer[64]{}; // A bitmask for the signature bytes we care about
+        alignas(64) std::byte byteBuffer[64]{}; // The remaining signature bytes
+        alignas(64) std::byte maskBuffer[64]{}; // A bitmask for the signature bytes we care about
         for (size_t i = 0; i < signature.size(); i++) {
             byteBuffer[i] = signature[i].value();
             maskBuffer[i] = signature[i].mask();
         }
-        bytes = _mm512_loadu_si512(&byteBuffer);
-        mask = _mm512_loadu_si512(&maskBuffer);
+        bytes = _mm512_load_si512(&byteBuffer);
+        mask = _mm512_load_si512(&maskBuffer);
     }
 
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
@@ -49,6 +49,7 @@ namespace hat::detail {
         }
 
         for (auto& it : vec) {
+            _mm_prefetch(reinterpret_cast<const char*>(&it) + 256, _MM_HINT_T0);
             auto mask = _mm512_cmpeq_epi8_mask(firstByte, _mm512_loadu_si512(&it));
 
             if constexpr (alignment != scan_alignment::X1) {

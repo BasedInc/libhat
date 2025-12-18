@@ -153,16 +153,33 @@ LIBHAT_EXPORT namespace hat {
         LIBHAT_CONSTEXPR_RESULT std::optional<signature_element> parse_signature_element(const std::string_view str, const uint8_t base) {
             uint8_t value{};
             uint8_t mask{};
-            for (auto& ch : str) {
-                value *= base;
-                mask *= base;
-                if (ch != '?') {
-                    auto digit = hat::parse_int<uint8_t>(&ch, &ch + 1, base);
-                    if (!digit.has_value()) [[unlikely]] {
-                        return std::nullopt;
+
+            if (base == 16) {
+                for (size_t i = 0; i < 2; ++i) {
+                    const char ch = str[i];
+                    value <<= 4;
+                    mask <<= 4;
+                    if (ch != '?') {
+                        int digit;
+                        if (ch >= '0' && ch <= '9') digit = ch - '0';
+                        else if (ch >= 'A' && ch <= 'F') digit = ch - 'A' + 10;
+                        else if (ch >= 'a' && ch <= 'f') digit = ch - 'a' + 10;
+                        else return std::nullopt;
+                        
+                        value |= digit;
+                        mask |= 0xF;
                     }
-                    value += digit.value();
-                    mask += static_cast<uint8_t>(base - 1);
+                }
+            } else {
+                for (size_t i = 0; i < 8; ++i) {
+                    const char ch = str[i];
+                    value <<= 1;
+                    mask <<= 1;
+                    if (ch != '?') {
+                        if (ch == '1') value |= 1;
+                        else if (ch != '0') return std::nullopt;
+                        mask |= 1;
+                    }
                 }
             }
 
@@ -223,6 +240,15 @@ LIBHAT_EXPORT namespace hat {
 
     [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_error> parse_signature(std::string_view str) {
         signature sig{};
+        // Heuristic: estimate size to reserve memory.
+        // Hex signature: "AA BB CC" -> 8 chars for 3 bytes -> ~2.6 chars/byte
+        // But wildcards "AA ? BB" -> 7 chars for 3 bytes.
+        // Safe bet: length / 2 is upper bound for packed hex, but spaces reduce density.
+        // length / 3 + 1 is a reasonable estimate for "AA BB"
+        if (!LIBHAT_IF_CONSTEVAL) {
+            sig.reserve(str.size() / 2); 
+        }
+        
         auto result = parse_signature_to(std::back_inserter(sig), str);
 
         if (result.has_value()) {
