@@ -129,6 +129,8 @@ LIBHAT_EXPORT namespace hat {
         lhs = lhs & rhs;
         return lhs;
     }
+
+    class scanner;
 }
 
 namespace hat::detail {
@@ -150,6 +152,7 @@ namespace hat::detail {
     };
 
     class scan_context {
+        friend class hat::scanner;
     public:
         signature_view signature{};
         scan_function_t scanner{};
@@ -166,7 +169,7 @@ namespace hat::detail {
 
         template<scan_mode mode = scan_mode::Auto>
         static constexpr scan_context create(signature_view signature, scan_alignment alignment, scan_hint hints);
-        
+    private:
         scan_context() = default;
     };
 
@@ -388,14 +391,13 @@ LIBHAT_EXPORT namespace hat {
         explicit scanner(const signature_view sig_view, const scan_alignment alignment = scan_alignment::X1, const scan_hint hints = scan_hint::none)
             : storage(sig_view.begin(), sig_view.end())
         {
-             init(alignment, hints);
+            init(alignment, hints);
         }
-
         // Move it in if you got it.
         explicit scanner(signature sig, const scan_alignment alignment = scan_alignment::X1, const scan_hint hints = scan_hint::none)
             : storage(std::move(sig))
         {
-             init(alignment, hints);
+            init(alignment, hints);
         }
 
         template<detail::byte_input_iterator Iter>
