@@ -43,6 +43,23 @@ static void BM_Throughput_libhat(benchmark::State& state) {
     
     for (auto _ : state) {
         // Use the pre-compiled scanner
+        benchmark::DoNotOptimize(scanner.find(begin, end));
+    }
+    state.SetBytesProcessed(static_cast<int64_t>(state.iterations() * size));
+}
+
+static void BM_Throughput_libhat_parallel(benchmark::State& state) {
+    const size_t size = state.range(0);
+    const auto buf = gen_random_buffer(size);
+    const auto begin = std::to_address(buf.begin());
+    const auto end = std::to_address(buf.end());
+
+    const auto sig = hat::parse_signature(test_pattern).value();
+    // Use the scanner for that sweet sweet speed
+    hat::scanner scanner(sig);
+    
+    for (auto _ : state) {
+        // Go parallel, brrr
         benchmark::DoNotOptimize(scanner.find(std::execution::par, begin, end));
     }
     state.SetBytesProcessed(static_cast<int64_t>(state.iterations() * size));
@@ -112,6 +129,7 @@ static constexpr int64_t rangeLimit = 1 << 28; // 256 MiB
     ->UseRealTime();
 
 LIBHAT_BENCHMARK(BM_Throughput_libhat);
+LIBHAT_BENCHMARK(BM_Throughput_libhat_parallel);
 LIBHAT_BENCHMARK(BM_Throughput_std_search);
 LIBHAT_BENCHMARK(BM_Throughput_std_find_std_equal);
 LIBHAT_BENCHMARK(BM_Throughput_UC1);

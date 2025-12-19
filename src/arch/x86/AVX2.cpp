@@ -49,7 +49,7 @@ namespace hat::detail {
 
         for (auto& it : vec) {
             // Gotta go fast, tell the CPU to wake up
-            _mm_prefetch(reinterpret_cast<const char*>(&it) + 256, _MM_HINT_T0);
+            LIBHAT_PREFETCH(reinterpret_cast<const char*>(&it) + 256);
             const auto cmp = _mm256_cmpeq_epi8(firstByte, _mm256_loadu_si256(&it));
             auto mask = static_cast<uint32_t>(_mm256_movemask_epi8(cmp));
 

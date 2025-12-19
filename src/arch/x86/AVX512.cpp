@@ -49,7 +49,8 @@ namespace hat::detail {
         }
 
         for (auto& it : vec) {
-            _mm_prefetch(reinterpret_cast<const char*>(&it) + 256, _MM_HINT_T0);
+            // Gotta go fast, tell the CPU to wake up
+            LIBHAT_PREFETCH(reinterpret_cast<const char*>(&it) + 256);
             auto mask = _mm512_cmpeq_epi8_mask(firstByte, _mm512_loadu_si512(&it));
 
             if constexpr (alignment != scan_alignment::X1) {

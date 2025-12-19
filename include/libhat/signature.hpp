@@ -154,32 +154,17 @@ LIBHAT_EXPORT namespace hat {
             uint8_t value{};
             uint8_t mask{};
 
-            if (base == 16) {
-                for (size_t i = 0; i < 2; ++i) {
-                    const char ch = str[i];
-                    value <<= 4;
-                    mask <<= 4;
-                    if (ch != '?') {
-                        int digit;
-                        if (ch >= '0' && ch <= '9') digit = ch - '0';
-                        else if (ch >= 'A' && ch <= 'F') digit = ch - 'A' + 10;
-                        else if (ch >= 'a' && ch <= 'f') digit = ch - 'a' + 10;
-                        else return std::nullopt;
-                        
-                        value |= digit;
-                        mask |= 0xF;
+            for (auto& ch : str) {
+                value *= base;
+                mask *= base;
+                if (ch != '?') {
+                    auto digit = hat::parse_int<uint8_t>(&ch, &ch + 1, base);
+                    if (!digit.has_value()) [[unlikely]] {
+                        return std::nullopt;
                     }
-                }
-            } else {
-                for (size_t i = 0; i < 8; ++i) {
-                    const char ch = str[i];
-                    value <<= 1;
-                    mask <<= 1;
-                    if (ch != '?') {
-                        if (ch == '1') value |= 1;
-                        else if (ch != '0') return std::nullopt;
-                        mask |= 1;
-                    }
+
+                    value |= digit.value();
+                    mask |= (base - 1);
                 }
             }
 
