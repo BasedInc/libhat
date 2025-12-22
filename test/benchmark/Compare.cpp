@@ -15,7 +15,8 @@ static auto gen_random_buffer(const size_t size) {
     std::default_random_engine generator(123);
     std::uniform_int_distribution<uint64_t> distribution(0, 0xFFFFFFFFFFFFFFFF);
     for (size_t i = 0; i < buffer.size(); i += 8) {
-        *reinterpret_cast<uint64_t*>(&buffer[i]) = distribution(generator);
+        uint64_t value = distribution(generator);
+        std::memcpy(&buffer[i], &value, sizeof(value));
     }
     return buffer;
 }
