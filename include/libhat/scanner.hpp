@@ -26,7 +26,8 @@ LIBHAT_EXPORT namespace hat {
         explicit(false) constexpr scan_result_base(std::nullptr_t) noexcept : result(nullptr) {}
         explicit(false) constexpr scan_result_base(const underlying_type result) noexcept : result(result) {}
 
-        /// Reads an integer of the specified type located at an offset from the signature result
+        /// Reads an integer of the specified type located at an offset from the signature result. If there is no
+        /// result, the behavior is undefined.
         template<std::integral Int>
         [[nodiscard]] constexpr Int read(const size_t offset) const noexcept {
             if LIBHAT_IF_CONSTEVAL {
@@ -41,14 +42,15 @@ LIBHAT_EXPORT namespace hat {
             }
         }
 
-        /// Reads an integer of the specified type which represents an index into an array with the given element type
+        /// Reads an integer of the specified type, which represents an index into an array with the given element type.
+        /// If there is no result, the behavior is undefined.
         template<std::integral Int, typename ArrayType>
         [[nodiscard]] constexpr size_t index(const size_t offset) const noexcept {
             return static_cast<size_t>(read<Int>(offset)) / sizeof(ArrayType);
         }
 
-        /// Resolve the relative address located at an offset from the signature result. The behavior is undefined if
-        /// there is no result. The "offset" parameter is the number of bytes after the result's match that the relative
+        /// Resolve the relative address located at an offset from the signature result. If there is no result, nullptr
+        /// is returned instead. The "offset" parameter is the number of bytes after the result's match that the relative
         /// address is located. For example:
         ///
         ///        | result matches here
@@ -71,6 +73,9 @@ LIBHAT_EXPORT namespace hat {
         /// address in this case is 0x12353BE + 0x7 = 0x12353C5. Simply using rel(2) would yield an incorrect result of
         /// 0x12353C4. In this case, rel(2, 1) would yield the expected 0x12353C5.
         [[nodiscard]] constexpr underlying_type rel(size_t offset, size_t remaining = 0) const noexcept {
+            if (!this->has_result()) LIBHAT_UNLIKELY {
+                return nullptr;
+            }
             using rel32_t = int32_t;
             return this->result + this->read<rel32_t>(offset) + offset + sizeof(rel32_t) + remaining;
         }
