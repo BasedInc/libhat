@@ -95,22 +95,33 @@ namespace hat::process {
     }
 
     static bool regionHasFlags(const std::span<const std::byte> region, const uint32_t flags) {
-        auto addr = std::bit_cast<uintptr_t>(region.data());
-        const auto end = addr + region.size();
+        if (region.empty()) {
+            return false;
+        }
 
-        iter_mapped_regions([&](const uintptr_t b, const uintptr_t e, const uint32_t prot) {
-            if (addr >= b && addr < e) {
+        auto begin = std::bit_cast<uintptr_t>(region.data());
+        const auto end = begin + region.size();
+
+        iter_mapped_regions([&, found = false](const uintptr_t b, const uintptr_t e, const uint32_t prot) mutable {
+            if (found) {
+                // intervals must be contiguous
+                if (b != begin) {
+                    return false;
+                }
+            } else if (begin >= b && begin < e) {
+                found = true;
+            }
+
+            if (found) {
                 if (!(prot & flags)) {
                     return false;
                 }
-                addr = e;
-            } else if (addr >= e) {
-                return false;
+                begin = e;
             }
-            return addr < end;
-        });
 
-        return addr >= end;
+            return begin < end && begin >= b;
+        });
+        return begin >= end;
     }
 
     bool is_readable(const std::span<const std::byte> region) {
