@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "Common.hpp"
+#include "../../Utils.hpp"
 
 namespace hat::process {
 
@@ -18,6 +19,36 @@ namespace hat::process {
             std::abort();
         }
         return *module;
+    }
+
+    std::span<std::byte> module::get_module_data() const {
+        size_t max{};
+
+        auto callback = [&](const dl_phdr_info& info) {
+            const auto addr = std::bit_cast<uintptr_t>(info.dlpi_addr);
+            if (addr != this->address()) {
+                return 0;
+            }
+
+            for (size_t i = 0; i < info.dlpi_phnum; i++) {
+                auto& header = info.dlpi_phdr[i];
+                if (header.p_type != PT_LOAD) {
+                    continue;
+                }
+                max = std::max(max, detail::fast_align_up(header.p_vaddr + header.p_memsz,
+                    header.p_align ? header.p_align : 1));
+            }
+
+            return 1;
+        };
+
+        dl_iterate_phdr(
+            [](dl_phdr_info* info, size_t, void* data) {
+                return (*static_cast<decltype(callback)*>(data))(*info);
+            },
+            &callback);
+
+        return {reinterpret_cast<std::byte*>(this->address()), max};
     }
 
     void module::for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const {
