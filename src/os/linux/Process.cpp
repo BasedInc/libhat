@@ -13,14 +13,6 @@
 
 namespace hat::process {
 
-    hat::process::module get_process_module() {
-        const auto module = get_module({});
-        if (!module) {
-            std::abort();
-        }
-        return *module;
-    }
-
     std::span<std::byte> module::get_module_data() const {
         size_t max{};
 

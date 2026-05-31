@@ -53,6 +53,8 @@ set(LIBHAT_SRC
     src/Scanner.cpp
     src/System.cpp
 
+    src/os/mac/Process.cpp
+
     src/os/linux/MemoryProtector.cpp
     src/os/linux/Process.cpp
 
