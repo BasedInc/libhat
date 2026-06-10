@@ -25,8 +25,8 @@ if(LIBHAT_TESTING_SDE)
     if(WIN32)
         CPMAddPackage(
             NAME            intel_sde
-            URL             https://downloadmirror.intel.com/831748/sde-external-9.44.0-2024-08-22-win.tar.xz
-            URL_HASH        SHA256=ED1562840510ABEB958DFE4DFBFF5BEA9A960A0075839222E984393425E15FBF
+            URL             https://github.com/BasedInc/sde/releases/download/v9.58.0/sde-external-9.58.0-2025-06-16-win.tar.xz
+            URL_HASH        SHA256=EBB8B3B63FCB0B6C1F9721118BA4883703D2AED9E0DB2DEFED4E44FBA78D9CA9
             DOWNLOAD_ONLY   TRUE
         )
         set(LIBHAT_SETUP_SDE ON)
@@ -34,8 +34,8 @@ if(LIBHAT_TESTING_SDE)
     elseif(UNIX)
         CPMAddPackage(
             NAME            intel_sde
-            URL             https://downloadmirror.intel.com/831748/sde-external-9.44.0-2024-08-22-lin.tar.xz
-            URL_HASH        SHA256=C6BC16FC6D1855049EA22DAF214A8C00331713BC6A7B0C4D6955D6ED84148B9B
+            URL             https://github.com/BasedInc/sde/releases/download/v9.58.0/sde-external-9.58.0-2025-06-16-lin.tar.xz
+            URL_HASH        SHA256=F849ACECAD4C9B108259C643B2688FD65C35723CD23368ABE5DD64B917CC18C0
             DOWNLOAD_ONLY   TRUE
         )
         set(LIBHAT_SETUP_SDE ON)
