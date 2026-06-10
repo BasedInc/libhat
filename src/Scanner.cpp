@@ -64,30 +64,28 @@ namespace hat::detail {
         }
     }
 
-    void scan_context::auto_resolve_scanner() {
+    template<>
+    scan_function_t resolve_scanner<scan_mode::Auto>(scan_context& context) {
 #if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
         const auto& ext = get_system().extensions;
         if (ext.bmi) {
 #if defined(LIBHAT_X86_64) && !defined(LIBHAT_DISABLE_AVX512)
             if (ext.avx512f && ext.avx512bw) {
-                this->scanner = resolve_scanner<scan_mode::AVX512>(*this);
-                return;
+                return resolve_scanner<scan_mode::AVX512>(context);
             }
 #endif
             if (ext.avx2) {
-                this->scanner = resolve_scanner<scan_mode::AVX2>(*this);
-                return;
+                return resolve_scanner<scan_mode::AVX2>(context);
             }
         }
 #if !defined(LIBHAT_DISABLE_SSE)
         if (ext.sse41) {
-            this->scanner = resolve_scanner<scan_mode::SSE>(*this);
-            return;
+            return resolve_scanner<scan_mode::SSE>(context);
         }
 #endif
 #endif
         // If none of the vectorized implementations are available/supported, then fallback to scanning per-byte
-        this->scanner = resolve_scanner<scan_mode::Single>(*this);
+        return resolve_scanner<scan_mode::Single>(context);
     }
 }
 

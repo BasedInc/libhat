@@ -163,11 +163,11 @@ namespace hat::detail {
             return this->scanner(begin, end, *this);
         }
 
-        void auto_resolve_scanner();
         void apply_hints(const scanner_context&);
 
         template<scan_mode mode = scan_mode::Auto>
         static constexpr scan_context create(signature_view signature, scan_alignment alignment, scan_hint hints);
+
     private:
         scan_context() = default;
     };
@@ -259,6 +259,9 @@ namespace hat::detail {
 
     template<scan_mode>
     scan_function_t resolve_scanner(scan_context&);
+
+    template<>
+    scan_function_t resolve_scanner<scan_mode::Auto>(scan_context&);
 
     template<scan_alignment>
     const_scan_result find_pattern_single(const std::byte* begin, const std::byte* end, const scan_context&);
@@ -354,11 +357,7 @@ namespace hat::detail {
         if LIBHAT_IF_CONSTEVAL {
             ctx.scanner = resolve_scanner<scan_mode::Single>(ctx);
         } else {
-            if constexpr (mode == scan_mode::Auto) {
-                ctx.auto_resolve_scanner();
-            } else {
-                ctx.scanner = resolve_scanner<mode>(ctx);
-            }
+            ctx.scanner = resolve_scanner<mode>(ctx);
         }
         return ctx;
     }
