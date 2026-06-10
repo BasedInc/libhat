@@ -273,15 +273,19 @@ namespace hat::detail {
             // Use std::find to efficiently find the first byte
             if LIBHAT_IF_CONSTEVAL {
                 i = std::find(i, scanEnd, firstByte);
+                if (i == scanEnd) LIBHAT_UNLIKELY break;
             } else {
-                #if __cpp_lib_execution >= 201902L
+                #ifndef _MSC_VER
+                    i = static_cast<const std::byte*>(
+                        std::memchr(i, static_cast<unsigned char>(firstByte), static_cast<std::size_t>(scanEnd - i)));
+                    if (!i) LIBHAT_UNLIKELY break;
+                #elif __cpp_lib_execution >= 201902L
                     i = std::find(std::execution::unseq, i, scanEnd, firstByte);
+                    if (i == scanEnd) LIBHAT_UNLIKELY break;
                 #else
                     i = std::find(i, scanEnd, firstByte);
+                    if (i == scanEnd) LIBHAT_UNLIKELY break;
                 #endif
-            }
-            if (i == scanEnd) LIBHAT_UNLIKELY {
-                break;
             }
             // Compare everything after the first byte
             auto match = std::equal(signature.begin() + 1, signature.end(), i + 1);
