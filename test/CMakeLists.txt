@@ -14,7 +14,7 @@ if(POLICY CMP0135)
 endif()
 
 CPMAddPackage("gh:google/googletest#v1.17.0")
-CPMAddPackage("gh:google/benchmark#v1.9.4")
+CPMAddPackage("gh:google/benchmark#v1.9.5")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 21)
     target_compile_options(gtest PRIVATE "-Wno-character-conversion")
