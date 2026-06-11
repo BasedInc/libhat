@@ -49,14 +49,17 @@ namespace hat::detail {
         }
 
         for (auto& it : vec) {
-            auto mask = _mm512_cmpeq_epi8_mask(firstByte, _mm512_loadu_si512(&it));
+            auto mask = _mm512_cmpeq_epi8_mask(firstByte, _mm512_load_si512(&it));
 
-            if constexpr (alignment != scan_alignment::X1) {
+            if constexpr (cmpeq2) {
+                const auto mask2 = _mm512_cmpeq_epi8_mask(secondByte, _mm512_load_si512(&it));
+                mask &= (mask2 >> 1) | (0b1ull << 63);
+                if constexpr (alignment != scan_alignment::X1) {
+                    mask &= std::rotl(create_alignment_mask<uint64_t, alignment>(), static_cast<int>(cmpIndex));
+                }
+            } else if constexpr (alignment != scan_alignment::X1) {
                 mask &= create_alignment_mask<uint64_t, alignment>();
                 if (!mask) continue;
-            } else if constexpr (cmpeq2) {
-                const auto mask2 = _mm512_cmpeq_epi8_mask(secondByte, _mm512_loadu_si512(&it));
-                mask &= (mask2 >> 1) | (0b1ull << 63);
             }
 
             while (mask) {
@@ -91,10 +94,10 @@ namespace hat::detail {
 
         const auto alignment = context.alignment;
         const auto signature = context.signature;
+        const bool cmpeq2 = context.pairIndex.has_value();
         const bool veccmp = signature.size() <= 64;
 
         if (alignment == scan_alignment::X1) {
-            const bool cmpeq2 = context.pairIndex.has_value();
             if (cmpeq2 && veccmp) {
                 return &find_pattern_avx512<scan_alignment::X1, true, true>;
             } else if (cmpeq2) {
@@ -105,7 +108,11 @@ namespace hat::detail {
                 return &find_pattern_avx512<scan_alignment::X1, false, false>;
             }
         } else if (alignment == scan_alignment::X16) {
-            if (veccmp) {
+            if (cmpeq2 && veccmp) {
+                return &find_pattern_avx512<scan_alignment::X16, true, true>;
+            } else if (cmpeq2) {
+                return &find_pattern_avx512<scan_alignment::X16, true, false>;
+            } else if (veccmp) {
                 return &find_pattern_avx512<scan_alignment::X16, false, true>;
             } else {
                 return &find_pattern_avx512<scan_alignment::X16, false, false>;

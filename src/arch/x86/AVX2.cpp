@@ -48,18 +48,21 @@ namespace hat::detail {
         }
 
         for (auto& it : vec) {
-            const auto cmp = _mm256_cmpeq_epi8(firstByte, _mm256_loadu_si256(&it));
+            const auto cmp = _mm256_cmpeq_epi8(firstByte, _mm256_load_si256(&it));
             auto mask = static_cast<uint32_t>(_mm256_movemask_epi8(cmp));
 
-            if constexpr (alignment != scan_alignment::X1) {
-                mask &= create_alignment_mask<uint32_t, alignment>();
-                if (!mask) continue;
-            } else if constexpr (cmpeq2) {
-                const auto cmp2 = _mm256_cmpeq_epi8(secondByte, _mm256_loadu_si256(&it));
+            if constexpr (cmpeq2) {
+                const auto cmp2 = _mm256_cmpeq_epi8(secondByte, _mm256_load_si256(&it));
                 auto mask2 = static_cast<uint32_t>(_mm256_movemask_epi8(cmp2));
                 // avoid loading unaligned memory by letting a match of the first signature byte in the last
                 // position imply that the second byte also matched
                 mask &= (mask2 >> 1) | (0b1u << 31);
+                if constexpr (alignment != scan_alignment::X1) {
+                    mask &= std::rotl(create_alignment_mask<uint32_t, alignment>(), static_cast<int>(cmpIndex));
+                }
+            } else if constexpr (alignment != scan_alignment::X1) {
+                mask &= create_alignment_mask<uint32_t, alignment>();
+                if (!mask) continue;
             }
 
             while (mask) {
@@ -94,10 +97,10 @@ namespace hat::detail {
 
         const auto alignment = context.alignment;
         const auto signature = context.signature;
+        const bool cmpeq2 = context.pairIndex.has_value();
         const bool veccmp = signature.size() <= 32;
 
         if (alignment == scan_alignment::X1) {
-            const bool cmpeq2 = context.pairIndex.has_value();
             if (cmpeq2 && veccmp) {
                 return &find_pattern_avx2<scan_alignment::X1, true, true>;
             } else if (cmpeq2) {
@@ -108,7 +111,11 @@ namespace hat::detail {
                 return &find_pattern_avx2<scan_alignment::X1, false, false>;
             }
         } else if (alignment == scan_alignment::X16) {
-            if (veccmp) {
+            if (cmpeq2 && veccmp) {
+                return &find_pattern_avx2<scan_alignment::X16, true, true>;
+            } else if (cmpeq2) {
+                return &find_pattern_avx2<scan_alignment::X16, true, false>;
+            } else if (veccmp) {
                 return &find_pattern_avx2<scan_alignment::X16, false, true>;
             } else {
                 return &find_pattern_avx2<scan_alignment::X16, false, false>;

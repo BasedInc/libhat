@@ -14,7 +14,7 @@ namespace hat::detail {
 
 #ifdef LIBHAT_HINT_X86_64
         const bool x86_64 = static_cast<bool>(this->hints & scan_hint::x86_64);
-        if (x86_64 && !pair0 && scanner.vectorSize && this->alignment == hat::scan_alignment::X1) {
+        if (x86_64 && !pair0 && scanner.vectorSize) {
             static constexpr auto getScore = [](const std::byte a, const std::byte b) {
                 constexpr auto& pairs = hat::detail::x86_64::pairs_x1;
                 const std::pair pair{a, b};
@@ -47,7 +47,7 @@ namespace hat::detail {
 #endif
 
         // If no "optimal" pair was found, find the first byte pair in the signature
-        if (!this->pairIndex.has_value() && this->alignment == hat::scan_alignment::X1) {
+        if (!this->pairIndex.has_value()) {
             for (auto it = this->signature.begin(); it != std::prev(this->signature.end()); it++) {
                 const auto i = static_cast<size_t>(it - this->signature.begin());
                 auto& a = *it;
