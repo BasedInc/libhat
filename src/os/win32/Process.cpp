@@ -93,17 +93,21 @@ namespace hat::process {
     }
 
     std::optional<hat::process::module> get_module(const std::string_view name) {
-        const int size = MultiByteToWideChar(CP_UTF8, 0, name.data(), static_cast<int>(name.size()), nullptr, 0);
-        if (!size) {
-            return {};
+        std::wstring buffer;
+
+        if (!name.empty()) {
+            const int size = MultiByteToWideChar(CP_UTF8, 0, name.data(), static_cast<int>(name.size()), nullptr, 0);
+            if (!size) {
+                return {};
+            }
+
+            buffer.resize(static_cast<size_t>(size));
+
+            MultiByteToWideChar(CP_UTF8, 0, name.data(), static_cast<int>(name.size()), buffer.data(), size);
         }
 
-        std::wstring str;
-        str.resize(static_cast<size_t>(size));
-
-        MultiByteToWideChar(CP_UTF8, 0, name.data(), static_cast<int>(name.size()), str.data(), size);
-
-        if (const auto handle = GetModuleHandleW(str.c_str()); handle) {
+        const wchar_t* file = buffer.empty() ? nullptr : buffer.c_str();
+        if (const auto handle = GetModuleHandleW(file); handle) {
             return hat::process::module{std::bit_cast<uintptr_t>(handle)};
         }
         return {};
