@@ -36,7 +36,6 @@ LIBHAT_API libhat_status_t libhat_parse_signature(const char* signatureStr, sign
             case empty_signature:      return libhat_err_sig_empty_signature;
             case expected_wildcard:    return libhat_err_sig_expected_wildcard;
             case invalid_token_length: return libhat_err_sig_invalid_token_length;
-            case illegal_first_byte:   return libhat_err_sig_illegal_first_byte;
         }
         return libhat_err_unknown;
     }

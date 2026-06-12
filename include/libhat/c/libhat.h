@@ -34,7 +34,6 @@ typedef enum libhat_status_t {
     libhat_err_sig_empty_signature,
     libhat_err_sig_expected_wildcard,
     libhat_err_sig_invalid_token_length,
-    libhat_err_sig_illegal_first_byte,
 } libhat_status_t;
 
 typedef enum scan_alignment {
