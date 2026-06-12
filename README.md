@@ -133,13 +133,13 @@ subrange `s` for which all the following conditions are met:
 - `s[2] == 0x12`
 - `s[3] & 0x0F == 0x03`
 
-Due to how various scanning algorithms are implemented, there are some restrictions when defining a pattern:
-
-1) A pattern must contain at least one fully masked byte (i.e. `AB` or `10011001`)
-2) The first byte with a non-zero mask must have a full mask
-   - `?1 02` is disallowed
-   - `01 02` is allowed
-   - `?? 01` is allowed
+As a scanning optimization, all patterns are required to have at least one fully masked byte. Attempting to find a
+pattern that does not meet this requirement will result in undefined behavior. Additionally, it is recommended
+(but not required) that patterns contain at least 2 consecutive fully masked bytes, as this will greatly speed
+up the vectorized scanning algorithms.
+- `?1 02` is allowed
+- `?? 02` is allowed
+- `01 02` is allowed (*and recommended*)
 
 In code, there are a few ways to initialize a signature from its string representation:
 

@@ -94,7 +94,6 @@ LIBHAT_EXPORT namespace hat {
         empty_signature,
         expected_wildcard,
         invalid_token_length,
-        illegal_first_byte,
     };
 
     /// Convert raw byte storage into a signature
@@ -195,13 +194,7 @@ LIBHAT_EXPORT namespace hat {
                     if (element) {
                         *out++ = *element;
                         written++;
-
-                        if (!containsByte && element->any()) {
-                            if (!element->all()) {
-                                return result_error{signature_error::illegal_first_byte};
-                            }
-                            containsByte = true;
-                        }
+                        containsByte |= element->all();
                     } else {
                         return result_error{signature_error::element_parse_error};
                     }
