@@ -22,7 +22,7 @@ namespace hat::detail {
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
     const_scan_result find_pattern_avx2(const std::byte* begin, const std::byte* end, const scan_context& context) {
         const auto signature = context.signature;
-        const auto cmpIndex = cmpeq2 ? *context.pairIndex : 0;
+        const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
         LIBHAT_ASSUME(cmpIndex < 32);
 
         // 256 bit vector containing first signature byte repeated
@@ -57,11 +57,10 @@ namespace hat::detail {
                 // avoid loading unaligned memory by letting a match of the first signature byte in the last
                 // position imply that the second byte also matched
                 mask &= (mask2 >> 1) | (0b1u << 31);
-                if constexpr (alignment != scan_alignment::X1) {
-                    mask &= std::rotl(create_alignment_mask<uint32_t, alignment>(), static_cast<int>(cmpIndex));
-                }
-            } else if constexpr (alignment != scan_alignment::X1) {
-                mask &= create_alignment_mask<uint32_t, alignment>();
+            }
+
+            if constexpr (alignment != scan_alignment::X1) {
+                mask &= std::rotl(create_alignment_mask<uint32_t, alignment>(), static_cast<int>(cmpIndex));
                 if (!mask) continue;
             }
 

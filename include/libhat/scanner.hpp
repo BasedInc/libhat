@@ -157,9 +157,13 @@ namespace hat::detail {
         scan_function_t scanner{};
         scan_alignment alignment{};
         scan_hint hints{};
+        size_t cmpIndex{};
         std::optional<size_t> pairIndex{};
 
         [[nodiscard]] constexpr const_scan_result scan(const std::byte* begin, const std::byte* end) const {
+            if (signature.size() > static_cast<size_t>(std::distance(begin, end))) LIBHAT_UNLIKELY {
+                return {};
+            }
             return this->scanner(begin, end, *this);
         }
 
@@ -269,10 +273,10 @@ namespace hat::detail {
     template<>
     constexpr const_scan_result find_pattern_single<scan_alignment::X1>(const std::byte* begin, const std::byte* end, const scan_context& context) {
         const auto signature = context.signature;
-        const auto firstByte = *signature[0];
-        const auto scanEnd = end - signature.size() + 1;
+        const auto firstByte = *signature[context.cmpIndex];
+        const auto scanEnd = end - signature.size() + 1 + context.cmpIndex;
 
-        for (auto i = begin; i != scanEnd; i++) {
+        for (auto i = begin + context.cmpIndex; i != scanEnd; i++) {
             // Use std::find to efficiently find the first byte
             if LIBHAT_IF_CONSTEVAL {
                 i = std::find(i, scanEnd, firstByte);
@@ -290,10 +294,10 @@ namespace hat::detail {
                     if (i == scanEnd) LIBHAT_UNLIKELY break;
                 #endif
             }
-            // Compare everything after the first byte
-            auto match = std::equal(signature.begin() + 1, signature.end(), i + 1);
+            const auto start = i - context.cmpIndex;
+            const auto match = std::equal(signature.begin(), signature.end(), start);
             if (match) LIBHAT_UNLIKELY {
-                return i;
+                return start;
             }
         }
         return nullptr;
@@ -302,20 +306,21 @@ namespace hat::detail {
     template<>
     inline const_scan_result find_pattern_single<scan_alignment::X16>(const std::byte* begin, const std::byte* end, const scan_context& context) {
         const auto signature = context.signature;
-        const auto firstByte = *signature[0];
+        const auto cmpByte = *signature[context.cmpIndex];
 
-        const auto scanBegin = next_boundary_align<scan_alignment::X16>(begin);
-        const auto scanEnd = next_boundary_align<scan_alignment::X16>(end - signature.size() + 1);
+        const auto scanBegin = next_boundary_align<scan_alignment::X16>(begin) + context.cmpIndex;
+        const auto scanEnd = next_boundary_align<scan_alignment::X16>(end - signature.size() + 1) + context.cmpIndex;
 
         if (scanBegin >= scanEnd) {
             return nullptr;
         }
 
         for (auto i = scanBegin; i != scanEnd; i += 16) {
-            if (*i == firstByte) {
-                auto match = std::equal(signature.begin() + 1, signature.end(), i + 1);
+            if (*i == cmpByte) {
+                const auto start = i - context.cmpIndex;
+                const auto match = std::equal(signature.begin(), signature.end(), start);
                 if (match) LIBHAT_UNLIKELY {
-                    return i;
+                    return start;
                 }
             }
         }
@@ -332,28 +337,25 @@ namespace hat::detail {
         LIBHAT_UNREACHABLE();
     }
 
-    [[nodiscard]] constexpr auto truncate(const signature_view signature) noexcept {
-        // Truncate the leading wildcards from the signature
-        size_t offset = 0;
-        for (const auto& elem : signature) {
-            if (elem.any()) {
-                break;
-            }
-            offset++;
-        }
-        return std::make_pair(offset, signature.subspan(offset));
-    }
-
     template<byte_input_iterator T>
     using result_type_for = std::conditional_t<std::is_const_v<std::remove_reference_t<std::iter_reference_t<T>>>,
         const_scan_result, scan_result>;
 
     template<scan_mode mode>
     constexpr scan_context scan_context::create(const signature_view signature, const scan_alignment alignment, const scan_hint hints) {
+        size_t cmpIndex{};
+        for (const auto& elem : signature) {
+            if (elem.all()) {
+                break;
+            }
+            cmpIndex++;
+        }
+
         scan_context ctx{};
         ctx.signature = signature;
         ctx.alignment = alignment;
         ctx.hints = hints;
+        ctx.cmpIndex = cmpIndex;
         if LIBHAT_IF_CONSTEVAL {
             ctx.scanner = resolve_scanner<scan_mode::Single>(ctx);
         } else {
@@ -374,18 +376,13 @@ LIBHAT_EXPORT namespace hat {
         const scan_alignment  alignment = scan_alignment::X1,
         const scan_hint       hints = scan_hint::none
     ) noexcept -> detail::result_type_for<Iter> {
-        const auto [offset, trunc] = detail::truncate(signature);
-        const auto begin = std::to_address(beginIt) + offset;
+        const auto context = detail::scan_context::create(signature, alignment, hints);
+        const auto begin = std::to_address(beginIt);
         const auto end = std::to_address(endIt);
 
-        if (begin >= end || trunc.size() > static_cast<size_t>(std::distance(begin, end))) {
-            return {nullptr};
-        }
-
-        const auto context = detail::scan_context::create(trunc, alignment, hints);
-        const const_scan_result result = context.scan(begin, end);
+        const auto result = context.scan(begin, end);
         return result.has_result()
-            ? const_cast<typename detail::result_type_for<Iter>::underlying_type>(result.get() - offset)
+            ? const_cast<typename detail::result_type_for<Iter>::underlying_type>(result.get())
             : nullptr;
     }
 
@@ -426,24 +423,21 @@ LIBHAT_EXPORT namespace hat {
         const scan_alignment  alignment = scan_alignment::X1,
         const scan_hint       hints = scan_hint::none
     ) noexcept -> std::pair<In, Out> {
-        const auto [offset, trunc] = detail::truncate(signature);
-        const auto begin = std::to_address(beginIn) + offset;
+        const auto context = detail::scan_context::create(signature, alignment, hints);
+        const auto begin = std::to_address(beginIn);
         const auto end = std::to_address(endIn);
 
         auto i = begin;
         auto out = beginOut;
 
-        const auto context = detail::scan_context::create(trunc, alignment, hints);
-
-        while (i < end && out != endOut && trunc.size() <= static_cast<size_t>(std::distance(i, end))) {
+        while (i < end && out != endOut) {
             const auto result = context.scan(i, end);
             if (!result.has_result()) {
                 i = end;
                 break;
             }
-            const auto addr = const_cast<typename detail::result_type_for<In>::underlying_type>(result.get());
-            *out++ = addr - offset;
-            i = addr + detail::to_stride(alignment);
+            *out++ = const_cast<typename detail::result_type_for<In>::underlying_type>(result.get());
+            i = result.get() + detail::to_stride(alignment);
         }
 
         return std::make_pair(std::next(beginIn, i - begin), out);
@@ -478,24 +472,21 @@ LIBHAT_EXPORT namespace hat {
         const scan_alignment  alignment = scan_alignment::X1,
         const scan_hint       hints = scan_hint::none
     ) noexcept {
-        const auto [offset, trunc] = detail::truncate(signature);
-        const auto begin = std::to_address(beginIn) + offset;
+        const auto context = detail::scan_context::create(signature, alignment, hints);
+        const auto begin = std::to_address(beginIn);
         const auto end = std::to_address(endIn);
 
         auto i = begin;
         auto out = beginOut;
         size_t matches{};
 
-        const auto context = detail::scan_context::create(trunc, alignment, hints);
-
-        while (begin < end && trunc.size() <= static_cast<size_t>(std::distance(i, end))) {
+        while (i < end) {
             const auto result = context.scan(i, end);
             if (!result.has_result()) {
                 break;
             }
-            const auto addr = const_cast<typename detail::result_type_for<In>::underlying_type>(result.get());
-            *out++ = addr - offset;
-            i = addr + detail::to_stride(alignment);
+            *out++ = const_cast<typename detail::result_type_for<In>::underlying_type>(result.get());
+            i = result.get() + detail::to_stride(alignment);
             matches++;
         }
 

@@ -38,7 +38,7 @@ namespace hat::detail {
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
     const_scan_result find_pattern_sse(const std::byte* begin, const std::byte* end, const scan_context& context) {
         const auto signature = context.signature;
-        const auto cmpIndex = cmpeq2 ? *context.pairIndex : 0;
+        const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
         LIBHAT_ASSUME(cmpIndex < 16);
 
         // 128 bit vector containing first signature byte repeated
@@ -71,12 +71,10 @@ namespace hat::detail {
                 const auto cmp2 = _mm_cmpeq_epi8(secondByte, _mm_load_si128(&it));
                 auto mask2 = static_cast<uint16_t>(_mm_movemask_epi8(cmp2));
                 mask &= (mask2 >> 1) | (0b1u << 15);
-                if constexpr (alignment != scan_alignment::X1) {
-                    mask &= std::rotl(create_alignment_mask<uint16_t, alignment>(), static_cast<int>(cmpIndex));
-                }
-            } else if constexpr (alignment != scan_alignment::X1) {
-                mask &= create_alignment_mask<uint16_t, alignment>();
-                if (!mask) continue;
+            }
+
+            if constexpr (alignment != scan_alignment::X1) {
+                mask &= std::rotl(create_alignment_mask<uint16_t, alignment>(), static_cast<int>(cmpIndex));
             }
 
             while (mask) {

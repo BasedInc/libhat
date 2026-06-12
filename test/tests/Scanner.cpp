@@ -33,8 +33,9 @@ protected:
             sig[i] = static_cast<std::byte>(i + 1);
         }
         hat::fixed_signature<SignatureSize> sigWildcard = sig;
-        if constexpr (SignatureSize >= 2) {
-            sigWildcard[1] = std::nullopt;
+        if constexpr (SignatureSize > 2) {
+            sigWildcard[0] = std::nullopt;
+            sigWildcard[1] = hat::signature_element{sigWildcard[1].value(), std::byte{0xF0}};
         }
 
         const auto contextA = hat::detail::scan_context::create<Mode>(sig, alignment, hat::scan_hint::none);
