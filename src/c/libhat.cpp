@@ -13,6 +13,16 @@ static signature_t* allocate_signature(const hat::signature_view signature) {
     return sig;
 }
 
+static hat::scan_alignment to_cpp_align(const scan_alignment align) {
+    switch (align) {
+        case scan_alignment_x1:
+            return hat::scan_alignment::X1;
+        case scan_alignment_x16:
+            return hat::scan_alignment::X16;
+    }
+    exit(EXIT_FAILURE);
+}
+
 extern "C" {
 
 LIBHAT_API libhat_status_t libhat_parse_signature(const char* signatureStr, signature_t** signatureOut) {
@@ -64,20 +74,10 @@ LIBHAT_API const void* libhat_find_pattern(
         signature->count
     };
 
-    const auto find_pattern = [=](const hat::scan_alignment alignment) {
-        const auto begin = static_cast<const std::byte*>(buffer);
-        const auto end = static_cast<const std::byte*>(buffer) + size;
-        const auto result = hat::find_pattern(begin, end, view, alignment);
-        return result.has_result() ? result.get() : nullptr;
-    };
-
-    switch (align) {
-        case scan_alignment_x1:
-            return find_pattern(hat::scan_alignment::X1);
-        case scan_alignment_x16:
-            return find_pattern(hat::scan_alignment::X16);
-    }
-    exit(EXIT_FAILURE);
+    const auto begin = static_cast<const std::byte*>(buffer);
+    const auto end = static_cast<const std::byte*>(buffer) + size;
+    const auto result = hat::find_pattern(begin, end, view, to_cpp_align(align));
+    return result.has_result() ? result.get() : nullptr;
 }
 
 LIBHAT_API const void* libhat_find_pattern_mod(
@@ -91,22 +91,12 @@ LIBHAT_API const void* libhat_find_pattern_mod(
         signature->count
     };
 
-    const auto find_pattern = [=]<hat::scan_alignment A>() -> const std::byte* {
-        const auto mod = hat::process::module_at(const_cast<void*>(module));
-        if (!mod.has_value()) {
-            return nullptr;
-        }
-        const auto result = hat::find_pattern(view, section, mod.value());
-        return result.has_result() ? result.get() : nullptr;
-    };
-
-    switch (align) {
-        case scan_alignment_x1:
-            return find_pattern.operator()<hat::scan_alignment::X1>();
-        case scan_alignment_x16:
-            return find_pattern.operator()<hat::scan_alignment::X16>();
+    const auto mod = hat::process::module_at(const_cast<void*>(module));
+    if (!mod.has_value()) {
+        return nullptr;
     }
-    exit(EXIT_FAILURE);
+    const auto result = hat::find_pattern(view, section, mod.value(), to_cpp_align(align));
+    return result.has_result() ? result.get() : nullptr;
 }
 
 LIBHAT_API const void* libhat_get_module(const char* name) {
