@@ -94,14 +94,10 @@ namespace hat::process {
             dlclose(handle);
         })>;
 
-        std::unique_ptr<char[]> buffer;
+        const std::string buffer{name};
+        const char* file = buffer.empty() ? nullptr : buffer.c_str();
 
-        if (!name.empty()) {
-            buffer = std::make_unique<char[]>(name.size() + 1);
-            std::ranges::copy(name, buffer.get());
-        }
-
-        const Handle handle{dlopen(buffer.get(), RTLD_LAZY | RTLD_NOLOAD)};
+        const Handle handle{dlopen(file, RTLD_LAZY | RTLD_NOLOAD)};
         if (!handle) {
             return {};
         }
@@ -153,6 +149,25 @@ namespace hat::process {
             return begin < end && begin >= b;
         });
         return begin >= end;
+    }
+
+    std::optional<hat::process::module> module_at(void* address, [[maybe_unused]] const std::optional<size_t> size) {
+        std::optional<hat::process::module> module{};
+        auto callback = [&](const dl_phdr_info& info) {
+            if (std::bit_cast<void*>(info.dlpi_addr) == address) {
+                module = hat::process::module{std::bit_cast<uintptr_t>(info.dlpi_addr)};
+                return 1;
+            }
+            return 0;
+        };
+
+        dl_iterate_phdr(
+            [](dl_phdr_info* info, size_t, void* data) {
+                return (*static_cast<decltype(callback)*>(data))(*info);
+            },
+            &callback);
+
+        return module;
     }
 
     bool is_readable(const std::span<const std::byte> region) {
