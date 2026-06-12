@@ -33,6 +33,8 @@ LIBHAT_EXPORT namespace hat::process {
         /// guaranteed to have page aligned begin and end addresses.
         void for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const;
 
+        [[nodiscard]] constexpr auto operator<=>(const module&) const noexcept = default;
+
     private:
         explicit module(const uintptr_t baseAddress)
             : baseAddress(baseAddress) {}
