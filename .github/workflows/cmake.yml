@@ -56,7 +56,7 @@ jobs:
     strategy:
       matrix:
         target: [ Win32, x64 ] # ARM, ARM64
-        toolset: [ v143, ClangCL ]
+        toolset: [ v145, ClangCL ]
         cxx_standard: [ 20, 23 ]
         include:
           - target: Win32
@@ -72,7 +72,7 @@ jobs:
             target: ARM
           - toolset: ClangCL
             target: ARM64
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
     steps:
       - uses: actions/checkout@v6
       - name: Configure
