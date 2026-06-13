@@ -3,6 +3,7 @@
 int main() {
     const auto& system = hat::get_system();
     
+#if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
     printf("cpu_vendor: %s\n", system.cpu_vendor.c_str());
     printf("cpu_brand: %s\n", system.cpu_brand.c_str());
     // extensions
@@ -19,6 +20,7 @@ int main() {
     printf("avx512bw: %d\n", ext.avx512bw);
     printf("popcnt: %d\n", ext.popcnt);
     printf("bmi: %d\n", ext.bmi);
+#endif
 
     return 0;
 }
