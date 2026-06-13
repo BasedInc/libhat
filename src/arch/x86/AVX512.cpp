@@ -23,7 +23,6 @@ namespace hat::detail {
     const_scan_result find_pattern_avx512(const std::byte* begin, const std::byte* end, const scan_context& context) {
         const auto signature = context.signature;
         const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
-        LIBHAT_ASSUME(cmpIndex < 64);
 
         // 512 bit vector containing first signature byte repeated
         const auto firstByte = _mm512_set1_epi8(static_cast<int8_t>(*signature[cmpIndex]));

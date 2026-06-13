@@ -39,7 +39,6 @@ namespace hat::detail {
     const_scan_result find_pattern_sse(const std::byte* begin, const std::byte* end, const scan_context& context) {
         const auto signature = context.signature;
         const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
-        LIBHAT_ASSUME(cmpIndex < 16);
 
         // 128 bit vector containing first signature byte repeated
         const auto firstByte = _mm_set1_epi8(static_cast<int8_t>(*signature[cmpIndex]));
