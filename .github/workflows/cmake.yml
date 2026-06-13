@@ -61,14 +61,17 @@ jobs:
         include:
           - target: Win32
             vcvars: vcvars32
+            os: windows-2025-vs2026
           - target: x64
             vcvars: vcvars64
+            os: windows-2025-vs2026
           - target: ARM64
-            vcvars: vcvarsamd64_arm64
+            vcvars: vcvarsarm64
+            os: windows-11-vs2026-arm
         exclude:
           - toolset: ClangCL
             target: ARM64
-    runs-on: windows-2025-vs2026
+    runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v6
 
@@ -78,13 +81,12 @@ jobs:
           echo "VS_INSTALL_DIR=$vsInstall" >> $env:GITHUB_ENV
 
       - name: Configure
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=${{startsWith(matrix.target, 'ARM') && 'OFF' || 'ON'}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF -A ${{matrix.target}} -T ${{matrix.toolset}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING_SDE=${{startsWith(matrix.target, 'ARM') && 'OFF' || 'ON'}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF -A ${{matrix.target}} -T ${{matrix.toolset}}
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
 
       - name: Test
-        if: ${{!startsWith(matrix.target, 'ARM')}}
         working-directory: ${{github.workspace}}/build
         shell: cmd
         run: |
