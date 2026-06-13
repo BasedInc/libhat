@@ -78,7 +78,7 @@ jobs:
           echo "VS_INSTALL_DIR=$vsInstall" >> $env:GITHUB_ENV
 
       - name: Configure
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=${{startsWith(matrix.target, 'ARM') && 'OFF' || 'ON'}} -DLIBHAT_TESTING_ASAN=OFF -DLIBHAT_TESTING_SAMPLE_BIN=OFF -A ${{matrix.target}} -T ${{matrix.toolset}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=${{startsWith(matrix.target, 'ARM') && 'OFF' || 'ON'}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF -A ${{matrix.target}} -T ${{matrix.toolset}}
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
