@@ -50,7 +50,7 @@ jobs:
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest -C ${{env.BUILD_TYPE}} -R libhat_test_.*
+        run: ctest --verbose -C ${{env.BUILD_TYPE}} -R libhat_test_.*
 
   windows:
     strategy:
@@ -87,4 +87,4 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\${{matrix.vcvars}}.bat"
-          ctest -C ${{env.BUILD_TYPE}} -R libhat_test_.*
+          ctest --verbose -C ${{env.BUILD_TYPE}} -R libhat_test_.*
