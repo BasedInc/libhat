@@ -55,7 +55,7 @@ jobs:
   windows:
     strategy:
       matrix:
-        target: [ Win32, x64 ] # ARM, ARM64
+        target: [ Win32, x64, ARM64 ]
         toolset: [ v145, ClangCL ]
         cxx_standard: [ 20, 23 ]
         include:
@@ -63,13 +63,9 @@ jobs:
             vcvars: vcvars32
           - target: x64
             vcvars: vcvars64
-#          - target: ARM
-#            vcvars: vcvarsamd64_arm
-#          - target: ARM64
-#            vcvars: vcvarsamd64_arm64
+          - target: ARM64
+            vcvars: vcvarsamd64_arm64
         exclude:
-          - toolset: ClangCL
-            target: ARM
           - toolset: ClangCL
             target: ARM64
     runs-on: windows-2025-vs2026
