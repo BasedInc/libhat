@@ -85,7 +85,7 @@ FetchContent_MakeAvailable(sse2neon)
 if (MSVC)
     set_source_files_properties(src/arch/arm/Neon.cpp PROPERTIES COMPILE_FLAGS "/Zc:preprocessor")
 endif()
-target_include_directories(libhat PRIVATE ${sse2neon_SOURCE_DIR})
+target_include_directories(libhat SYSTEM PRIVATE ${sse2neon_SOURCE_DIR})
 
 if(UNIX)
     set_target_properties(libhat PROPERTIES POSITION_INDEPENDENT_CODE ON)
