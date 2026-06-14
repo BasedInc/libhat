@@ -114,6 +114,7 @@ private:
         else if constexpr (Mode == hat::detail::scan_mode::SSE) return "SSE";
         else if constexpr (Mode == hat::detail::scan_mode::AVX2) return "AVX2";
         else if constexpr (Mode == hat::detail::scan_mode::AVX512) return "AVX512";
+        else if constexpr (Mode == hat::detail::scan_mode::Neon) return "Neon";
         else static_assert(sizeof(Mode) == 0);
     }
 };
