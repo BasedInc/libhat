@@ -68,10 +68,24 @@ set(LIBHAT_SRC
     src/arch/x86/AVX512.cpp
     src/arch/x86/System.cpp
 
-    src/arch/arm/System.cpp)
+    src/arch/arm/Neon.cpp
+    src/arch/arm/System.cpp
+)
 
 add_library(libhat STATIC ${LIBHAT_SRC})
 add_library(libhat::libhat ALIAS libhat)
+
+include(FetchContent)
+FetchContent_Declare(
+    sse2neon
+    GIT_REPOSITORY https://github.com/DLTcollab/sse2neon
+    GIT_TAG        92f6de174717aef09033ad21568d5bb9e5470404 # v1.9.1
+)
+FetchContent_MakeAvailable(sse2neon)
+if (MSVC)
+    set_source_files_properties(src/arch/arm/Neon.cpp PROPERTIES COMPILE_FLAGS "/Zc:preprocessor")
+endif()
+target_include_directories(libhat SYSTEM PRIVATE ${sse2neon_SOURCE_DIR})
 
 if(UNIX)
     set_target_properties(libhat PROPERTIES POSITION_INDEPENDENT_CODE ON)

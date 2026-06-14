@@ -52,8 +52,11 @@ LIBHAT_EXPORT namespace hat {
 LIBHAT_EXPORT namespace hat {
 
     struct system_info_arm : hat::system_info {
+        struct {
+            bool neon;
+        } extensions{};
     private:
-        system_info_arm() = default;
+        system_info_arm();
         friend const system_info_arm& get_system();
         static const system_info_arm instance;
     };

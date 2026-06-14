@@ -149,6 +149,7 @@ namespace hat::detail {
         SSE,    // x86/x64 SSE 4.1
         AVX2,   // x86/x64 AVX2
         AVX512, // x64 AVX512
+        Neon,   // ARMv7+ Neon
     };
 
     class scan_context {
