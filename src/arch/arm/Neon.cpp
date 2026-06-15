@@ -4,8 +4,6 @@
 
 #include <libhat/scanner.hpp>
 
-#include <sse2neon.h>
-
 #ifdef _MSC_VER
     namespace hat::detail {
         inline unsigned long bsf(unsigned __int64 num) noexcept {
@@ -88,8 +86,8 @@ namespace hat::detail {
                 if constexpr (veccmp) {
                     const auto data = vld1q_u8(i);
                     const auto neqBits = veorq_u8(data, signatureBytes);
-                    const auto match = _mm_testz_si128(neqBits, signatureMask);
-                    if (match) LIBHAT_UNLIKELY {
+                    const auto match = vandq_s64(neqBits, signatureMask);
+                    if (!(vgetq_lane_s64(match, 0) | vgetq_lane_s64(match, 1))) LIBHAT_UNLIKELY {
                         return i;
                     }
                 } else {
