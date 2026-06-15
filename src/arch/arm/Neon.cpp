@@ -98,7 +98,7 @@ namespace hat::detail {
                         return i;
                     }
                 }
-                mask &= ~(0xF * (mask & -mask));
+                mask &= ~(0xF * (mask & -static_cast<int64_t>(mask)));
             }
         }
 
