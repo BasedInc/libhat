@@ -36,6 +36,8 @@ static constexpr int64_t rangeLimit = 1 << 28; // 256 MiB
 
 #define LIBHAT_BENCHMARK(...) BENCHMARK(__VA_ARGS__) \
     ->Threads(1)                                     \
+    ->MinWarmUpTime(1)                               \
+    ->MinTime(2)                                     \
     ->Range(rangeStart, rangeLimit)                  \
     ->UseRealTime();
 
