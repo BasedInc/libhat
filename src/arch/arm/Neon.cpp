@@ -4,6 +4,8 @@
 
 #include <libhat/scanner.hpp>
 
+#include <arm_neon.h>
+
 #ifdef _MSC_VER
     namespace hat::detail {
         inline unsigned long bsf(unsigned __int64 num) noexcept {
