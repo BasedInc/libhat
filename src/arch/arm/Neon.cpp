@@ -22,15 +22,15 @@
 
 namespace hat::detail {
 
-    inline void load_signature_128(const signature_view signature, int8x16_t& bytes, int8x16_t& mask) {
+    inline void load_signature_128(const signature_view signature, uint8x16_t& bytes, uint8x16_t& mask) {
         std::byte byteBuffer[16]{}; // The remaining signature bytes
         std::byte maskBuffer[16]{}; // A bitmask for the signature bytes we care about
         for (size_t i = 0; i < signature.size(); i++) {
             byteBuffer[i] = signature[i].value();
             maskBuffer[i] = signature[i].mask();
         }
-        bytes = vld1q_s8(&byteBuffer);
-        mask = vld1q_s8(&maskBuffer);
+        bytes = vld1q_u8(&byteBuffer);
+        mask = vld1q_u8(&maskBuffer);
     }
 
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
@@ -39,19 +39,19 @@ namespace hat::detail {
         const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
 
         // 128 bit vector containing first signature byte repeated
-        const auto firstByte = vdupq_n_s8(static_cast<int8_t>(*signature[cmpIndex]));
+        const auto firstByte = vdupq_n_u8(static_cast<int8_t>(*signature[cmpIndex]));
 
-        int8x16_t secondByte;
+        uint8x16_t secondByte;
         if constexpr (cmpeq2) {
-            secondByte = vdupq_n_s8(static_cast<int8_t>(*signature[cmpIndex + 1]));
+            secondByte = vdupq_n_u8(static_cast<int8_t>(*signature[cmpIndex + 1]));
         }
 
-        int8x16_t signatureBytes, signatureMask;
+        uint8x16_t signatureBytes, signatureMask;
         if constexpr (veccmp) {
             load_signature_128(signature, signatureBytes, signatureMask);
         }
 
-        auto [pre, vec, post] = segment_scan<int8x16_t, veccmp>(begin, end, signature.size(), cmpIndex);
+        auto [pre, vec, post] = segment_scan<uint8x16_t, veccmp>(begin, end, signature.size(), cmpIndex);
 
         if (!pre.empty()) {
             const auto result = find_pattern_single<alignment>(pre.data(), pre.data() + pre.size(), context);
@@ -61,15 +61,16 @@ namespace hat::detail {
         }
 
         for (auto& it : vec) {
-            const auto cmp = vceqq_s8(firstByte, vld1q_s8(&it));
-            auto mask = static_cast<uint16_t>(_mm_movemask_epi8(cmp));
+            auto cmp = vceqq_u8(firstByte, vld1q_s8(&it));
 
             if constexpr (cmpeq2) {
-                const auto cmp2 = vceqq_s8(secondByte, vld1q_s8(&it));
-                auto mask2 = static_cast<uint16_t>(_mm_movemask_epi8(cmp2));
-                mask &= (mask2 >> 1) | (0b1u << 15);
+                const auto cmp2 = vceqq_u8(secondByte, vld1q_s8(reinterpret_cast<const std::byte*>(&it) + 1));
+                cmp = vandq_u8(cmp, cmp2);
             }
 
+            if (!std::bit_cast<uint64_t>(vshrn_n_u16(cmp, 4))) continue;
+
+            auto mask = static_cast<uint16_t>(_mm_movemask_epi8(cmp));
             if constexpr (alignment != scan_alignment::X1) {
                 mask &= std::rotl(create_alignment_mask<uint16_t, alignment>(), static_cast<int>(cmpIndex));
             }
@@ -78,8 +79,8 @@ namespace hat::detail {
                 const auto offset = LIBHAT_BSF32(mask);
                 const auto i = reinterpret_cast<const std::byte*>(&it) + offset - cmpIndex;
                 if constexpr (veccmp) {
-                    const auto data = vld1q_s8(i);
-                    const auto neqBits = veorq_s32(data, signatureBytes);
+                    const auto data = vld1q_u8(i);
+                    const auto neqBits = veorq_u8(data, signatureBytes);
                     const auto match = _mm_testz_si128(neqBits, signatureMask);
                     if (match) LIBHAT_UNLIKELY {
                         return i;
