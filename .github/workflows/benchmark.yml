@@ -15,6 +15,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: CPM Cache
+        uses: actions/cache@v5
+        with:
+          path: ${{github.workspace}}/.cpmcache
+          key: cpm-${{runner.os}}-ARM64-${{hashFiles('test/CMakeLists.txt')}}
+          restore-keys: |
+            cpm-${{runner.os}}-ARM64-
+
       - name: Check Hardware
         run: (Get-CimInstance Win32_Processor).Name
 
