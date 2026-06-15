@@ -35,6 +35,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: CPM Cache
+        uses: actions/cache@v5
+        with:
+          path: ${{github.workspace}}/.cpmcache
+          key: cpm-${{runner.os}}-${{hashFiles('test/CMakeLists.txt')}}
+          restore-keys: |
+            cpm-${{runner.os}}-
+
       - name: Install Compiler
         run: |
           sudo apt update
@@ -43,7 +51,7 @@ jobs:
       - name: Configure
         env:
           CXX: ${{matrix.compiler.exe}}-${{matrix.compiler.version}}
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING=ON -DLIBHAT_TESTING_SAMPLE_BIN=OFF
+        run: cmake -B ${{github.workspace}}/build -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING=ON -DLIBHAT_TESTING_SAMPLE_BIN=OFF
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
@@ -75,13 +83,21 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: CPM Cache
+        uses: actions/cache@v5
+        with:
+          path: ${{github.workspace}}/.cpmcache
+          key: cpm-${{runner.os}}-${{matrix.target}}-${{hashFiles('test/CMakeLists.txt')}}
+          restore-keys: |
+            cpm-${{runner.os}}-${{matrix.target}}-
+
       - name: Locate Visual Studio
         run: |
           $vsInstall = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
           echo "VS_INSTALL_DIR=$vsInstall" >> $env:GITHUB_ENV
 
       - name: Configure
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING_SDE=${{startsWith(matrix.target, 'ARM') && 'OFF' || 'ON'}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF -A ${{matrix.target}} -T ${{matrix.toolset}}
+        run: cmake -B ${{github.workspace}}/build -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING_SDE=${{startsWith(matrix.target, 'ARM') && 'OFF' || 'ON'}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF -A ${{matrix.target}} -T ${{matrix.toolset}}
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
