@@ -36,12 +36,12 @@ static constexpr int64_t rangeLimit = 1 << 28; // 256 MiB
 
 #define LIBHAT_BENCHMARK(...) BENCHMARK(__VA_ARGS__) \
     ->Threads(1)                                     \
-    ->MinWarmUpTime(2)                               \
-    ->MinTime(4)                                     \
     ->Range(rangeStart, rangeLimit)                  \
     ->UseRealTime();
 
 LIBHAT_BENCHMARK(BM_Throughput<hat::detail::scan_mode::Single>);
+#if defined(LIBHAT_AARCH64) || defined(LIBHAT_ARM)
 LIBHAT_BENCHMARK(BM_Throughput<hat::detail::scan_mode::Neon>);
+#endif
 
 BENCHMARK_MAIN();
