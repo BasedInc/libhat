@@ -1,0 +1,31 @@
+name: Benchmark
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  windows:
+    runs-on: windows-11-vs2026-arm
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Locate Visual Studio
+        run: |
+          $vsInstall = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
+          echo "VS_INSTALL_DIR=$vsInstall" >> $env:GITHUB_ENV
+
+      - name: Configure
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=23 -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING_SDE=OFF -DLIBHAT_TESTING_SAMPLE_BIN=OFF -A ARM64 -T v145
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build -j 4 --config Release
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        shell: cmd
+        run: |
+          call "${{env.VS_INSTALL_DIR}}\VC\Auxiliary\Build\vcvarsarm64.bat"
+          ctest --verbose -C Release -R libhat_benchmark_compare_impl

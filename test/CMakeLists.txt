@@ -59,6 +59,7 @@ function(register_test NAME SOURCE)
 endfunction()
 
 register_test(libhat_benchmark_compare benchmark/Compare.cpp)
+register_test(libhat_benchmark_compare_impl benchmark/CompareImpl.cpp)
 register_test(libhat_test_scanner tests/Scanner.cpp)
 register_test(libhat_test_process tests/Process.cpp)
 
