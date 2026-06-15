@@ -29,8 +29,8 @@ namespace hat::detail {
             byteBuffer[i] = std::to_integer<uint8_t>(signature[i].value());
             maskBuffer[i] = std::to_integer<uint8_t>(signature[i].mask());
         }
-        bytes = vld1q_u8(&byteBuffer);
-        mask = vld1q_u8(&maskBuffer);
+        bytes = vld1q_u8(static_cast<const uint8_t*>(byteBuffer));
+        mask = vld1q_u8(static_cast<const uint8_t*>(maskBuffer));
     }
 
     template<scan_alignment alignment>
@@ -98,7 +98,7 @@ namespace hat::detail {
                         return i;
                     }
                 }
-                mask &= ~(0xF * (mask & -static_cast<int64_t>(mask)));
+                mask &= ~(0xF * (mask & (~mask + 1)));
             }
         }
 
