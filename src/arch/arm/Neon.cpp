@@ -8,16 +8,16 @@
 
 #ifdef _MSC_VER
     namespace hat::detail {
-        inline unsigned long bsf(unsigned long num) noexcept {
+        inline unsigned long bsf(unsigned __int64 num) noexcept {
             unsigned long offset;
-            _BitScanForward(&offset, num);
+            _BitScanForward64(&offset, num);
             return offset;
         }
     }
 
-#define LIBHAT_BSF32(num) hat::detail::bsf(num)
+#define LIBHAT_BSF64(num) hat::detail::bsf(num)
 #else
-#define LIBHAT_BSF32(num) __builtin_ctz(num)
+#define LIBHAT_BSF64(num) __builtin_ctzll(num)
 #endif
 
 namespace hat::detail {
@@ -31,6 +31,15 @@ namespace hat::detail {
         }
         bytes = vld1q_u8(&byteBuffer);
         mask = vld1q_u8(&maskBuffer);
+    }
+
+    template<scan_alignment alignment>
+    LIBHAT_FORCEINLINE consteval uint64_t create_alignment_mask_neon() {
+        uint64_t mask{};
+        for (size_t i = 0; i < 16; i += alignment_stride<alignment>) {
+            mask |= (static_cast<uint64_t>(0xF) << (i * 4));
+        }
+        return mask;
     }
 
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
@@ -68,15 +77,13 @@ namespace hat::detail {
                 cmp = vandq_u8(cmp, cmp2);
             }
 
-            if (!std::bit_cast<uint64_t>(vshrn_n_u16(cmp, 4))) continue;
-
-            auto mask = static_cast<uint16_t>(_mm_movemask_epi8(cmp));
+            auto mask = std::bit_cast<uint64_t>(vshrn_n_u16(cmp, 4));
             if constexpr (alignment != scan_alignment::X1) {
-                mask &= std::rotl(create_alignment_mask<uint16_t, alignment>(), static_cast<int>(cmpIndex));
+                mask &= std::rotl(create_alignment_mask_neon<alignment>(), static_cast<int>(cmpIndex) * 4);
             }
 
             while (mask) {
-                const auto offset = LIBHAT_BSF32(mask);
+                const auto offset = LIBHAT_BSF64(mask) / 4;
                 const auto i = reinterpret_cast<const std::byte*>(&it) + offset - cmpIndex;
                 if constexpr (veccmp) {
                     const auto data = vld1q_u8(i);
@@ -91,7 +98,7 @@ namespace hat::detail {
                         return i;
                     }
                 }
-                mask &= (mask - 1);
+                mask &= ~(0xF * (mask & -mask));
             }
         }
 
