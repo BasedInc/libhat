@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Check Hardware
+        run: (Get-CimInstance Win32_Processor).Name
+
       - name: Locate Visual Studio
         run: |
           $vsInstall = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
