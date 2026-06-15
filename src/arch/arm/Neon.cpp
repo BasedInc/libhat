@@ -98,7 +98,10 @@ namespace hat::detail {
                         return i;
                     }
                 }
-                mask &= ~(0xF * (mask & (~mask + 1)));
+                // thanks msvc?
+                // mask &= ~(0xF * (mask & (~mask + 1)));
+                const auto lsb = (mask & static_cast<uint64_t>(-static_cast<int64_t>(mask)));
+                mask &= ~((lsb << 4) - lsb);
             }
         }
 
