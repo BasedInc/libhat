@@ -60,7 +60,7 @@ namespace hat::detail {
             load_signature_128(signature, signatureBytes, signatureMask);
         }
 
-        auto [pre, vec, post] = segment_scan<uint8x16x2_t, veccmp>(begin, end, signature.size(), cmpIndex);
+        auto [pre, vec, post] = segment_scan<uint8x16_t, veccmp>(begin, end, signature.size(), cmpIndex);
 
         if (!pre.empty()) {
             const auto result = find_pattern_single<alignment>(pre.data(), pre.data() + pre.size(), context);
@@ -72,21 +72,16 @@ namespace hat::detail {
         const auto vec_begin = std::to_address(vec.begin());
         const auto vec_end = std::to_address(vec.end());
         for (auto it = vec_begin; it != vec_end; it++) {
-            auto data = vld1q_u8_x2(reinterpret_cast<const uint8_t*>(it));
-            auto cmp = vceqq_u8(firstByte, data.val[0]);
-            auto cmp2 = vceqq_u8(firstByte, data.val[1]);
+            auto cmp = vceqq_u8(firstByte, vld1q_u8(reinterpret_cast<const uint8_t*>(it)));
 
             if constexpr (cmpeq2) {
-                auto data2 = vld1q_u8_x2(reinterpret_cast<const uint8_t*>(it) + 1);
-                cmp = vandq_u8(cmp, vceqq_u8(secondByte, data2.val[0]));
-                cmp2 = vandq_u8(cmp2, vceqq_u8(secondByte, data2.val[1]));
+                const auto cmp2 = vceqq_u8(secondByte, vld1q_u8(reinterpret_cast<const uint8_t*>(it) + 1));
+                cmp = vandq_u8(cmp, cmp2);
             }
 
             auto mask = vget_lane_u64(vshrn_n_u16(cmp, 4), 0);
-            auto mask2 = vget_lane_u64(vshrn_n_u16(cmp2, 4), 0);
             if constexpr (alignment != scan_alignment::X1) {
                 mask &= std::rotl(create_alignment_mask_neon<alignment>(), static_cast<int>(cmpIndex) * 4);
-                mask2 &= std::rotl(create_alignment_mask_neon<alignment>(), static_cast<int>(cmpIndex) * 4);
             }
 
             while (mask) {
@@ -109,28 +104,6 @@ namespace hat::detail {
                 // mask &= ~(0xF * (mask & (~mask + 1)));
                 const auto lsb = (mask & static_cast<uint64_t>(-static_cast<int64_t>(mask)));
                 mask &= ~((lsb << 4) - lsb);
-            }
-
-            while (mask2) {
-                const auto offset = LIBHAT_BSF64(mask2) / 4 + 16;
-                const auto i = reinterpret_cast<const std::byte*>(it) + offset - cmpIndex;
-                if constexpr (veccmp) {
-                    const auto data = vld1q_u8(reinterpret_cast<const uint8_t*>(i));
-                    const auto neqBits = veorq_u8(data, signatureBytes);
-                    const auto match = vandq_u8(neqBits, signatureMask);
-                    if (!(vgetq_lane_u64(match, 0) | vgetq_lane_u64(match, 1))) LIBHAT_UNLIKELY {
-                        return i;
-                    }
-                } else {
-                    const auto match = std::equal(signature.begin(), signature.end(), i);
-                    if (match) LIBHAT_UNLIKELY {
-                        return i;
-                    }
-                }
-                // thanks msvc?
-                // mask &= ~(0xF * (mask & (~mask + 1)));
-                const auto lsb = (mask2 & static_cast<uint64_t>(-static_cast<int64_t>(mask2)));
-                mask2 &= ~((lsb << 4) - lsb);
             }
         }
 
