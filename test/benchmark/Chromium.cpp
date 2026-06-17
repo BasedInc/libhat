@@ -6,11 +6,16 @@
 
 #include <format>
 
+#include "vendor/UC1.hpp"
+#include "vendor/UC2.hpp"
+
 #define WIDE_STR_(x) L ## #x
 #define WIDE_STR(x) WIDE_STR_(x)
 
+#define DLL_MAIN_SIGNATURE "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ?? 49 8B F8"
+
 static const hat::signature DllMainSignature = [] {
-    auto result = hat::parse_signature("48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ?? 49 8B F8");
+    auto result = hat::parse_signature(DLL_MAIN_SIGNATURE);
     if (!result.has_value()) {
         std::terminate();
     }
@@ -88,6 +93,37 @@ static void BM_find_align_hint(benchmark::State& state) {
     state.SetBytesProcessed(state.iterations() * (result.get() - buf.data()));
 }
 
+static void BM_UC1(benchmark::State& state) {
+    const auto buf = get_file_data();
+    const auto begin = std::to_address(buf.begin());
+    const auto end = std::to_address(buf.end());
+
+    const std::byte* result{};
+    const auto sig = UC1::pattern_to_byte(DLL_MAIN_SIGNATURE);
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(result = UC1::PatternScan(begin, end, sig));
+    }
+    if (!result) {
+        std::terminate();
+    }
+    state.SetBytesProcessed(state.iterations() * (result - buf.data()));
+}
+
+static void BM_UC2(benchmark::State& state) {
+    const auto buf = get_file_data();
+    const auto begin = std::to_address(buf.begin());
+    const auto end = std::to_address(buf.end());
+
+    const std::byte* result{};
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(result = UC2::findPattern(begin, end, DLL_MAIN_SIGNATURE));
+    }
+    if (!result) {
+        std::terminate();
+    }
+    state.SetBytesProcessed(state.iterations() * (result - buf.data()));
+}
+
 #define LIBHAT_BENCHMARK(...) BENCHMARK(__VA_ARGS__) \
     ->Threads(1)                                     \
     ->MinWarmUpTime(2)                               \
@@ -98,5 +134,7 @@ LIBHAT_BENCHMARK(BM_find);
 LIBHAT_BENCHMARK(BM_find_align);
 LIBHAT_BENCHMARK(BM_find_hint);
 LIBHAT_BENCHMARK(BM_find_align_hint);
+LIBHAT_BENCHMARK(BM_UC1);
+LIBHAT_BENCHMARK(BM_UC2);
 
 BENCHMARK_MAIN();
