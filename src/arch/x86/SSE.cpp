@@ -62,12 +62,14 @@ namespace hat::detail {
             }
         }
 
-        for (auto& it : vec) {
-            const auto cmp = _mm_cmpeq_epi8(firstByte, _mm_load_si128(&it));
+        const auto vec_begin = std::to_address(vec.begin());
+        const auto vec_end = std::to_address(vec.end());
+        for (auto it = vec_begin; it != vec_end; it++) {
+            const auto cmp = _mm_cmpeq_epi8(firstByte, _mm_load_si128(it));
             auto mask = static_cast<uint16_t>(_mm_movemask_epi8(cmp));
 
             if constexpr (cmpeq2) {
-                const auto cmp2 = _mm_cmpeq_epi8(secondByte, _mm_load_si128(&it));
+                const auto cmp2 = _mm_cmpeq_epi8(secondByte, _mm_load_si128(it));
                 auto mask2 = static_cast<uint16_t>(_mm_movemask_epi8(cmp2));
                 mask &= (mask2 >> 1) | (0b1u << 15);
             }
@@ -78,7 +80,7 @@ namespace hat::detail {
 
             while (mask) {
                 const auto offset = LIBHAT_BSF32(mask);
-                const auto i = reinterpret_cast<const std::byte*>(&it) + offset - cmpIndex;
+                const auto i = reinterpret_cast<const std::byte*>(it) + offset - cmpIndex;
                 if constexpr (veccmp) {
                     const auto data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(i));
                     const auto neqBits = _mm_xor_si128(data, signatureBytes);
