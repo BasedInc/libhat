@@ -46,12 +46,14 @@ namespace hat::detail {
             }
         }
 
-        for (auto& it : vec) {
-            const auto cmp = _mm256_cmpeq_epi8(firstByte, _mm256_load_si256(&it));
+        const auto vec_begin = std::to_address(vec.begin());
+        const auto vec_end = std::to_address(vec.end());
+        for (auto it = vec_begin; it != vec_end; it++) {
+            const auto cmp = _mm256_cmpeq_epi8(firstByte, _mm256_load_si256(it));
             auto mask = static_cast<uint32_t>(_mm256_movemask_epi8(cmp));
 
             if constexpr (cmpeq2) {
-                const auto cmp2 = _mm256_cmpeq_epi8(secondByte, _mm256_load_si256(&it));
+                const auto cmp2 = _mm256_cmpeq_epi8(secondByte, _mm256_load_si256(it));
                 auto mask2 = static_cast<uint32_t>(_mm256_movemask_epi8(cmp2));
                 // avoid loading unaligned memory by letting a match of the first signature byte in the last
                 // position imply that the second byte also matched
@@ -65,7 +67,7 @@ namespace hat::detail {
 
             while (mask) {
                 const auto offset = _tzcnt_u32(mask);
-                const auto i = reinterpret_cast<const std::byte*>(&it) + offset - cmpIndex;
+                const auto i = reinterpret_cast<const std::byte*>(it) + offset - cmpIndex;
                 if constexpr (veccmp) {
                     const auto data = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(i));
                     const auto neqBits = _mm256_xor_si256(data, signatureBytes);

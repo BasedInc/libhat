@@ -47,11 +47,13 @@ namespace hat::detail {
             }
         }
 
-        for (auto& it : vec) {
-            auto mask = _mm512_cmpeq_epi8_mask(firstByte, _mm512_load_si512(&it));
+        const auto vec_begin = std::to_address(vec.begin());
+        const auto vec_end = std::to_address(vec.end());
+        for (auto it = vec_begin; it != vec_end; it++) {
+            auto mask = _mm512_cmpeq_epi8_mask(firstByte, _mm512_load_si512(it));
 
             if constexpr (cmpeq2) {
-                const auto mask2 = _mm512_cmpeq_epi8_mask(secondByte, _mm512_load_si512(&it));
+                const auto mask2 = _mm512_cmpeq_epi8_mask(secondByte, _mm512_load_si512(it));
                 mask &= (mask2 >> 1) | (0b1ull << 63);
             }
 
@@ -62,7 +64,7 @@ namespace hat::detail {
 
             while (mask) {
                 const auto offset = _tzcnt_u64(mask);
-                const auto i = reinterpret_cast<const std::byte*>(&it) + offset - cmpIndex;
+                const auto i = reinterpret_cast<const std::byte*>(it) + offset - cmpIndex;
                 if constexpr (veccmp) {
                     const auto data = _mm512_loadu_si512(i);
                     const auto neqBits = _mm512_xor_si512(data, signatureBytes);
