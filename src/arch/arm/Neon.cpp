@@ -69,13 +69,15 @@ namespace hat::detail {
             }
         }
 
-        for (auto& it : vec) {
-            auto data = vld1q_u8_x2(reinterpret_cast<const uint8_t*>(&it));
+        const auto vec_begin = std::to_address(vec.begin());
+        const auto vec_end = std::to_address(vec.end());
+        for (auto it = vec_begin; it != vec_end; it++) {
+            auto data = vld1q_u8_x2(reinterpret_cast<const uint8_t*>(it));
             auto cmp = vceqq_u8(firstByte, data.val[0]);
             auto cmp2 = vceqq_u8(firstByte, data.val[1]);
 
             if constexpr (cmpeq2) {
-                auto data2 = vld1q_u8_x2(reinterpret_cast<const uint8_t*>(&it) + 1);
+                auto data2 = vld1q_u8_x2(reinterpret_cast<const uint8_t*>(it) + 1);
                 cmp = vandq_u8(cmp, vceqq_u8(secondByte, data2.val[0]));
                 cmp2 = vandq_u8(cmp2, vceqq_u8(secondByte, data2.val[1]));
             }
@@ -89,7 +91,7 @@ namespace hat::detail {
 
             while (mask) {
                 const auto offset = LIBHAT_BSF64(mask) / 4;
-                const auto i = reinterpret_cast<const std::byte*>(&it) + offset - cmpIndex;
+                const auto i = reinterpret_cast<const std::byte*>(it) + offset - cmpIndex;
                 if constexpr (veccmp) {
                     const auto data = vld1q_u8(reinterpret_cast<const uint8_t*>(i));
                     const auto neqBits = veorq_u8(data, signatureBytes);
@@ -111,7 +113,7 @@ namespace hat::detail {
 
             while (mask2) {
                 const auto offset = LIBHAT_BSF64(mask2) / 4 + 16;
-                const auto i = reinterpret_cast<const std::byte*>(&it) + offset - cmpIndex;
+                const auto i = reinterpret_cast<const std::byte*>(it) + offset - cmpIndex;
                 if constexpr (veccmp) {
                     const auto data = vld1q_u8(reinterpret_cast<const uint8_t*>(i));
                     const auto neqBits = veorq_u8(data, signatureBytes);
