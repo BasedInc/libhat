@@ -80,8 +80,8 @@ namespace hat::detail {
                 cmp2 = vandq_u8(cmp2, vceqq_u8(secondByte, data2.val[1]));
             }
 
-            auto mask = std::bit_cast<uint64_t>(vshrn_n_u16(cmp, 4));
-            auto mask2 = std::bit_cast<uint64_t>(vshrn_n_u16(cmp2, 4));
+            auto mask = vget_lane_u64(vshrn_n_u16(cmp, 4), 0);
+            auto mask2 = vget_lane_u64(vshrn_n_u16(cmp2, 4), 0);
             if constexpr (alignment != scan_alignment::X1) {
                 mask &= std::rotl(create_alignment_mask_neon<alignment>(), static_cast<int>(cmpIndex) * 4);
                 mask2 &= std::rotl(create_alignment_mask_neon<alignment>(), static_cast<int>(cmpIndex) * 4);
