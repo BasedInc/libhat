@@ -39,11 +39,12 @@ jobs:
   linux:
     strategy:
       matrix:
+        os: [ ubuntu-26.04, ubuntu-26.04-arm ]
         compiler:
           - { pkg: g++, exe: g++, version: 14 }
           - { pkg: clang, exe: clang++, version: 18 }
         cxx_standard: [ 20, 23 ]
-    runs-on: ubuntu-24.04
+    runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v6
 
@@ -63,7 +64,7 @@ jobs:
       - name: Configure
         env:
           CXX: ${{matrix.compiler.exe}}-${{matrix.compiler.version}}
-        run: cmake -B ${{github.workspace}}/build -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF
+        run: cmake -B ${{github.workspace}}/build -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING_SDE=${{contains(matrix.os, 'arm') && 'OFF' || 'ON'}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
