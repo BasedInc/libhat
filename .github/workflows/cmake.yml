@@ -18,11 +18,23 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: CPM Cache
+        uses: actions/cache@v5
+        with:
+          path: ${{github.workspace}}/.cpmcache
+          key: cpm-${{runner.os}}-${{hashFiles('test/CMakeLists.txt')}}
+          restore-keys: |
+            cpm-${{runner.os}}-
+
       - name: Configure
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING=OFF
+        run: cmake -B ${{github.workspace}}/build -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF -DLIBHAT_TESTING_SDE=OFF
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest --verbose -C ${{env.BUILD_TYPE}} -R libhat_test_.*
 
   linux:
     strategy:
@@ -51,7 +63,7 @@ jobs:
       - name: Configure
         env:
           CXX: ${{matrix.compiler.exe}}-${{matrix.compiler.version}}
-        run: cmake -B ${{github.workspace}}/build -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING=ON -DLIBHAT_TESTING_SAMPLE_BIN=OFF
+        run: cmake -B ${{github.workspace}}/build -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4

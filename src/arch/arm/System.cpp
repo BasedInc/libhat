@@ -5,7 +5,7 @@
 
 namespace hat {
 
-#ifdef LIBHAT_WINDOWS
+#if defined(LIBHAT_WINDOWS) || defined(LIBHAT_MAC)
     system_info_arm::system_info_arm() {
         this->extensions.neon = true;
     }
