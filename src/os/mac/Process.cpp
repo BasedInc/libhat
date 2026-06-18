@@ -13,6 +13,17 @@
 
 namespace hat::process {
 
+    hat::process::module get_process_module() {
+        const uint32_t count = _dyld_image_count();
+        for (uint32_t i = 0; i != count; i++) {
+            const auto* header = reinterpret_cast<const mach_header_64*>(_dyld_get_image_header(i));
+            if (header && header->filetype == MH_EXECUTE) {
+                return hat::process::module{std::bit_cast<uintptr_t>(header)};
+            }
+        }
+        std::abort();
+    }
+
     // no-op on 32 bit binaries
     void module::for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const {
         const uint32_t imageCount = _dyld_image_count();
@@ -58,37 +69,33 @@ namespace hat::process {
     }
 
     std::optional<hat::process::module> get_module(const std::string_view name) {
+        if (name.empty()) {
+            return get_process_module();
+        }
+
         using Handle = std::unique_ptr<void, decltype([](void* handle) {
             dlclose(handle);
         })>;
 
-        std::unique_ptr<char[]> buffer;
-
-        if (!name.empty()) {
-            buffer = std::make_unique<char[]>(name.size() + 1);
-            std::ranges::copy(name, buffer.get());
-        }
-
-        const Handle handle{dlopen(buffer.get(), RTLD_LAZY | RTLD_NOLOAD)};
+        const std::string buffer{name};
+        const Handle handle{dlopen(buffer.c_str(), RTLD_LAZY | RTLD_NOLOAD)};
         if (!handle) {
             return {};
         }
-        
-        std::optional<hat::process::module> module{};
 
-        uint32_t imageCount = _dyld_image_count();
-        for (uint32_t i = 0; i < imageCount; i++) {
+        const uint32_t count = _dyld_image_count();
+        for (uint32_t i = 0; i < count; i++) {
             const auto* header = reinterpret_cast<const mach_header_64*>(_dyld_get_image_header(i));
             if (header == nullptr)
                 continue;
 
             const Handle h{dlopen(_dyld_get_image_name(i), RTLD_LAZY | RTLD_NOLOAD)};
             if (h == handle) {
-                module = hat::process::module{std::bit_cast<uintptr_t>(header)};
+                return hat::process::module{std::bit_cast<uintptr_t>(header)};
             }
         }
 
-        return module;
+        return {};
     }
 }
 
