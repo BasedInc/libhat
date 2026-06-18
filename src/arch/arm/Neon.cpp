@@ -79,7 +79,7 @@ namespace hat::detail {
                 cmp = vandq_u8(cmp, cmp2);
             }
 
-            auto mask = vget_lane_u64(vshrn_n_u16(vreinterpretq_u16_u8(cmp), 4), 0);
+            auto mask = vget_lane_u64(vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(cmp), 4)),  0);
             if constexpr (alignment != scan_alignment::X1) {
                 mask &= std::rotl(create_alignment_mask_neon<alignment>(), static_cast<int>(cmpIndex) * 4);
             }
