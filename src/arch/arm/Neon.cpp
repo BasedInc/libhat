@@ -79,7 +79,7 @@ namespace hat::detail {
                 cmp = vandq_u8(cmp, cmp2);
             }
 
-            auto mask = vget_lane_u64(vshrn_n_u16(cmp, 4), 0);
+            auto mask = vget_lane_u64(vshrn_n_u16(vreinterpretq_u16_u8(cmp), 4), 0);
             if constexpr (alignment != scan_alignment::X1) {
                 mask &= std::rotl(create_alignment_mask_neon<alignment>(), static_cast<int>(cmpIndex) * 4);
             }
@@ -90,7 +90,7 @@ namespace hat::detail {
                 if constexpr (veccmp) {
                     const auto data = vld1q_u8(reinterpret_cast<const uint8_t*>(i));
                     const auto neqBits = veorq_u8(data, signatureBytes);
-                    const auto match = vandq_u8(neqBits, signatureMask);
+                    const auto match = vreinterpretq_u64_u8(vandq_u8(neqBits, signatureMask));
                     if (!(vgetq_lane_u64(match, 0) | vgetq_lane_u64(match, 1))) LIBHAT_UNLIKELY {
                         return i;
                     }
