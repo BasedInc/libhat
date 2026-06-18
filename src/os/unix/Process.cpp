@@ -5,6 +5,8 @@
 
 #include <dlfcn.h>
 
+#include <cstdlib>
+
 namespace hat::process {
 
     hat::process::module get_process_module() {
