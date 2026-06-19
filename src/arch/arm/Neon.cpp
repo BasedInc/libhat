@@ -5,10 +5,19 @@
 #include <libhat/scanner.hpp>
 
 #include <arm_neon.h>
-#include <intrin.h>
 
 #ifdef _MSC_VER
-#define LIBHAT_BSF64(num) _CountTrailingZeros64(num)
+#include <intrin.h>
+
+    namespace hat::detail {
+        inline unsigned long bsf(unsigned __int64 num) noexcept {
+            unsigned long offset;
+            _BitScanForward64(&offset, num);
+            return offset;
+        }
+    }
+
+#define LIBHAT_BSF64(num) hat::detail::bsf(num)
 #else
 #define LIBHAT_BSF64(num) __builtin_ctzll(num)
 #endif
