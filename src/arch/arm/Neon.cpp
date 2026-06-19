@@ -5,17 +5,10 @@
 #include <libhat/scanner.hpp>
 
 #include <arm_neon.h>
+#include <intrin.h>
 
 #ifdef _MSC_VER
-    namespace hat::detail {
-        inline unsigned long bsf(unsigned __int64 num) noexcept {
-            unsigned long offset;
-            _BitScanForward64(&offset, num);
-            return offset;
-        }
-    }
-
-#define LIBHAT_BSF64(num) hat::detail::bsf(num)
+#define LIBHAT_BSF64(num) _CountTrailingZeros64(num)
 #else
 #define LIBHAT_BSF64(num) __builtin_ctzll(num)
 #endif
@@ -85,8 +78,8 @@ namespace hat::detail {
             }
 
             while (mask) {
-                const auto offset = LIBHAT_BSF64(mask) / 4;
-                const auto i = reinterpret_cast<const std::byte*>(it) + offset - cmpIndex;
+                const auto offset = LIBHAT_BSF64(mask);
+                const auto i = reinterpret_cast<const std::byte*>(it) + (offset >> 2) - cmpIndex;
                 if constexpr (veccmp) {
                     const auto data = vld1q_u8(reinterpret_cast<const uint8_t*>(i));
                     const auto neqBits = veorq_u8(data, signatureBytes);
@@ -102,8 +95,7 @@ namespace hat::detail {
                 }
                 // thanks msvc?
                 // mask &= ~(0xF * (mask & (~mask + 1)));
-                const auto lsb = (mask & static_cast<uint64_t>(-static_cast<int64_t>(mask)));
-                mask &= ~((lsb << 4) - lsb);
+                mask ^= (uint64_t{0xF} << offset);
             }
         }
 
