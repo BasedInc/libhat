@@ -1,13 +1,14 @@
 import itertools
 import sys
 
+import numpy as np
 import pefile
 
 
 def main():
     files = [pefile.PE(path, fast_load=True) for path in sys.argv[1:]]
 
-    pair_counts = [0 for _ in range(2 ** 16)]
+    pair_counts = np.zeros(1 << 16, dtype=np.int64)
     total_pairs_count = 0
 
     for pe in files:
@@ -16,8 +17,12 @@ def main():
                 continue
             data = section.get_data()
             total_pairs_count += len(data) - 1
-            for a, b in zip(data[:], data[1:]):
-                pair_counts[a * 0x100 + b] += 1
+
+            a = np.frombuffer(data[:-1], dtype=np.uint8).astype(np.uint16)
+            b = np.frombuffer(data[1:], dtype=np.uint8)
+            pairs = (a << 8) | b
+            count = np.bincount(pairs, minlength=1 << 16)
+            pair_counts += count
 
     top_n_pairs = 512
     sorted_pairs = sorted(
