@@ -15,7 +15,7 @@ def main():
         for section in pe.sections:
             if not section.IMAGE_SCN_MEM_EXECUTE:
                 continue
-            data = section.get_data()
+            data = memoryview(section.get_data())
             total_pairs_count += len(data) - 1
 
             a = np.frombuffer(data[:-1], dtype=np.uint8).astype(np.uint16)
