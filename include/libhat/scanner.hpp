@@ -199,11 +199,6 @@ namespace hat::detail {
         return std::assume_aligned<alignment>(ptr);
     }
 
-    template<scan_alignment alignment>
-    LIBHAT_FORCEINLINE const std::byte* align_up(const std::byte* ptr) {
-        return align_up<alignment_stride<alignment>>(ptr);
-    }
-
     template<typename Vector, size_t alignment, bool veccmp>
     LIBHAT_FORCEINLINE auto segment_scan(
         const std::byte* begin,
@@ -292,17 +287,18 @@ namespace hat::detail {
 
     template<>
     inline const_scan_result find_pattern_single<scan_alignment::X16>(const std::byte* begin, const std::byte* end, const scan_context& context) {
+        static constexpr auto stride = alignment_stride<scan_alignment::X16>;
         const auto signature = context.signature;
         const auto cmpByte = *signature[context.cmpIndex];
 
-        const auto scanBegin = align_up<scan_alignment::X16>(begin) + context.cmpIndex;
-        const auto scanEnd = align_up<scan_alignment::X16>(end - signature.size() + 1) + context.cmpIndex;
+        const auto scanBegin = align_up<stride>(begin) + context.cmpIndex;
+        const auto scanEnd = align_up<stride>(end - signature.size() + 1) + context.cmpIndex;
 
         if (scanBegin >= scanEnd) {
             return nullptr;
         }
 
-        for (auto i = scanBegin; i != scanEnd; i += 16) {
+        for (auto i = scanBegin; i != scanEnd; i += stride) {
             if (*i == cmpByte) {
                 const auto start = i - context.cmpIndex;
                 const auto match = std::equal(signature.begin(), signature.end(), start);
