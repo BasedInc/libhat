@@ -76,6 +76,12 @@
     #define LIBHAT_FORCEINLINE inline
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#define LIBHAT_TARGET(arch) __attribute__((target(arch)))
+#else
+#define LIBHAT_TARGET(arch)
+#endif
+
 #if __has_cpp_attribute(no_unique_address)
     #define LIBHAT_NO_UNIQUE_ADDRESS [[no_unique_address]]
 #elif __has_cpp_attribute(msvc::no_unique_address)

@@ -8,6 +8,7 @@
 
 namespace hat::detail {
 
+    LIBHAT_TARGET("avx")
     inline void load_signature_256(const signature_view signature, __m256i& bytes, __m256i& mask) {
         std::byte byteBuffer[32]{}; // The remaining signature bytes
         std::byte maskBuffer[32]{}; // A bitmask for the signature bytes we care about
@@ -20,6 +21,7 @@ namespace hat::detail {
     }
 
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
+    LIBHAT_TARGET("avx,avx2,bmi")
     const_scan_result find_pattern_avx2(const std::byte* begin, const std::byte* end, const scan_context& context) {
         const auto signature = context.signature;
         const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
@@ -37,7 +39,7 @@ namespace hat::detail {
             load_signature_256(signature, signatureBytes, signatureMask);
         }
 
-        auto [pre, vec, post] = segment_scan<__m256i, veccmp>(begin, end, signature.size(), cmpIndex);
+        auto [pre, vec, post] = segment_scan<__m256i, 32, veccmp>(begin, end, signature.size(), cmpIndex);
 
         if (!pre.empty()) {
             const auto result = find_pattern_single<alignment>(pre.data(), pre.data() + pre.size(), context);

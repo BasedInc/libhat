@@ -46,6 +46,11 @@ namespace hat {
     }
     #endif
 
+    LIBHAT_TARGET("xsave")
+    static auto xgetbv_impl(unsigned int a) {
+        return _xgetbv(a);
+    }
+
     system_info_x86::system_info_x86() {
         std::array<int, 4> info{};
         std::vector<std::array<int, 4>> data{};
@@ -99,7 +104,7 @@ namespace hat {
         bool osxsave = f_1_ECX_[27];
         if (xsave && osxsave) {
             // https://cdrdv2-public.intel.com/671190/253668-sdm-vol-3a.pdf (Page 2-20)
-            const std::bitset<64> xcr = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+            const std::bitset<64> xcr = xgetbv_impl(_XCR_XFEATURE_ENABLED_MASK);
             avxsupport = xcr[1] && xcr[2]; // xmm and ymm
             avx512support = avxsupport && xcr[5] && xcr[6] && xcr[7]; // opmask and zmm
         }
