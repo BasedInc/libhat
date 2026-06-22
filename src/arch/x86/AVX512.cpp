@@ -9,8 +9,8 @@
 namespace hat::detail {
 
     inline void load_signature_512(const signature_view signature, __m512i& bytes, __m512i& mask) {
-        std::byte byteBuffer[64]{}; // The remaining signature bytes
-        std::byte maskBuffer[64]{}; // A bitmask for the signature bytes we care about
+        alignas(64) std::byte byteBuffer[64]{}; // The remaining signature bytes
+        alignas(64) std::byte maskBuffer[64]{}; // A bitmask for the signature bytes we care about
         for (size_t i = 0; i < signature.size(); i++) {
             byteBuffer[i] = signature[i].value();
             maskBuffer[i] = signature[i].mask();
