@@ -92,8 +92,8 @@ namespace hat::detail {
                 if constexpr (veccmp) {
                     const auto data = vld1q_u8(reinterpret_cast<const uint8_t*>(i));
                     const auto neqBits = veorq_u8(data, signatureBytes);
-                    const auto match = vreinterpretq_u64_u8(vandq_u8(neqBits, signatureMask));
-                    if (!(vgetq_lane_u64(match, 0) | vgetq_lane_u64(match, 1))) LIBHAT_UNLIKELY {
+                    const auto match = vreinterpretq_u32_u8(vandq_u8(neqBits, signatureMask));
+                    if (vmaxvq_u32(match) == 0) LIBHAT_UNLIKELY {
                         return i;
                     }
                 } else {
