@@ -62,7 +62,7 @@ namespace hat::detail {
             load_signature_128(signature, signatureBytes, signatureMask);
         }
 
-        auto [pre, vec, post] = segment_scan<uint8x16_t, veccmp>(begin, end, signature.size(), cmpIndex);
+        auto [pre, vec, post] = segment_scan<uint8x16_t, 16, veccmp>(begin, end, signature.size(), cmpIndex);
 
         if (!pre.empty()) {
             const auto result = find_pattern_single<alignment>(pre.data(), pre.data() + pre.size(), context);
