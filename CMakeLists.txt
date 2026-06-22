@@ -20,7 +20,7 @@ option(LIBHAT_INSTALL_TARGET "Creates install rules for the libhat target" ON)
 option(LIBHAT_DISABLE_SSE "Disables SSE scanning" OFF)
 option(LIBHAT_DISABLE_AVX512 "Disables AVX512 scanning" OFF)
 option(LIBHAT_TESTING "Enable tests" ${PROJECT_IS_TOP_LEVEL})
-option(LIBHAT_TESTING_ASAN "Enable address sanitizer when testing" ON)
+option(LIBHAT_TESTING_SANITIZE "Enable address sanitizer when testing" ON)
 option(LIBHAT_TESTING_SDE "Run tests using Intel Software Development Emulator" ON)
 option(LIBHAT_TESTING_SAMPLE_BIN "Enables tests that require downloading a large sample binary" ON)
 option(LIBHAT_MODULE_TARGET "Create target for the module interface" OFF)
@@ -29,24 +29,13 @@ option(LIBHAT_EXAMPLES "Include example targets" ${PROJECT_IS_TOP_LEVEL})
 
 option(LIBHAT_HINT_X86_64 "Enables support for the x86_64 scan hint, requires a small (2KB) data table" ON)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    # Just assume that the compiler accepts the required x86/x64 options if it'll accept -mmmx
-    # CMake architecture detection SUCKS!!!
-    check_cxx_compiler_flag("-mmmx" LIBHAT_COMPILER_X86_OPTIONS)
-
-    if(LIBHAT_COMPILER_X86_OPTIONS)
-        set_source_files_properties(src/arch/x86/SSE.cpp PROPERTIES COMPILE_FLAGS "-msse4.1")
-        set_source_files_properties(src/arch/x86/AVX2.cpp PROPERTIES COMPILE_FLAGS "-mavx -mavx2 -mbmi")
-        set_source_files_properties(src/arch/x86/AVX512.cpp PROPERTIES COMPILE_FLAGS "-mavx512f -mavx512bw -mbmi")
-        set_source_files_properties(src/arch/x86/System.cpp PROPERTIES COMPILE_FLAGS "-mxsave")
+if(LIBHAT_TESTING AND LIBHAT_TESTING_SANITIZE)
+    if(MSVC)
+        add_compile_options($<$<AND:$<CONFIG:Debug>,$<CXX_COMPILER_ID:MSVC>>:/fsanitize=address>)
+    else()
+        add_compile_options($<$<CONFIG:Debug>:-fsanitize=address,undefined>)
+        add_link_options($<$<CONFIG:Debug>:-fsanitize=address,undefined>)
     endif()
-endif()
-
-if(LIBHAT_TESTING AND LIBHAT_TESTING_ASAN)
-    if(MSVC AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        add_compile_options($<$<CONFIG:Debug>:/fsanitize=address>)
-    endif()
-    # TODO: Linux
 endif()
 
 set(LIBHAT_SRC

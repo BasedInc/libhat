@@ -188,47 +188,29 @@ namespace hat::detail {
     LIBHAT_FORCEINLINE consteval auto create_alignment_mask() {
         type mask{};
         for (size_t i = 0; i < sizeof(type) * 8; i += alignment_stride<alignment>) {
-            mask |= (type(1) << i);
+            mask |= static_cast<type>(type(1) << i);
         }
         return mask;
     }
 
-    template<scan_alignment alignment>
-    LIBHAT_FORCEINLINE const std::byte* next_boundary_align(const std::byte* ptr) {
-        constexpr auto stride = alignment_stride<alignment>;
-        if constexpr (stride == 1) {
-            return ptr;
-        }
-        uintptr_t mod = reinterpret_cast<uintptr_t>(ptr) % stride;
-        ptr += mod ? stride - mod : 0;
-        return std::assume_aligned<stride>(ptr);
-    }
-
-    template<scan_alignment alignment>
-    LIBHAT_FORCEINLINE const std::byte* prev_boundary_align(const std::byte* ptr) {
-        constexpr auto stride = alignment_stride<alignment>;
-        if constexpr (stride == 1) {
-            return ptr;
-        }
-        const uintptr_t mod = reinterpret_cast<uintptr_t>(ptr) % stride;
-        return std::assume_aligned<stride>(ptr - mod);
-    }
-
-    template<typename Type>
-    LIBHAT_FORCEINLINE const std::byte* align_pointer_as(const std::byte* ptr) {
-        constexpr size_t alignment = alignof(Type);
+    template<size_t alignment>
+    LIBHAT_FORCEINLINE const std::byte* align_up(const std::byte* ptr) {
         const uintptr_t mod = reinterpret_cast<uintptr_t>(ptr) % alignment;
         ptr += mod ? alignment - mod : 0;
         return std::assume_aligned<alignment>(ptr);
     }
 
-    template<typename Vector, bool veccmp>
+    template<typename Vector, size_t alignment, bool veccmp>
     LIBHAT_FORCEINLINE auto segment_scan(
         const std::byte* begin,
         const std::byte* end,
         const size_t signatureSize,
         const size_t cmpOffset
     ) -> std::tuple<std::span<const std::byte>, std::span<const Vector>, std::span<const std::byte>> {
+        // Alignment may not match due to function-targeted architecture flags
+        // The size should though...
+        static_assert(sizeof(Vector) == alignment);
+
         auto validateRange = [signatureSize](const std::byte* b, const std::byte* e) -> std::span<const std::byte> {
             if (b <= e && static_cast<size_t>(e - b) >= signatureSize) {
                 return {b, e};
@@ -237,7 +219,7 @@ namespace hat::detail {
         };
 
         const auto preBegin = begin;
-        const auto vecBegin = reinterpret_cast<const Vector*>(align_pointer_as<Vector>(preBegin + cmpOffset));
+        const auto vecBegin = reinterpret_cast<const Vector*>(align_up<alignment>(preBegin + cmpOffset));
         if (reinterpret_cast<const std::byte*>(vecBegin) > end) LIBHAT_UNLIKELY {
             return {validateRange(begin, end), {}, {}};
         }
@@ -306,17 +288,18 @@ namespace hat::detail {
 
     template<>
     inline const_scan_result find_pattern_single<scan_alignment::X16>(const std::byte* begin, const std::byte* end, const scan_context& context) {
+        static constexpr auto stride = alignment_stride<scan_alignment::X16>;
         const auto signature = context.signature;
         const auto cmpByte = *signature[context.cmpIndex];
 
-        const auto scanBegin = next_boundary_align<scan_alignment::X16>(begin) + context.cmpIndex;
-        const auto scanEnd = next_boundary_align<scan_alignment::X16>(end - signature.size() + 1) + context.cmpIndex;
+        const auto scanBegin = align_up<stride>(begin) + context.cmpIndex;
+        const auto scanEnd = align_up<stride>(end - signature.size() + 1) + context.cmpIndex;
 
         if (scanBegin >= scanEnd) {
             return nullptr;
         }
 
-        for (auto i = scanBegin; i != scanEnd; i += 16) {
+        for (auto i = scanBegin; i != scanEnd; i += stride) {
             if (*i == cmpByte) {
                 const auto start = i - context.cmpIndex;
                 const auto match = std::equal(signature.begin(), signature.end(), start);
