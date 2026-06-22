@@ -71,7 +71,7 @@ namespace hat::detail {
             if constexpr (cmpeq2) {
                 const auto cmp2 = _mm_cmpeq_epi8(secondByte, _mm_load_si128(it));
                 auto mask2 = static_cast<uint16_t>(_mm_movemask_epi8(cmp2));
-                mask &= (mask2 >> 1) | (0b1u << 15);
+                mask &= static_cast<uint16_t>((mask2 >> 1) | (0b1u << 15));
             }
 
             if constexpr (alignment != scan_alignment::X1) {

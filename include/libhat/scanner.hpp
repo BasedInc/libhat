@@ -187,7 +187,7 @@ namespace hat::detail {
     LIBHAT_FORCEINLINE consteval auto create_alignment_mask() {
         type mask{};
         for (size_t i = 0; i < sizeof(type) * 8; i += alignment_stride<alignment>) {
-            mask |= (type(1) << i);
+            mask |= static_cast<type>(type(1) << i);
         }
         return mask;
     }
