@@ -15,15 +15,17 @@ namespace hat::detail {
 #ifdef LIBHAT_HINT_X86_64
         const bool x86_64 = static_cast<bool>(this->hints & scan_hint::x86_64);
         if (x86_64 && !pair0 && scanner.vectorSize) {
-            static constexpr auto getScore = [](const std::byte a, const std::byte b) {
+            static constexpr auto getScore = [](const std::byte a, const std::byte b) -> uint16_t {
                 constexpr auto& pairs = hat::detail::x86_64::pairs_x1;
+                constexpr auto& scores = hat::detail::x86_64::scores_x1;
+                static_assert(pairs.size() == scores.size());
+
+                constexpr auto max = static_cast<uint16_t>(scores.size());
+
                 const std::pair pair{a, b};
                 const auto it = std::ranges::lower_bound(pairs, pair);
                 const auto index = static_cast<uint16_t>(it - pairs.begin());
-                if (it != pairs.end() && *it == pair) {
-                    return hat::detail::x86_64::scores_x1[index];
-                }
-                return index;
+                return it != pairs.end() && *it == pair ? scores[index] : max;
             };
 
             std::optional<std::pair<size_t, uint16_t>> bestPair{};
