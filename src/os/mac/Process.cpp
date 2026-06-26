@@ -10,6 +10,7 @@
 #include <dlfcn.h>
 
 #include <memory>
+#include <utility>
 
 namespace hat::process {
 
