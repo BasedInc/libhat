@@ -9,8 +9,9 @@
 
 #include <dlfcn.h>
 
+#include <cstdlib>
 #include <memory>
-#include <utility>
+#include <string>
 
 namespace hat::process {
 
