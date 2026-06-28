@@ -83,7 +83,7 @@ jobs:
       matrix:
         cxx_standard: [ 20 ]
         abi: [ arm64-v8a ]
-        sdk: [ android-26 ]
+        sdk: [ android-21 ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
