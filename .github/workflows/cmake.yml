@@ -78,6 +78,22 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: ctest --verbose -C ${{env.BUILD_TYPE}} -R libhat_test_.*
 
+  android:
+    strategy:
+      matrix:
+        cxx_standard: [ 20 ]
+        abi: [ arm64-v8a ]
+        sdk: [ android-26 ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake -DANDROID_ABI=${{matrix.abi}} -DANDROID_PLATFORM=${{matrix.sdk}} -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING=OFF
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build -j 4
+
   windows:
     strategy:
       matrix:
