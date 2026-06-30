@@ -22,6 +22,12 @@
 #define LIBHAT_BSF64(num) __builtin_ctzll(num)
 #endif
 
+#ifdef LIBHAT_AARCH64
+#define LIBHAT_TEST_ZERO(x) (vmaxvq_u32(vreinterpretq_u32_u8(x)) == 0)
+#else
+#define LIBHAT_TEST_ZERO(x) (!(vgetq_lane_u64(vreinterpretq_u64_u8(x), 0) | vgetq_lane_u64(vreinterpretq_u64_u8(x), 1)))
+#endif
+
 namespace hat::detail {
 
     inline void load_signature_128(const signature_view signature, uint8x16_t& bytes, uint8x16_t& mask) {
@@ -92,8 +98,8 @@ namespace hat::detail {
                 if constexpr (veccmp) {
                     const auto data = vld1q_u8(reinterpret_cast<const uint8_t*>(i));
                     const auto neqBits = veorq_u8(data, signatureBytes);
-                    const auto match = vreinterpretq_u32_u8(vandq_u8(neqBits, signatureMask));
-                    if (vmaxvq_u32(match) == 0) LIBHAT_UNLIKELY {
+                    const auto match = vandq_u8(neqBits, signatureMask);
+                    if (LIBHAT_TEST_ZERO(match)) LIBHAT_UNLIKELY {
                         return i;
                     }
                 } else {
