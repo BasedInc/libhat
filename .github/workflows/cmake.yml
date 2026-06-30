@@ -82,7 +82,7 @@ jobs:
     strategy:
       matrix:
         cxx_standard: [ 20 ]
-        abi: [ arm64-v8a ]
+        abi: [ armeabi-v7a, arm64-v8a, x86, x86_64 ]
         sdk: [ android-21 ]
     runs-on: ubuntu-latest
     steps:
