@@ -104,6 +104,7 @@ namespace hat::process {
 
         std::optional<hat::process::module> module{};
         auto callback = [&](const dl_phdr_info& info) {
+            if (!info.dlpi_addr) return 0;
             const Handle h{dlopen(info.dlpi_name, RTLD_LAZY | RTLD_NOLOAD)};
             if (h == handle) {
                 module = hat::process::module{std::bit_cast<uintptr_t>(info.dlpi_addr)};
