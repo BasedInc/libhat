@@ -121,6 +121,9 @@ jobs:
         with:
           api-level: ${{matrix.sdk}}
           arch: ${{matrix.abi}}
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
           script: |
             adb push ${{github.workspace}}/build/test /data/local/tmp/
             adb shell chmod +x /data/local/tmp/test/libhat_test_process
