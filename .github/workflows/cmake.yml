@@ -83,16 +83,27 @@ jobs:
       matrix:
         cxx_standard: [ 20 ]
         abi: [ armeabi-v7a, arm64-v8a, x86, x86_64 ]
-        sdk: [ android-21 ]
+        sdk: [ android-24 ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
       - name: Configure
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake -DANDROID_ABI=${{matrix.abi}} -DANDROID_PLATFORM=${{matrix.sdk}} -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING=OFF
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake -DANDROID_ABI=${{matrix.abi}} -DANDROID_PLATFORM=${{matrix.sdk}} -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF -DLIBHAT_TESTING_SDE=OFF -DLIBHAT_TESTING_SANITIZE=OFF
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
+
+      - name: Test
+        if: matrix.abi != 'armeabi-v7a'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 24
+          arch: ${{ matrix.abi }}
+          script: |
+            adb push ${{github.workspace}}/build/test /data/local/tmp/
+            adb shell chmod +x /data/local/tmp/test/libhat_test_process
+            adb shell /data/local/tmp/test/libhat_test_process
 
   windows:
     strategy:
