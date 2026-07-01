@@ -83,10 +83,19 @@ jobs:
       matrix:
         cxx_standard: [ 20 ]
         abi: [ armeabi-v7a, arm64-v8a, x86, x86_64 ]
-        sdk: [ android-24 ]
+        sdk: [ 24 ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - name: AVD Cache
+        uses: actions/cache@v5
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{matrix.sdk}}
 
       - name: Configure
         run: cmake -B ${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake -DANDROID_ABI=${{matrix.abi}} -DANDROID_PLATFORM=${{matrix.sdk}} -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF -DLIBHAT_TESTING_SDE=OFF -DLIBHAT_TESTING_SANITIZE=OFF
@@ -94,12 +103,23 @@ jobs:
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
 
+      - name: Create AVD and generate snapshot for caching
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{matrix.sdk}}
+          arch: ${{matrix.abi}}
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
+
       - name: Test
         if: matrix.abi != 'armeabi-v7a'
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 24
-          arch: ${{ matrix.abi }}
+          api-level: ${{matrix.sdk}}
+          arch: ${{matrix.abi}}
           script: |
             adb push ${{github.workspace}}/build/test /data/local/tmp/
             adb shell chmod +x /data/local/tmp/test/libhat_test_process
