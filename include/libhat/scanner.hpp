@@ -108,9 +108,10 @@ LIBHAT_EXPORT namespace hat {
     };
 
     enum class scan_hint : uint64_t {
-        none   = 0,      // no hints
-        x86_64 = 1 << 0, // The data being scanned is x86_64 machine code
-        pair0  = 1 << 1, // Only utilize byte pair based scanning if the signature starts with a byte pair
+        none    = 0,      // no hints
+        x86_64  = 1 << 0, // The data being scanned is x86_64 machine code
+        pair0   = 1 << 1, // Only utilize byte pair based scanning if the signature starts with a byte pair
+        aarch64 = 1 << 2, // The data being scanned is AArch64 machine code
     };
 
     constexpr scan_hint operator|(scan_hint lhs, scan_hint rhs) {
