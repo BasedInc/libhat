@@ -1,5 +1,10 @@
 #pragma once
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <utility>
+
 namespace hat::detail::x86_64 {
 
     static constexpr auto p(uint8_t a, uint8_t b) {
