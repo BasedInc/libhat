@@ -103,6 +103,7 @@ LIBHAT_EXPORT namespace hat {
 
     enum class scan_alignment : uint8_t {
         X1 = 1,
+        X4 = 4,
         X16 = 16
     };
 
@@ -250,8 +251,31 @@ namespace hat::detail {
     template<>
     scan_function_t resolve_scanner<scan_mode::Auto>(scan_context&);
 
-    template<scan_alignment>
-    const_scan_result find_pattern_single(const std::byte* begin, const std::byte* end, const scan_context&);
+    template<scan_alignment alignment>
+    const_scan_result find_pattern_single(const std::byte* begin, const std::byte* end, const scan_context& context) {
+        static constexpr auto stride = alignment_stride<alignment>;
+        const auto signature = context.signature;
+        const auto cmpByte = *signature[context.cmpIndex];
+
+        const auto scanBegin = align_up<stride>(begin) + context.cmpIndex;
+        const auto scanEnd = align_up<stride>(end - signature.size() + 1) + context.cmpIndex;
+
+        if (scanBegin >= scanEnd) {
+            return nullptr;
+        }
+
+        for (auto i = scanBegin; i != scanEnd; i += stride) {
+            if (*i == cmpByte) {
+                const auto start = i - context.cmpIndex;
+                const auto match = std::equal(signature.begin(), signature.end(), start);
+                if (match) LIBHAT_UNLIKELY {
+                    return start;
+                }
+            }
+        }
+
+        return nullptr;
+    }
 
     template<>
     constexpr const_scan_result find_pattern_single<scan_alignment::X1>(const std::byte* begin, const std::byte* end, const scan_context& context) {
@@ -287,35 +311,10 @@ namespace hat::detail {
     }
 
     template<>
-    inline const_scan_result find_pattern_single<scan_alignment::X16>(const std::byte* begin, const std::byte* end, const scan_context& context) {
-        static constexpr auto stride = alignment_stride<scan_alignment::X16>;
-        const auto signature = context.signature;
-        const auto cmpByte = *signature[context.cmpIndex];
-
-        const auto scanBegin = align_up<stride>(begin) + context.cmpIndex;
-        const auto scanEnd = align_up<stride>(end - signature.size() + 1) + context.cmpIndex;
-
-        if (scanBegin >= scanEnd) {
-            return nullptr;
-        }
-
-        for (auto i = scanBegin; i != scanEnd; i += stride) {
-            if (*i == cmpByte) {
-                const auto start = i - context.cmpIndex;
-                const auto match = std::equal(signature.begin(), signature.end(), start);
-                if (match) LIBHAT_UNLIKELY {
-                    return start;
-                }
-            }
-        }
-
-        return nullptr;
-    }
-
-    template<>
     constexpr scan_function_t resolve_scanner<scan_mode::Single>(scan_context& context) {
         switch (context.alignment) {
             case scan_alignment::X1: return &find_pattern_single<scan_alignment::X1>;
+            case scan_alignment::X4: return &find_pattern_single<scan_alignment::X4>;
             case scan_alignment::X16: return &find_pattern_single<scan_alignment::X16>;
         }
         LIBHAT_UNREACHABLE();

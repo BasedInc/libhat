@@ -128,6 +128,17 @@ TYPED_TEST(FindPatternTest, ScanX1) {
     });
 }
 
+TYPED_TEST(FindPatternTest, ScanX4) {
+    this->run_cases(hat::scan_alignment::X4, [](auto result, auto expected) {
+        if (std::bit_cast<uintptr_t>(expected) % 4 == 0) {
+            ASSERT_TRUE(result.has_result());
+            ASSERT_EQ(result.get(), expected);
+        } else {
+            ASSERT_FALSE(result.has_result());
+        }
+    });
+}
+
 TYPED_TEST(FindPatternTest, ScanX16) {
     this->run_cases(hat::scan_alignment::X16, [](auto result, auto expected) {
         if (std::bit_cast<uintptr_t>(expected) % 16 == 0) {

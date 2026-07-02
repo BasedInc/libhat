@@ -127,7 +127,7 @@ public final class Hat {
             Objects.requireNonNull(signature.handle),
             new Pointer(start),
             count,
-            alignment.ordinal()
+            alignment.alignment()
         );
 
         if (result == Pointer.NULL) {
@@ -175,7 +175,7 @@ public final class Hat {
             Objects.requireNonNull(signature.handle),
             module.handle,
             section,
-            alignment.ordinal()
+            alignment.alignment()
         );
 
         return Optional.ofNullable(result);
