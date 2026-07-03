@@ -204,12 +204,12 @@ hat::signature_view  pattern = /* ... */;
 hat::scan_result     result  = hat::find_pattern(range, pattern, hat::scan_alignment::X16);
 
 // Or, if the architecture has byte-aligned instructions (such as ARM and AArch64):
-hat::scan_result     result  = hat::find_pattern(range, pattern, hat::scan_alignment::X4);
+hat::scan_result result = hat::find_pattern(range, pattern, hat::scan_alignment::X4);
 
 // Additionally, machine code contains a non-uniform distribution of bytes. By passing the respective
 // scan hint (either `x86_64` or `aarch64`), the search anchor can be tuned to the least frequent
 // bytes that are present in the pattern.
-hat::scan_result result  = hat::find_pattern(range, pattern, hat::scan_alignment::X1, hat::scan_hint::x86_64);
+hat::scan_result result = hat::find_pattern(range, pattern, hat::scan_alignment::X1, hat::scan_hint::x86_64);
 ```
 
 ### Accessing members
