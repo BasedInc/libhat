@@ -28,6 +28,10 @@ LIBHAT_EXPORT namespace hat::process {
         /// Returns the memory region for a named section
         [[nodiscard]] std::span<std::byte> get_section_data(std::string_view name) const;
 
+        /// Invokes the callback for each named linker section defined by this module as long as it returns true. The
+        /// returned byte range is not guaranteed to have page aligned begin and end addresses.
+        void for_each_section(const std::function<bool(std::string_view name, std::span<std::byte>, hat::protection)>& callback) const;
+
         /// Invokes the callback for each memory segment defined by this module as long as it returns true. Depending on
         /// the platform, a segment may be represented by multiple linker sections. The returned byte range is not
         /// guaranteed to have page aligned begin and end addresses.

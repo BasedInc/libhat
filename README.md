@@ -115,6 +115,7 @@ Below is a summary of the current support for libhat's platform-dependent APIs:
 | `hp::is_executable`            |    ✅    |   ✅   |       |    ✅    |
 | `hp::module::get_module_data`  |    ✅    |   ✅   |       |    ✅    |
 | `hp::module::get_section_data` |    ✅    |       |       |         |
+| `hp::module::for_each_section` |    ✅    |       |       |         |
 | `hp::module::for_each_segment` |    ✅    |   ✅   |   ✅   |    ✅    |
 
 ## Quick start

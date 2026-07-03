@@ -126,8 +126,7 @@ namespace hat::process {
         return {scanBytes, sizeOfImage};
     }
 
-    std::span<std::byte> hat::process::module::get_section_data(const std::string_view name) const {
-        auto* bytes = reinterpret_cast<std::byte*>(this->address());
+    std::span<std::byte> module::get_section_data(const std::string_view name) const {
         const auto& ntHeaders = getNTHeaders(*this);
 
         const auto* sectionHeader = IMAGE_FIRST_SECTION(&ntHeaders);
@@ -138,7 +137,7 @@ namespace hat::process {
             };
             if (sectionName == name) {
                 return {
-                    bytes + sectionHeader->VirtualAddress,
+                    reinterpret_cast<std::byte*>(this->address() + sectionHeader->VirtualAddress),
                     static_cast<size_t>(sectionHeader->Misc.VirtualSize)
                 };
             }
@@ -146,7 +145,32 @@ namespace hat::process {
         return {};
     }
 
-    void hat::process::module::for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const {
+    void module::for_each_section(const std::function<bool(std::string_view, std::span<std::byte>, hat::protection)>& callback) const {
+        const auto& ntHeaders = getNTHeaders(*this);
+
+        const auto* sectionHeader = IMAGE_FIRST_SECTION(&ntHeaders);
+        for (WORD i = 0; i < ntHeaders.FileHeader.NumberOfSections; i++, sectionHeader++) {
+            const std::string_view name{
+                reinterpret_cast<const char*>(sectionHeader->Name),
+                strnlen_s(reinterpret_cast<const char*>(sectionHeader->Name), IMAGE_SIZEOF_SHORT_NAME)
+            };
+            const std::span data{
+                reinterpret_cast<std::byte*>(this->address() + sectionHeader->VirtualAddress),
+                sectionHeader->Misc.VirtualSize
+            };
+
+            hat::protection prot{};
+            if (sectionHeader->Characteristics & IMAGE_SCN_MEM_READ) prot |= hat::protection::Read;
+            if (sectionHeader->Characteristics & IMAGE_SCN_MEM_WRITE) prot |= hat::protection::Write;
+            if (sectionHeader->Characteristics & IMAGE_SCN_MEM_EXECUTE) prot |= hat::protection::Execute;
+
+            if (!callback(name, data, prot)) {
+                break;
+            }
+        }
+    }
+
+    void module::for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const {
         const auto& ntHeaders = getNTHeaders(*this);
 
         const auto* sectionHeader = IMAGE_FIRST_SECTION(&ntHeaders);
