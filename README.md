@@ -2,14 +2,15 @@
 A modern, high-performance library for C++20 designed around game hacking
 
 ## Feature overview
-- Windows x86/x64 support
-- Partial Linux and macOS support
 - Vectorized scanning for byte patterns
   - SSE 4.1 and AVX2 on x86/x64
   - AVX-512 on x64
+  - Neon on ARM/ARM64
 - RAII memory protector
 - Convenience wrappers over OS APIs
 - Language bindings (C, C#, Java)
+- Full Windows support
+- Partial (WIP) Linux, macOS, and Android support
 
 ## Versioning
 This project adheres to [semantic versioning](https://semver.org/spec/v2.0.0.html). Any declaration that
@@ -100,19 +101,21 @@ BM_Throughput_UC2/256MiB                 261157833 ns    261160714 ns           
 
 Below is a summary of the current support for libhat's platform-dependent APIs:
 
-|                                | Windows | Linux | macOS |
-|--------------------------------|:-------:|:-----:|:-----:|
-| `hat::get_system`              |    ✅    |   ✅   |   ✅   |
-| `hat::memory_protector`        |    ✅    |   ✅   |       |
-| `hp::get_process_module`       |    ✅    |   ✅   |   ✅   |
-| `hp::get_module`               |    ✅    |   ✅   |   ✅   |
-| `hp::module_at`                |    ✅    |       |       |
-| `hp::is_readable`              |    ✅    |   ✅   |       |
-| `hp::is_writable`              |    ✅    |   ✅   |       |
-| `hp::is_executable`            |    ✅    |   ✅   |       |
-| `hp::module::get_module_data`  |    ✅    |   ✅   |       |
-| `hp::module::get_section_data` |    ✅    |       |       |
-| `hp::module::for_each_segment` |    ✅    |   ✅   |   ✅   |
+### APIs
+
+|                                | Windows | Linux | macOS | Android |
+|--------------------------------|:-------:|:-----:|:-----:|:-------:|
+| `hat::get_system`              |    ✅    |   ✅   |   ✅   |    ✅    |
+| `hat::memory_protector`        |    ✅    |   ✅   |       |    ✅    |
+| `hp::get_process_module`       |    ✅    |   ✅   |   ✅   |    ✅    |
+| `hp::get_module`               |    ✅    |   ✅   |   ✅   |    ✅    |
+| `hp::module_at`                |    ✅    |       |       |         |
+| `hp::is_readable`              |    ✅    |   ✅   |       |    ✅    |
+| `hp::is_writable`              |    ✅    |   ✅   |       |    ✅    |
+| `hp::is_executable`            |    ✅    |   ✅   |       |    ✅    |
+| `hp::module::get_module_data`  |    ✅    |   ✅   |       |    ✅    |
+| `hp::module::get_section_data` |    ✅    |       |       |         |
+| `hp::module::for_each_segment` |    ✅    |   ✅   |   ✅   |    ✅    |
 
 ## Quick start
 ### Defining patterns
