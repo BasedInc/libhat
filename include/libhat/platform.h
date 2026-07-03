@@ -13,7 +13,7 @@
     #error Unsupported Architecture
 #endif
 
-#if defined(__LP64__)  || defined(_M_X64)
+#if defined(__LP64__) || defined(_M_X64)
     #define LIBHAT_LP64
 #else
     #define LIBHAT_LP32
