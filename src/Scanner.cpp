@@ -88,24 +88,25 @@ namespace hat::detail {
     scan_function_t resolve_scanner<scan_mode::Auto>(scan_context& context) {
         const auto& ext = get_system().extensions;
 #if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
-        if (ext.bmi) {
+        if (compiled_extensions.bmi || ext.bmi) {
 #if defined(LIBHAT_X86_64) && !defined(LIBHAT_DISABLE_AVX512)
-            if (ext.avx512f && ext.avx512bw) {
+            if ((compiled_extensions.avx512f || ext.avx512f)
+                && (compiled_extensions.avx512bw || ext.avx512bw)) {
                 return resolve_scanner<scan_mode::AVX512>(context);
             }
 #endif
-            if (ext.avx2) {
+            if (compiled_extensions.avx2 || ext.avx2) {
                 return resolve_scanner<scan_mode::AVX2>(context);
             }
         }
 #if !defined(LIBHAT_DISABLE_SSE)
-        if (ext.sse41) {
+        if (compiled_extensions.sse41 || ext.sse41) {
             return resolve_scanner<scan_mode::SSE>(context);
         }
 #endif
 #endif
 #if defined(LIBHAT_ARM) || defined(LIBHAT_AARCH64)
-        if (ext.neon) {
+        if (compiled_extensions.neon || ext.neon) {
             return resolve_scanner<scan_mode::Neon>(context);
         }
 #endif
