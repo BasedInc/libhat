@@ -32,7 +32,7 @@ namespace hat::process {
 
             for (size_t i = 0; i < info.dlpi_phnum; i++) {
                 auto& header = info.dlpi_phdr[i];
-                if (header.p_type != PT_LOAD) {
+                if (header.p_type != PT_LOAD && header.p_type != PT_GNU_RELRO) {
                     continue;
                 }
                 max = std::max(max, detail::fast_align_up(header.p_vaddr + header.p_memsz,
@@ -60,7 +60,7 @@ namespace hat::process {
 
             for (size_t i = 0; i < info.dlpi_phnum; i++) {
                 auto& header = info.dlpi_phdr[i];
-                if (header.p_type != PT_LOAD) {
+                if (header.p_type != PT_LOAD && header.p_type != PT_GNU_RELRO) {
                     continue;
                 }
 
@@ -104,6 +104,7 @@ namespace hat::process {
 
         std::optional<hat::process::module> module{};
         auto callback = [&](const dl_phdr_info& info) {
+            if (!info.dlpi_addr) return 0;
             const Handle h{dlopen(info.dlpi_name, RTLD_LAZY | RTLD_NOLOAD)};
             if (h == handle) {
                 module = hat::process::module{std::bit_cast<uintptr_t>(info.dlpi_addr)};

@@ -13,12 +13,21 @@
     #error Unsupported Architecture
 #endif
 
+#if defined(__LP64__) || defined(_M_X64)
+    #define LIBHAT_LP64
+#else
+    #define LIBHAT_LP32
+#endif
+
 // Detect Operating System
 #if defined(_WIN32)
     #define LIBHAT_WINDOWS
 #elif defined(linux) || defined(__linux__) || defined(__linux)
     #define LIBHAT_UNIX
     #define LIBHAT_LINUX
+    #if defined(__ANDROID__)
+        #define LIBHAT_ANDROID
+    #endif
 #elif defined(__APPLE__) && defined(__MACH__)
     #define LIBHAT_UNIX
     #define LIBHAT_MAC

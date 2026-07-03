@@ -18,20 +18,38 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: CPM Cache
+        uses: actions/cache@v5
+        with:
+          path: ${{github.workspace}}/.cpmcache
+          key: cpm-${{runner.os}}-${{hashFiles('test/CMakeLists.txt')}}
+          restore-keys: |
+            cpm-${{runner.os}}-
+
       - name: Configure
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING=OFF
+        run: cmake -B ${{github.workspace}}/build -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF -DLIBHAT_TESTING_SDE=OFF
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
 
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest --verbose -C ${{env.BUILD_TYPE}} -R libhat_test_.*
+
   linux:
     strategy:
       matrix:
+        target: [ x64, ARM64 ]
+        cxx_standard: [ 20, 23 ]
         compiler:
           - { pkg: g++, exe: g++, version: 14 }
           - { pkg: clang, exe: clang++, version: 18 }
-        cxx_standard: [ 20, 23 ]
-    runs-on: ubuntu-24.04
+        include:
+          - target: x64
+            os: ubuntu-26.04
+          - target: ARM64
+            os: ubuntu-26.04-arm
+    runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v6
 
@@ -51,7 +69,7 @@ jobs:
       - name: Configure
         env:
           CXX: ${{matrix.compiler.exe}}-${{matrix.compiler.version}}
-        run: cmake -B ${{github.workspace}}/build -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING=ON -DLIBHAT_TESTING_SAMPLE_BIN=OFF -DLIBHAT_TESTING_SANITIZE=OFF
+        run: cmake -B ${{github.workspace}}/build -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING_SDE=${{startsWith(matrix.target, 'ARM') && 'OFF' || 'ON'}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF -DLIBHAT_TESTING_SANITIZE=OFF
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build -j 4
@@ -59,6 +77,57 @@ jobs:
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: ctest --verbose -C ${{env.BUILD_TYPE}} -R libhat_test_.*
+
+  android:
+    strategy:
+      matrix:
+        cxx_standard: [ 20 ]
+        abi: [ armeabi-v7a, arm64-v8a, x86, x86_64 ]
+        sdk: [ 24 ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: AVD Cache
+        if: ${{!startsWith(matrix.abi, 'arm')}}
+        uses: actions/cache@v5
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{matrix.sdk}}-${{matrix.abi}}
+
+      - name: Configure
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake -DANDROID_ABI=${{matrix.abi}} -DANDROID_PLATFORM=${{matrix.sdk}} -DCPM_SOURCE_CACHE=${{github.workspace}}/.cpmcache -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DLIBHAT_TESTING_SAMPLE_BIN=OFF -DLIBHAT_TESTING_SDE=OFF -DLIBHAT_TESTING_SANITIZE=OFF
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build -j 4
+
+      - name: Create AVD and generate snapshot for caching
+        if: ${{!startsWith(matrix.abi, 'arm') && steps.avd-cache.outputs.cache-hit != 'true'}}
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{matrix.sdk}}
+          arch: ${{matrix.abi}}
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
+
+      - name: Test
+        if: ${{!startsWith(matrix.abi, 'arm')}}
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{matrix.sdk}}
+          arch: ${{matrix.abi}}
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            adb push ${{github.workspace}}/build/test /data/local/tmp/
+            adb shell chmod +x /data/local/tmp/test/libhat_test_process
+            adb shell /data/local/tmp/test/libhat_test_process
 
   windows:
     strategy:

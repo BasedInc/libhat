@@ -28,6 +28,7 @@ option(LIBHAT_USE_STD_MODULE "Compile the module target using the std module" OF
 option(LIBHAT_EXAMPLES "Include example targets" ${PROJECT_IS_TOP_LEVEL})
 
 option(LIBHAT_HINT_X86_64 "Enables support for the x86_64 scan hint, requires a small (2KB) data table" ON)
+option(LIBHAT_HINT_AARCH64 "Enables support for the aarch64 scan hint, requires a small (2KB) data table" ON)
 
 if(LIBHAT_TESTING AND LIBHAT_TESTING_SANITIZE)
     if(MSVC)
@@ -41,6 +42,8 @@ endif()
 set(LIBHAT_SRC
     src/Scanner.cpp
     src/System.cpp
+
+    src/os/mac/Process.cpp
 
     src/os/linux/MemoryProtector.cpp
     src/os/linux/Process.cpp
@@ -57,7 +60,9 @@ set(LIBHAT_SRC
     src/arch/x86/AVX512.cpp
     src/arch/x86/System.cpp
 
-    src/arch/arm/System.cpp)
+    src/arch/arm/Neon.cpp
+    src/arch/arm/System.cpp
+)
 
 add_library(libhat STATIC ${LIBHAT_SRC})
 add_library(libhat::libhat ALIAS libhat)
@@ -75,10 +80,7 @@ if (MSVC)
         target_compile_options(libhat PRIVATE /W3 /WX)
     endif()
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(libhat PRIVATE -Wall -Wextra -Wconversion -Werror
-            # temp fix for macOS CI failing due to incorrect LIBHAT_COMPILER_X86_OPTIONS value
-            -Wno-unused-command-line-argument
-    )
+    target_compile_options(libhat PRIVATE -Wall -Wextra -Wconversion -Werror)
 endif()
 
 target_include_directories(libhat PUBLIC
@@ -90,6 +92,7 @@ target_compile_definitions(libhat PUBLIC
     "$<$<BOOL:${LIBHAT_DISABLE_SSE}>:LIBHAT_DISABLE_SSE>"
     "$<$<BOOL:${LIBHAT_DISABLE_AVX512}>:LIBHAT_DISABLE_AVX512>"
     "$<$<BOOL:${LIBHAT_HINT_X86_64}>:LIBHAT_HINT_X86_64>"
+    "$<$<BOOL:${LIBHAT_HINT_AARCH64}>:LIBHAT_HINT_AARCH64>"
 )
 
 if(LIBHAT_STATIC_C_LIB OR LIBHAT_SHARED_C_LIB)

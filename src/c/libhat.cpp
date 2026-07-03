@@ -17,6 +17,8 @@ static hat::scan_alignment to_cpp_align(const scan_alignment align) {
     switch (align) {
         case scan_alignment_x1:
             return hat::scan_alignment::X1;
+        case scan_alignment_x4:
+            return hat::scan_alignment::X4;
         case scan_alignment_x16:
             return hat::scan_alignment::X16;
     }
