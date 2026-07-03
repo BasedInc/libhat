@@ -19,6 +19,9 @@
 #elif defined(linux) || defined(__linux__) || defined(__linux)
     #define LIBHAT_UNIX
     #define LIBHAT_LINUX
+    #if defined(__ANDROID__)
+        #define LIBHAT_ANDROID
+    #endif
 #elif defined(__APPLE__) && defined(__MACH__)
     #define LIBHAT_UNIX
     #define LIBHAT_MAC

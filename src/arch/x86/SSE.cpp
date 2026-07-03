@@ -4,6 +4,8 @@
 
 #include <libhat/scanner.hpp>
 
+#include "../../Utils.hpp"
+
 #include <immintrin.h>
 
 #ifdef _MSC_VER
@@ -114,28 +116,9 @@ namespace hat::detail {
         const bool cmpeq2 = context.pairIndex.has_value();
         const bool veccmp = signature.size() <= 16;
 
-        if (alignment == scan_alignment::X1) {
-            if (cmpeq2 && veccmp) {
-                return &find_pattern_sse<scan_alignment::X1, true, true>;
-            } else if (cmpeq2) {
-                return &find_pattern_sse<scan_alignment::X1, true, false>;
-            } else if (veccmp) {
-                return &find_pattern_sse<scan_alignment::X1, false, true>;
-            } else {
-                return &find_pattern_sse<scan_alignment::X1, false, false>;
-            }
-        } else if (alignment == scan_alignment::X16) {
-            if (cmpeq2 && veccmp) {
-                return &find_pattern_sse<scan_alignment::X16, true, true>;
-            } else if (cmpeq2) {
-                return &find_pattern_sse<scan_alignment::X16, true, false>;
-            } else if (veccmp) {
-                return &find_pattern_sse<scan_alignment::X16, false, true>;
-            } else {
-                return &find_pattern_sse<scan_alignment::X16, false, false>;
-            }
-        }
-        LIBHAT_UNREACHABLE();
+        return find_specialization_switch<[]<auto... p>() consteval {
+            return &find_pattern_sse<p...>;
+        }>(alignment, cmpeq2, veccmp);
     }
 }
 #endif

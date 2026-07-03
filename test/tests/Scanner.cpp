@@ -84,6 +84,14 @@ using FindPatternTestTypes = ::testing::Types<
     FindPatternParameters<hat::detail::scan_mode::AVX512, 32, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 64, 256>,
 #endif
+#if defined(LIBHAT_ARM) || defined(LIBHAT_AARCH64)
+    FindPatternParameters<hat::detail::scan_mode::Neon, 1, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Neon, 3, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Neon, 8, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Neon, 16, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Neon, 32, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Neon, 64, 256>,
+#endif
     FindPatternParameters<hat::detail::scan_mode::Single, 1, 256>,
     FindPatternParameters<hat::detail::scan_mode::Single, 3, 256>,
     FindPatternParameters<hat::detail::scan_mode::Single, 8, 256>,
@@ -106,6 +114,7 @@ private:
         else if constexpr (Mode == hat::detail::scan_mode::SSE) return "SSE";
         else if constexpr (Mode == hat::detail::scan_mode::AVX2) return "AVX2";
         else if constexpr (Mode == hat::detail::scan_mode::AVX512) return "AVX512";
+        else if constexpr (Mode == hat::detail::scan_mode::Neon) return "Neon";
         else static_assert(sizeof(Mode) == 0);
     }
 };
@@ -116,6 +125,17 @@ TYPED_TEST(FindPatternTest, ScanX1) {
     this->run_cases(hat::scan_alignment::X1, [](auto result, auto expected) {
         ASSERT_TRUE(result.has_result());
         ASSERT_EQ(result.get(), expected);
+    });
+}
+
+TYPED_TEST(FindPatternTest, ScanX4) {
+    this->run_cases(hat::scan_alignment::X4, [](auto result, auto expected) {
+        if (std::bit_cast<uintptr_t>(expected) % 4 == 0) {
+            ASSERT_TRUE(result.has_result());
+            ASSERT_EQ(result.get(), expected);
+        } else {
+            ASSERT_FALSE(result.has_result());
+        }
     });
 }
 

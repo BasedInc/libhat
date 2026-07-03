@@ -7,25 +7,44 @@
 #include "arch/x86/Frequency.hpp"
 #endif
 
+#ifdef LIBHAT_HINT_AARCH64
+#include "arch/arm/Frequency.hpp"
+#endif
+
 namespace hat::detail {
+
+    static constexpr uint16_t NUM_PAIRS = 512;
+
+    using pair_hint_t = std::tuple<
+        const std::array<std::pair<std::byte, std::byte>, NUM_PAIRS>&,
+        const std::array<uint16_t, NUM_PAIRS>&
+    >;
+
+    static constexpr auto get_pair_hint(const scan_hint hints) -> std::optional<pair_hint_t> {
+#ifdef LIBHAT_HINT_X86_64
+        if (static_cast<bool>(hints & scan_hint::x86_64)) {
+            return std::tie(hat::detail::x86_64::pairs_x1, hat::detail::x86_64::scores_x1);
+        }
+#endif
+#ifdef LIBHAT_HINT_AARCH64
+        if (static_cast<bool>(hints & scan_hint::aarch64)) {
+            return std::tie(hat::detail::aarch64::pairs_x1, hat::detail::aarch64::scores_x1);
+        }
+#endif
+        return std::nullopt;
+    }
 
     void scan_context::apply_hints(const scanner_context& scanner) {
         const bool pair0 = static_cast<bool>(this->hints & scan_hint::pair0);
 
-#ifdef LIBHAT_HINT_X86_64
-        const bool x86_64 = static_cast<bool>(this->hints & scan_hint::x86_64);
-        if (x86_64 && !pair0 && scanner.vectorSize) {
-            static constexpr auto getScore = [](const std::byte a, const std::byte b) -> uint16_t {
-                constexpr auto& pairs = hat::detail::x86_64::pairs_x1;
-                constexpr auto& scores = hat::detail::x86_64::scores_x1;
-                static_assert(pairs.size() == scores.size());
-
-                constexpr auto max = static_cast<uint16_t>(scores.size());
-
+        const auto pair_hint = get_pair_hint(this->hints);
+        if (pair_hint && !pair0 && scanner.vectorSize) {
+            const auto getScore = [&](const std::byte a, const std::byte b) -> uint16_t {
+                const auto& [pairs, scores] = *pair_hint;
                 const std::pair pair{a, b};
                 const auto it = std::ranges::lower_bound(pairs, pair);
                 const auto index = static_cast<uint16_t>(it - pairs.begin());
-                return it != pairs.end() && *it == pair ? scores[index] : max;
+                return it != pairs.end() && *it == pair ? scores[index] : NUM_PAIRS;
             };
 
             std::optional<std::pair<size_t, uint16_t>> bestPair{};
@@ -46,7 +65,6 @@ namespace hat::detail {
                 this->pairIndex = bestPair->first;
             }
         }
-#endif
 
         // If no "optimal" pair was found, find the first byte pair in the signature
         if (!this->pairIndex.has_value()) {
@@ -68,8 +86,8 @@ namespace hat::detail {
 
     template<>
     scan_function_t resolve_scanner<scan_mode::Auto>(scan_context& context) {
-#if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
         const auto& ext = get_system().extensions;
+#if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
         if (ext.bmi) {
 #if defined(LIBHAT_X86_64) && !defined(LIBHAT_DISABLE_AVX512)
             if (ext.avx512f && ext.avx512bw) {
@@ -85,6 +103,11 @@ namespace hat::detail {
             return resolve_scanner<scan_mode::SSE>(context);
         }
 #endif
+#endif
+#if defined(LIBHAT_ARM) || defined(LIBHAT_AARCH64)
+        if (ext.neon) {
+            return resolve_scanner<scan_mode::Neon>(context);
+        }
 #endif
         // If none of the vectorized implementations are available/supported, then fallback to scanning per-byte
         return resolve_scanner<scan_mode::Single>(context);

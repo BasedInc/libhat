@@ -2,14 +2,15 @@
 A modern, high-performance library for C++20 designed around game hacking
 
 ## Feature overview
-- Windows x86/x64 support
-- Partial Linux and macOS support
 - Vectorized scanning for byte patterns
   - SSE 4.1 and AVX2 on x86/x64
   - AVX-512 on x64
+  - Neon on ARM/ARM64
 - RAII memory protector
 - Convenience wrappers over OS APIs
 - Language bindings (C, C#, Java)
+- Full Windows support
+- Partial (WIP) Linux, macOS, and Android support
 
 ## Versioning
 This project adheres to [semantic versioning](https://semver.org/spec/v2.0.0.html). Any declaration that
@@ -100,19 +101,21 @@ BM_Throughput_UC2/256MiB                 261157833 ns    261160714 ns           
 
 Below is a summary of the current support for libhat's platform-dependent APIs:
 
-|                                | Windows | Linux | macOS |
-|--------------------------------|:-------:|:-----:|:-----:|
-| `hat::get_system`              |    ✅    |   ✅   |   ✅   |
-| `hat::memory_protector`        |    ✅    |   ✅   |       |
-| `hp::get_process_module`       |    ✅    |   ✅   |       |
-| `hp::get_module`               |    ✅    |   ✅   |       |
-| `hp::module_at`                |    ✅    |       |       |
-| `hp::is_readable`              |    ✅    |   ✅   |       |
-| `hp::is_writable`              |    ✅    |   ✅   |       |
-| `hp::is_executable`            |    ✅    |   ✅   |       |
-| `hp::module::get_module_data`  |    ✅    |   ✅   |       |
-| `hp::module::get_section_data` |    ✅    |       |       |
-| `hp::module::for_each_segment` |    ✅    |   ✅   |       |
+### APIs
+
+|                                | Windows | Linux | macOS | Android |
+|--------------------------------|:-------:|:-----:|:-----:|:-------:|
+| `hat::get_system`              |    ✅    |   ✅   |   ✅   |    ✅    |
+| `hat::memory_protector`        |    ✅    |   ✅   |       |    ✅    |
+| `hp::get_process_module`       |    ✅    |   ✅   |   ✅   |    ✅    |
+| `hp::get_module`               |    ✅    |   ✅   |   ✅   |    ✅    |
+| `hp::module_at`                |    ✅    |       |       |         |
+| `hp::is_readable`              |    ✅    |   ✅   |       |    ✅    |
+| `hp::is_writable`              |    ✅    |   ✅   |       |    ✅    |
+| `hp::is_executable`            |    ✅    |   ✅   |       |    ✅    |
+| `hp::module::get_module_data`  |    ✅    |   ✅   |       |    ✅    |
+| `hp::module::get_section_data` |    ✅    |       |       |         |
+| `hp::module::for_each_segment` |    ✅    |   ✅   |   ✅   |    ✅    |
 
 ## Quick start
 ### Defining patterns
@@ -189,19 +192,24 @@ const std::byte* address = result.get();
 const std::byte* relative_address = result.rel(3);
 ```
 
-libhat has a few optimizations for searching for patterns in `x86_64` machine code:
+libhat has a few optimizations for searching for patterns in `x86_64` and `AArch64` machine code:
 ```cpp
 #include <libhat/scanner.hpp>
 
-// If a byte pattern matches at the start of a function, the result will be aligned on 16-bytes.
-// This can be indicated via the defaulted `alignment` parameter (all overloads have this parameter):
+// Compilers will often align the start address of a function on 16-bytes. Scanning for patterns that
+// match the start of a function can take advantage of this by specifying the defaulted `alignment`
+// parameter (all overloads have this parameter):
 std::span<std::byte> range   = /* ... */;
 hat::signature_view  pattern = /* ... */;
 hat::scan_result     result  = hat::find_pattern(range, pattern, hat::scan_alignment::X16);
 
-// Additionally, x86_64 contains a non-uniform distribution of byte pairs. By passing the `x86_64`
-// scan hint, the search can be based on the least common byte pair that is found in the pattern.
-hat::scan_result result  = hat::find_pattern(range, pattern, hat::scan_alignment::X1, hat::scan_hint::x86_64);
+// Or, if the architecture has byte-aligned instructions (such as ARM and AArch64):
+hat::scan_result result = hat::find_pattern(range, pattern, hat::scan_alignment::X4);
+
+// Additionally, machine code contains a non-uniform distribution of bytes. By passing the respective
+// scan hint (either `x86_64` or `aarch64`), the search anchor can be tuned to the least frequent
+// bytes that are present in the pattern.
+hat::scan_result result = hat::find_pattern(range, pattern, hat::scan_alignment::X1, hat::scan_hint::x86_64);
 ```
 
 ### Accessing members
