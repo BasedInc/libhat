@@ -192,18 +192,23 @@ const std::byte* address = result.get();
 const std::byte* relative_address = result.rel(3);
 ```
 
-libhat has a few optimizations for searching for patterns in `x86_64` machine code:
+libhat has a few optimizations for searching for patterns in `x86_64` and `AArch64` machine code:
 ```cpp
 #include <libhat/scanner.hpp>
 
-// If a byte pattern matches at the start of a function, the result will be aligned on 16-bytes.
-// This can be indicated via the defaulted `alignment` parameter (all overloads have this parameter):
+// Compilers will often align the start address of a function on 16-bytes. Scanning for patterns that
+// match the start of a function can take advantage of this by specifying the defaulted `alignment`
+// parameter (all overloads have this parameter):
 std::span<std::byte> range   = /* ... */;
 hat::signature_view  pattern = /* ... */;
 hat::scan_result     result  = hat::find_pattern(range, pattern, hat::scan_alignment::X16);
 
-// Additionally, x86_64 contains a non-uniform distribution of byte pairs. By passing the `x86_64`
-// scan hint, the search can be based on the least common byte pair that is found in the pattern.
+// Or, if the architecture has byte-aligned instructions (such as ARM and AArch64):
+hat::scan_result     result  = hat::find_pattern(range, pattern, hat::scan_alignment::X4);
+
+// Additionally, machine code contains a non-uniform distribution of bytes. By passing the respective
+// scan hint (either `x86_64` or `aarch64`), the search anchor can be tuned to the least frequent
+// bytes that are present in the pattern.
 hat::scan_result result  = hat::find_pattern(range, pattern, hat::scan_alignment::X1, hat::scan_hint::x86_64);
 ```
 
