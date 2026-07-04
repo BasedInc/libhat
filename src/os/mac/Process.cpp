@@ -36,7 +36,7 @@ namespace hat::process {
         return header && (header->magic == mh_magic || header->magic == mh_cigam);
     }
 
-    static void for_each_segment_impl(const uintptr_t address, std::predicate<intptr_t, const segment_command_t*> auto&& callback) {
+    static void for_each_segment_impl(const uintptr_t address, std::predicate<uintptr_t, const segment_command_t*> auto&& callback) {
         const uint32_t imageCount = _dyld_image_count();
         for (uint32_t i = 0; i < imageCount; i++) {
             const auto* header = reinterpret_cast<const mach_header_t*>(_dyld_get_image_header(i));
@@ -84,7 +84,7 @@ namespace hat::process {
 
     std::span<std::byte> module::get_section_data(std::string_view name) const {
         std::span<std::byte> data{};
-        for_each_segment_impl(this->address(), [&](intptr_t slide, const segment_command_t* seg) {
+        for_each_segment_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg) {
             hat::protection prot{};
             if (seg->initprot & VM_PROT_READ)    prot |= hat::protection::Read;
             if (seg->initprot & VM_PROT_WRITE)   prot |= hat::protection::Write;
@@ -119,7 +119,7 @@ namespace hat::process {
     }
 
     void module::for_each_section(const std::function<bool(std::string_view, std::span<std::byte>, hat::protection)>& callback) const {
-        for_each_segment_impl(this->address(), [&](intptr_t slide, const segment_command_t* seg) {
+        for_each_segment_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg) {
             hat::protection prot{};
             if (seg->initprot & VM_PROT_READ)    prot |= hat::protection::Read;
             if (seg->initprot & VM_PROT_WRITE)   prot |= hat::protection::Write;
@@ -152,7 +152,7 @@ namespace hat::process {
     }
 
     void module::for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const {
-        for_each_segment_impl(this->address(), [](intptr_t slide, const segment_command_t* seg) {
+        for_each_segment_impl(this->address(), [](uintptr_t slide, const segment_command_t* seg) {
             const std::span data{
                 reinterpret_cast<std::byte*>(seg->vmaddr + slide),
                 seg->vmsize
