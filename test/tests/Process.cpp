@@ -24,7 +24,6 @@ TEST(ProcessTest, ProcessModuleHasDefaultSegments) {
     EXPECT_TRUE(rw);
 }
 
-#ifndef LIBHAT_MAC
 TEST(ProcessTest, ProcessModuleHasDefaultSections) {
     bool rx = false; // .text
     bool r = false;  // .rdata
@@ -53,4 +52,3 @@ TEST(ProcessTest, ModuleSectionsMatchLookup) {
         return true;
     });
 }
-#endif
