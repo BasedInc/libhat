@@ -23,3 +23,34 @@ TEST(ProcessTest, ProcessModuleHasDefaultSegments) {
     EXPECT_TRUE(r);
     EXPECT_TRUE(rw);
 }
+
+#ifndef LIBHAT_MAC
+TEST(ProcessTest, ProcessModuleHasDefaultSections) {
+    bool rx = false; // .text
+    bool r = false;  // .rdata
+    bool rw = false; // .data
+    hat::process::get_process_module().for_each_section([&](auto, auto, auto prot) {
+        if (prot == (hat::protection::Read | hat::protection::Execute)) {
+            rx = true;
+        } else if (prot == (hat::protection::Read)) {
+            r = true;
+        } else if (prot == (hat::protection::Read | hat::protection::Write)) {
+            rw = true;
+        }
+        return !rx || !r || !rw;
+    });
+    EXPECT_TRUE(rx);
+    EXPECT_TRUE(r);
+    EXPECT_TRUE(rw);
+}
+
+TEST(ProcessTest, ModuleSectionsMatchLookup) {
+    const auto mod = hat::process::get_process_module();
+    mod.for_each_section([&](auto name, auto data, auto) {
+        auto lookup = mod.get_section_data(name);
+        EXPECT_EQ(std::to_address(lookup.begin()), std::to_address(data.begin()));
+        EXPECT_EQ(std::to_address(lookup.end()), std::to_address(data.end()));
+        return true;
+    });
+}
+#endif

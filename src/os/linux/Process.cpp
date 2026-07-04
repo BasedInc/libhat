@@ -6,12 +6,29 @@
 #include <dlfcn.h>
 #include <link.h>
 
+#include <string.h>
+
+#include <fstream>
 #include <memory>
 
 #include "Common.hpp"
 #include "../../Utils.hpp"
 
 namespace hat::process {
+
+#ifdef LIBHAT_LP64
+    using elf_ehdr_t = Elf64_Ehdr;
+    using elf_shdr_t = Elf64_Shdr;
+    static constexpr unsigned char elf_class = ELFCLASS64;
+#else
+    using elf_ehdr_t = Elf32_Ehdr;
+    using elf_shdr_t = Elf32_Shdr;
+    static constexpr unsigned char elf_class = ELFCLASS32;
+#endif
+
+    using Handle = std::unique_ptr<void, decltype([](void* handle) {
+        dlclose(handle);
+    })>;
 
     hat::process::module get_process_module() {
         const auto module = get_module({});
@@ -49,6 +66,113 @@ namespace hat::process {
             &callback);
 
         return {reinterpret_cast<std::byte*>(this->address()), max};
+    }
+
+    std::span<std::byte> module::get_section_data(std::string_view name) const {
+        std::span<std::byte> data{};
+        this->for_each_section([&](auto section_name, auto section_data, auto) -> bool {
+            if (section_name == name) {
+                data = section_data;
+                return false;
+            }
+            return true;
+        });
+        return data;
+    }
+
+    void module::for_each_section(const std::function<bool(std::string_view, std::span<std::byte>, hat::protection)>& callback) const {
+        auto phdrCallback = [&](const dl_phdr_info& info) {
+            const auto addr = std::bit_cast<uintptr_t>(info.dlpi_addr);
+            if (addr != this->address()) {
+                return 0;
+            }
+
+            const char* path = (info.dlpi_name && *info.dlpi_name != '\0')
+                ? info.dlpi_name : "/proc/self/exe";
+            std::ifstream file{path, std::ios::binary};
+            if (!file.is_open()) {
+                return 0; // ?????
+            }
+
+            elf_ehdr_t ehdr{};
+            if (!file.read(reinterpret_cast<char*>(&ehdr), EI_NIDENT)) {
+                return 0; // Invalid ELF
+            }
+
+            const auto& e_ident = ehdr.e_ident;
+            if (e_ident[EI_MAG0] != ELFMAG0 || e_ident[EI_MAG1] != ELFMAG1
+                || e_ident[EI_MAG2] != ELFMAG2 || e_ident[EI_MAG3] != ELFMAG3
+                || e_ident[EI_CLASS] != elf_class) {
+                return 0; // Invalid ELF
+            }
+
+            if (!file.read(reinterpret_cast<char*>(&ehdr) + EI_NIDENT, sizeof(ehdr) - EI_NIDENT)) {
+                return 0; // Invalid ELF
+            }
+
+            if (!ehdr.e_shnum || ehdr.e_shentsize < sizeof(elf_shdr_t)) {
+                return 0; // No section header table, or entries are smaller than expected. Nothing to do
+            }
+
+            std::vector<char> sections(ehdr.e_shnum * ehdr.e_shentsize);
+            if (!file.seekg(static_cast<std::streamoff>(ehdr.e_shoff), std::ios::beg)) {
+                return 0;
+            }
+            if (!file.read(sections.data(), static_cast<std::streamsize>(sections.size()))) {
+                return 0;
+            }
+
+            elf_shdr_t shstrtab{};
+            if (ehdr.e_shstrndx >= ehdr.e_shnum) {
+                return 0;
+            }
+            std::memcpy(&shstrtab, sections.data() + ehdr.e_shstrndx * ehdr.e_shentsize, sizeof(shstrtab));
+
+            std::vector<char> strings(shstrtab.sh_size);
+            if (!file.seekg(static_cast<std::streamoff>(shstrtab.sh_offset), std::ios::beg)) {
+                return 0;
+            }
+            if (!file.read(strings.data(), static_cast<std::streamsize>(strings.size()))) {
+                return 0;
+            }
+
+            for (auto it = sections.begin(); it != sections.end(); it += ehdr.e_shentsize) {
+                elf_shdr_t header{};
+                std::memcpy(&header, std::to_address(it), sizeof(header));
+                if (header.sh_type == SHT_NULL) {
+                    continue;
+                }
+
+                if (!header.sh_addr || header.sh_name > strings.size() || (header.sh_flags & SHF_ALLOC) == 0) {
+                    continue;
+                }
+
+                const char* cstr = strings.data() + header.sh_name;
+                const size_t size = strnlen(cstr, strings.size() - header.sh_name);
+                const std::string_view name{cstr, size};
+
+                const std::span data{
+                    reinterpret_cast<std::byte*>(this->address()) + header.sh_addr,
+                    header.sh_size
+                };
+
+                hat::protection prot = hat::protection::Read;
+                if (header.sh_flags & SHF_WRITE) prot |= hat::protection::Write;
+                if (header.sh_flags & SHF_EXECINSTR) prot |= hat::protection::Execute;
+
+                if (!callback(name, data, prot)) {
+                    break;
+                }
+            }
+
+            return 1;
+        };
+
+        dl_iterate_phdr(
+            [](dl_phdr_info* info, size_t, void* data) {
+                return (*static_cast<decltype(phdrCallback)*>(data))(*info);
+            },
+            &phdrCallback);
     }
 
     void module::for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const {
@@ -90,10 +214,6 @@ namespace hat::process {
     }
 
     std::optional<hat::process::module> get_module(const std::string_view name) {
-        using Handle = std::unique_ptr<void, decltype([](void* handle) {
-            dlclose(handle);
-        })>;
-
         const std::string buffer{name};
         const char* file = buffer.empty() ? nullptr : buffer.c_str();
 
