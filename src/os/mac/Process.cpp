@@ -152,7 +152,7 @@ namespace hat::process {
     }
 
     void module::for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const {
-        for_each_segment_impl(this->address(), [](uintptr_t slide, const segment_command_t* seg) {
+        for_each_segment_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg) {
             const std::span data{
                 reinterpret_cast<std::byte*>(seg->vmaddr + slide),
                 seg->vmsize
