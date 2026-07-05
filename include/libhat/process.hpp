@@ -28,7 +28,8 @@ LIBHAT_EXPORT namespace hat::process {
         /// Returns the memory region for a named section. On Linux-based platforms this is implemented via
         /// {@code for_each_section}, and subsequently requires file I/O and parsing (see below). Caching the return
         /// value should be considered if repeated calls are frequently made. If looking up multiple named sections is
-        /// required, consider doing so with a single call to {@code for_each_section}.
+        /// required, consider doing so with a single call to {@code for_each_section}. On systems using the Mach-O
+        /// format, "SEGNAME,SECNAME" is supported for disambiguation. i.e. "__TEXT,__const" vs "__DATA,__const"
         [[nodiscard]] std::span<std::byte> get_section_data(std::string_view name) const;
 
         /// Invokes the callback for each named linker section defined by this module as long as it returns true. The
