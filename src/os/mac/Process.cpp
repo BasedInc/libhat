@@ -76,7 +76,7 @@ namespace hat::process {
     }
 
     static void for_each_section_impl(const uintptr_t address, std::predicate<uintptr_t, const segment_command_t*, const section_t*> auto&& callback) {
-        for_each_segment_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg) {
+        for_each_segment_impl(address, [&](uintptr_t slide, const segment_command_t* seg) {
             const auto* sections = reinterpret_cast<const section_t*>(
                 reinterpret_cast<const std::byte*>(seg) + sizeof(segment_command_t));
             for (uint32_t i = 0; i < seg->nsects; i++) {
@@ -108,7 +108,7 @@ namespace hat::process {
 
     std::span<std::byte> module::get_section_data(std::string_view name) const {
         std::span<std::byte> data{};
-        for_each_section_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg, const section_t* sec) {
+        for_each_section_impl(this->address(), [&](uintptr_t slide, const segment_command_t*, const section_t* sec) {
             const std::string_view sectionName{
                 static_cast<const char*>(sec->sectname),
                 strnlen(static_cast<const char*>(sec->sectname), 16)
