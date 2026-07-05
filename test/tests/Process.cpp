@@ -7,7 +7,11 @@ TEST(ProcessTest, ProcessModuleMatchesEmptyStr) {
 
 TEST(ProcessTest, ProcessModuleHasDefaultSegments) {
     bool rx = false; // .text
+#ifdef LIBHAT_MAC
+    bool r = true; // only __TEXT and __DATA are expected
+#else
     bool r = false;  // .rdata
+#endif
     bool rw = false; // .data
     hat::process::get_process_module().for_each_segment([&](auto, auto prot) {
         if (prot == (hat::protection::Read | hat::protection::Execute)) {
@@ -26,7 +30,11 @@ TEST(ProcessTest, ProcessModuleHasDefaultSegments) {
 
 TEST(ProcessTest, ProcessModuleHasDefaultSections) {
     bool rx = false; // .text
+#ifdef LIBHAT_MAC
+    bool r = true; // only __TEXT and __DATA are expected
+#else
     bool r = false;  // .rdata
+#endif
     bool rw = false; // .data
     hat::process::get_process_module().for_each_section([&](auto, auto, auto prot) {
         if (prot == (hat::protection::Read | hat::protection::Execute)) {
