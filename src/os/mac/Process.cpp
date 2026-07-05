@@ -108,7 +108,11 @@ namespace hat::process {
 
     std::span<std::byte> module::get_section_data(std::string_view name) const {
         std::span<std::byte> data{};
-        for_each_section_impl(this->address(), [&](uintptr_t slide, const segment_command_t*, const section_t* sec) {
+        for_each_section_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg, const section_t* sec) {
+            const std::string_view segmentName{
+                static_cast<const char*>(seg->segname),
+                strnlen(static_cast<const char*>(seg->segname), 16)
+            };
             const std::string_view sectionName{
                 static_cast<const char*>(sec->sectname),
                 strnlen(static_cast<const char*>(sec->sectname), 16)
@@ -117,7 +121,14 @@ namespace hat::process {
                 reinterpret_cast<std::byte*>(sec->addr + slide),
                 sec->size
             };
-            if (sectionName == name) {
+
+            // Check for "SEGMENT,SECTION" first
+            const bool qualified = name.size() == segmentName.size() + sectionName.size() + 1
+                && name.starts_with(segmentName)
+                && name[segmentName.size()] == ','
+                && name.ends_with(sectionName);
+
+            if (qualified || sectionName == name) {
                 data = sectionData;
                 return false;
             }
@@ -128,7 +139,11 @@ namespace hat::process {
 
     void module::for_each_section(const std::function<bool(std::string_view, std::span<std::byte>, hat::protection)>& callback) const {
         for_each_section_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg, const section_t* sec) {
-            const std::string_view name{
+            const std::string_view segmentName{
+                static_cast<const char*>(seg->segname),
+                strnlen(static_cast<const char*>(seg->segname), 16)
+            };
+            const std::string_view sectionName{
                 static_cast<const char*>(sec->sectname),
                 strnlen(static_cast<const char*>(sec->sectname), 16)
             };
@@ -136,7 +151,12 @@ namespace hat::process {
                 reinterpret_cast<std::byte*>(sec->addr + slide),
                 sec->size
             };
-            return callback(name, data, to_hat_prot(seg->initprot));
+            std::string qualified;
+            qualified.reserve(segmentName.size() + sectionName.size() + 1);
+            qualified += segmentName;
+            qualified += ',';
+            qualified += sectionName;
+            return callback(qualified, data, to_hat_prot(seg->initprot));
         });
     }
 
