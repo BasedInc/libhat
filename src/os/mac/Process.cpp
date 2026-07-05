@@ -32,6 +32,14 @@ namespace hat::process {
     static constexpr uint32_t lc_segment = LC_SEGMENT;
 #endif
 
+    static hat::protection to_hat_prot(const vm_prot_t prot) {
+        hat::protection ret{};
+        if (prot & VM_PROT_READ)    ret |= hat::protection::Read;
+        if (prot & VM_PROT_WRITE)   ret |= hat::protection::Write;
+        if (prot & VM_PROT_EXECUTE) ret |= hat::protection::Execute;
+        return ret;
+    }
+
     static bool is_valid_header(const mach_header_t* header) {
         return header && (header->magic == mh_magic || header->magic == mh_cigam);
     }
@@ -67,6 +75,22 @@ namespace hat::process {
         }
     }
 
+    static void for_each_section_impl(const uintptr_t address, std::predicate<uintptr_t, const segment_command_t*, const section_t*> auto&& callback) {
+        for_each_segment_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg) {
+            const auto* sections = reinterpret_cast<const section_t*>(
+                reinterpret_cast<const std::byte*>(seg) + sizeof(segment_command_t));
+            for (uint32_t i = 0; i < seg->nsects; i++) {
+                auto* sec = &sections[i];
+                if (sec->addr) {
+                    if (!callback(slide, seg, sec)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        });
+    }
+
     hat::process::module get_process_module() {
         const uint32_t count = _dyld_image_count();
         for (uint32_t i = 0; i != count; i++) {
@@ -84,70 +108,35 @@ namespace hat::process {
 
     std::span<std::byte> module::get_section_data(std::string_view name) const {
         std::span<std::byte> data{};
-        for_each_segment_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg) {
-            hat::protection prot{};
-            if (seg->initprot & VM_PROT_READ)    prot |= hat::protection::Read;
-            if (seg->initprot & VM_PROT_WRITE)   prot |= hat::protection::Write;
-            if (seg->initprot & VM_PROT_EXECUTE) prot |= hat::protection::Execute;
-
-            const auto* sections = reinterpret_cast<const section_t*>(
-                reinterpret_cast<const std::byte*>(seg) + sizeof(segment_command_t));
-            for (uint32_t i = 0; i < seg->nsects; i++) {
-                auto& section = sections[i];
-                if (!section.addr) {
-                    continue;
-                }
-
-                const std::string_view sectionName{
-                    static_cast<const char*>(section.sectname),
-                    strnlen(static_cast<const char*>(section.sectname), 16)
-                };
-                const std::span sectionData{
-                    reinterpret_cast<std::byte*>(section.addr + slide),
-                    section.size
-                };
-
-                if (sectionName == name) {
-                    data = sectionData;
-                    return false;
-                }
+        for_each_section_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg, const section_t* sec) {
+            const std::string_view sectionName{
+                static_cast<const char*>(sec->sectname),
+                strnlen(static_cast<const char*>(sec->sectname), 16)
+            };
+            const std::span sectionData{
+                reinterpret_cast<std::byte*>(sec->addr + slide),
+                sec->size
+            };
+            if (sectionName == name) {
+                data = sectionData;
+                return false;
             }
-
             return true;
         });
         return data;
     }
 
     void module::for_each_section(const std::function<bool(std::string_view, std::span<std::byte>, hat::protection)>& callback) const {
-        for_each_segment_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg) {
-            hat::protection prot{};
-            if (seg->initprot & VM_PROT_READ)    prot |= hat::protection::Read;
-            if (seg->initprot & VM_PROT_WRITE)   prot |= hat::protection::Write;
-            if (seg->initprot & VM_PROT_EXECUTE) prot |= hat::protection::Execute;
-
-            const auto* sections = reinterpret_cast<const section_t*>(
-                reinterpret_cast<const std::byte*>(seg) + sizeof(segment_command_t));
-            for (uint32_t i = 0; i < seg->nsects; i++) {
-                auto& section = sections[i];
-                if (!section.addr) {
-                    continue;
-                }
-
-                const std::string_view sectionName{
-                    static_cast<const char*>(section.sectname),
-                    strnlen(static_cast<const char*>(section.sectname), 16)
-                };
-                const std::span data{
-                    reinterpret_cast<std::byte*>(section.addr + slide),
-                    section.size
-                };
-
-                if (!callback(sectionName, data, prot)) {
-                    return false;
-                }
-            }
-
-            return true;
+        for_each_section_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg, const section_t* sec) {
+            const std::string_view name{
+                static_cast<const char*>(sec->sectname),
+                strnlen(static_cast<const char*>(sec->sectname), 16)
+            };
+            const std::span data{
+                reinterpret_cast<std::byte*>(sec->addr + slide),
+                sec->size
+            };
+            return callback(name, data, to_hat_prot(seg->initprot));
         });
     }
 
@@ -157,13 +146,7 @@ namespace hat::process {
                 reinterpret_cast<std::byte*>(seg->vmaddr + slide),
                 seg->vmsize
             };
-
-            hat::protection prot{};
-            if (seg->initprot & VM_PROT_READ)    prot |= hat::protection::Read;
-            if (seg->initprot & VM_PROT_WRITE)   prot |= hat::protection::Write;
-            if (seg->initprot & VM_PROT_EXECUTE) prot |= hat::protection::Execute;
-
-            return callback(data, prot);
+            return callback(data, to_hat_prot(seg->initprot));
         });
     }
 
