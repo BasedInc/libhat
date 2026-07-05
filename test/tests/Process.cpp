@@ -1,5 +1,13 @@
 #include <gtest/gtest.h>
-#include <libhat/scanner.hpp>
+
+#include <libhat/process.hpp>
+#include <libhat/system.hpp>
+
+TEST(SystemTest, ValidateSystemPageSize) {
+    auto& system = hat::get_system();
+    EXPECT_GE(system.page_size, 4096);
+    EXPECT_TRUE((system.page_size & (system.page_size - 1)) == 0);
+}
 
 TEST(ProcessTest, ProcessModuleMatchesEmptyStr) {
     EXPECT_EQ(hat::process::get_process_module(), hat::process::get_module({}));
