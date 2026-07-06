@@ -4,7 +4,6 @@
 #include <libhat/memory_protector.hpp>
 
 #include <mach/mach.h>
-#include <mach/mach_prot.h>
 #include <mach/mach_vm.h>
 
 namespace hat {
