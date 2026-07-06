@@ -58,7 +58,7 @@ LIBHAT_EXPORT namespace hat::process {
 
         friend hat::process::module get_process_module();
         friend std::optional<hat::process::module> get_module(std::string_view);
-        friend std::optional<hat::process::module> module_at(void* address, std::optional<size_t> size);
+        friend std::optional<hat::process::module> module_at(void* address);
 
         uintptr_t baseAddress{};
     };
@@ -79,8 +79,7 @@ LIBHAT_EXPORT namespace hat::process {
     /// If the module is not found, std::nullopt is returned instead
     [[nodiscard]] std::optional<hat::process::module> get_module(std::string_view name);
 
-    /// Returns the module located at the specified base address. Optionally, a size may be provided to indicate
-    /// the size of the allocation pointed to by address, preventing a potential out-of-bounds read.
-    /// If the given address does not point to a valid module, std::nullopt is returned instead
-    [[nodiscard]] std::optional<hat::process::module> module_at(void* address, std::optional<size_t> size = {});
+    /// Returns the module containing the specified address. If the given address is not located within a
+    /// loaded module, std::nullopt is returned instead.
+    [[nodiscard]] std::optional<hat::process::module> module_at(void* address);
 }

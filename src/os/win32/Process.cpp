@@ -17,28 +17,6 @@
 
 namespace hat::process {
 
-    static bool isValidModule(const void* mod, const std::optional<size_t> size) {
-        if (size && *size < sizeof(IMAGE_DOS_HEADER)) {
-            return false;
-        }
-
-        const auto dosHeader = static_cast<const IMAGE_DOS_HEADER*>(mod);
-        if (dosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
-            return false;
-        }
-
-        if (size && *size < static_cast<size_t>(dosHeader->e_lfanew) + sizeof(IMAGE_NT_HEADERS)) {
-            return false;
-        }
-
-        const auto ntHeaders = reinterpret_cast<const IMAGE_NT_HEADERS*>(static_cast<const std::byte*>(mod) + dosHeader->e_lfanew);
-        if (ntHeaders->Signature != IMAGE_NT_SIGNATURE) {
-            return false;
-        }
-
-        return true;
-    }
-
     static const IMAGE_NT_HEADERS& getNTHeaders(const hat::process::module mod) {
         const auto* scanBytes = reinterpret_cast<const std::byte*>(mod.address());
         const auto* dosHeader = reinterpret_cast<const IMAGE_DOS_HEADER*>(mod.address());
@@ -113,9 +91,15 @@ namespace hat::process {
         return {};
     }
 
-    std::optional<hat::process::module> module_at(void* address, const std::optional<size_t> size) {
-        if (isValidModule(address, size)) {
-            return hat::process::module{std::bit_cast<uintptr_t>(address)};
+    std::optional<hat::process::module> module_at(void* address) {
+        HMODULE out{};
+        const auto status = GetModuleHandleExW(
+            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            reinterpret_cast<LPCWSTR>(address),
+            &out
+        );
+        if (status) {
+            return hat::process::module{std::bit_cast<uintptr_t>(out)};
         }
         return {};
     }
