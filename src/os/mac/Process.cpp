@@ -91,6 +91,48 @@ namespace hat::process {
         });
     }
 
+#ifdef LIBHAT_LP64
+    static bool regionHasFlags(const std::span<const std::byte> region, const vm_prot_t flags) {
+        for (auto* addr = region.data(); addr < region.data() + region.size();) {
+            mach_vm_address_t vm_addr = std::bit_cast<mach_vm_address_t>(addr);
+            mach_vm_size_t size{};
+            vm_region_basic_info_64 info{};
+            mach_msg_type_number_t infoCount = VM_REGION_BASIC_INFO_COUNT_64;
+            mach_port_t objectName{};
+
+            const auto result = mach_vm_region(
+                mach_task_self(),
+                &vm_addr,
+                &size,
+                VM_REGION_BASIC_INFO_64,
+                reinterpret_cast<vm_region_info_t>(&info),
+                &infoCount,
+                &objectName
+            );
+            if (result != KERN_SUCCESS) {
+                return false;
+            }
+            if (!(info.protection & flags)) {
+                return false;
+            }
+            addr = std::bit_cast<const std::byte*>(vm_addr) + size;
+        }
+        return true;
+    }
+
+    bool is_readable(const std::span<const std::byte> region) {
+        return regionHasFlags(region, VM_PROT_READ);
+    }
+
+    bool is_writable(const std::span<const std::byte> region) {
+        return regionHasFlags(region, VM_PROT_WRITE);
+    }
+
+    bool is_executable(const std::span<const std::byte> region) {
+        return regionHasFlags(region, VM_PROT_EXECUTE);
+    }
+#endif
+
     hat::process::module get_process_module() {
         const uint32_t count = _dyld_image_count();
         for (uint32_t i = 0; i != count; i++) {
