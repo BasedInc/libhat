@@ -69,7 +69,7 @@ namespace hat::process {
     std::span<std::byte> module::get_module_data() const {
         size_t max{};
         for_each_segment_impl(this->address(), [&](const elf_phdr_t& header) {
-            max = std::max(max, header.p_vaddr + header.p_memsz);
+            max = std::max(max, static_cast<size_t>(header.p_vaddr + header.p_memsz));
             return true;
         });
         return {reinterpret_cast<std::byte*>(this->address()), max};
