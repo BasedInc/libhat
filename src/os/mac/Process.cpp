@@ -274,6 +274,14 @@ namespace hat::process {
 
         return {};
     }
+
+    std::optional<hat::process::module> module_at(void* address, [[maybe_unused]] const std::optional<size_t> size) {
+        Dl_info info{};
+        if (dladdr(address, &info)) {
+            return hat::process::module{std::bit_cast<uintptr_t>(info.dli_fbase)};
+        }
+        return std::nullopt;
+    }
 }
 
 #endif

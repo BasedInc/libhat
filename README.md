@@ -109,7 +109,7 @@ Below is a summary of the current support for libhat's platform-dependent APIs:
 | `hat::memory_protector`           |    ✅    |   ✅   |   ✅   |    ✅    |
 | `hp::get_process_module`          |    ✅    |   ✅   |   ✅   |    ✅    |
 | `hp::get_module`                  |    ✅    |   ✅   |   ✅   |    ✅    |
-| `hp::module_at`                   |    ✅    |       |       |         |
+| `hp::module_at`                   |    ✅    |       |   ✅   |         |
 | `hp::is_readable`                 |    ✅    |   ✅   |   ✅   |    ✅    |
 | `hp::is_writable`                 |    ✅    |   ✅   |   ✅   |    ✅    |
 | `hp::is_executable`               |    ✅    |   ✅   |   ✅   |    ✅    |
