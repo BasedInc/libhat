@@ -274,22 +274,11 @@ namespace hat::process {
     }
 
     std::optional<hat::process::module> module_at(void* address, [[maybe_unused]] const std::optional<size_t> size) {
-        std::optional<hat::process::module> module{};
-        auto callback = [&](const dl_phdr_info& info) {
-            if (std::bit_cast<void*>(info.dlpi_addr) == address) {
-                module = hat::process::module{std::bit_cast<uintptr_t>(info.dlpi_addr)};
-                return 1;
-            }
-            return 0;
-        };
-
-        dl_iterate_phdr(
-            [](dl_phdr_info* info, size_t, void* data) {
-                return (*static_cast<decltype(callback)*>(data))(*info);
-            },
-            &callback);
-
-        return module;
+        Dl_info info{};
+        if (dladdr(address, &info)) {
+            return hat::process::module{std::bit_cast<uintptr_t>(info.dli_fbase)};
+        }
+        return std::nullopt;
     }
 
     bool is_readable(const std::span<const std::byte> region) {
