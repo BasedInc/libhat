@@ -106,6 +106,15 @@ namespace hat::process {
         std::abort();
     }
 
+    std::span<std::byte> module::get_module_data() const {
+        size_t max{};
+        for_each_segment_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg) {
+            max = std::max(max, static_cast<size_t>(seg->vmaddr + slide - this->address() + seg->vmsize));
+            return true;
+        });
+        return {reinterpret_cast<std::byte*>(this->address()), max};
+    }
+
     std::span<std::byte> module::get_section_data(std::string_view name) const {
         std::span<std::byte> data{};
         for_each_section_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg, const section_t* sec) {

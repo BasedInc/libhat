@@ -13,6 +13,12 @@ TEST(ProcessTest, ProcessModuleMatchesEmptyStr) {
     EXPECT_EQ(hat::process::get_process_module(), hat::process::get_module({}));
 }
 
+TEST(ProcessTest, ProcessModuleDataContainsGTest) {
+    const auto func = reinterpret_cast<void*>(&RUN_ALL_TESTS);
+    const auto text = hat::process::get_process_module().get_module_data();
+    EXPECT_TRUE(std::to_address(text.begin()) <= func && std::to_address(text.end()) > func);
+}
+
 TEST(ProcessTest, ProcessModuleHasDefaultSegments) {
     bool rx = false; // .text
 #ifdef LIBHAT_MAC
