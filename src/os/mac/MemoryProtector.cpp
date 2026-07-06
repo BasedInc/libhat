@@ -6,6 +6,8 @@
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
 
+#include <optional>
+
 namespace hat {
 
     static std::optional<uint32_t> get_page_prot(const uintptr_t address) {
