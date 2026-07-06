@@ -5,6 +5,8 @@
 
 #include <mach-o/dyld.h>
 #include <mach-o/loader.h>
+#include <mach/mach.h>
+#include <mach/mach_vm.h>
 #include <mach/vm_prot.h>
 
 #include <dlfcn.h>

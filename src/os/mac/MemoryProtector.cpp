@@ -5,6 +5,7 @@
 
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
+#include <mach/vm_prot.h>
 
 #include <optional>
 
