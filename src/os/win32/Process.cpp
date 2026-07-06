@@ -126,6 +126,27 @@ namespace hat::process {
         return {scanBytes, sizeOfImage};
     }
 
+    std::span<std::byte> module::get_executable_data() const {
+        if (const auto text = this->get_section_data(".text"); !text.empty()) {
+            return text;
+        }
+
+        const auto& ntHeaders = getNTHeaders(*this);
+
+        const auto* section = IMAGE_FIRST_SECTION(&ntHeaders);
+        for (WORD i = 0; i < ntHeaders.FileHeader.NumberOfSections; i++, section++) {
+            const auto c = section->Characteristics;
+            if ((c & IMAGE_SCN_MEM_READ) && !(c & IMAGE_SCN_MEM_WRITE) && (c & IMAGE_SCN_MEM_EXECUTE)) {
+                return {
+                    reinterpret_cast<std::byte*>(this->address() + section->VirtualAddress),
+                    section->Misc.VirtualSize
+                };
+            }
+        }
+
+        return {};
+    }
+
     std::span<std::byte> module::get_section_data(const std::string_view name) const {
         const auto& ntHeaders = getNTHeaders(*this);
 

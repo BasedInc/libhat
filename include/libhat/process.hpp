@@ -25,6 +25,11 @@ LIBHAT_EXPORT namespace hat::process {
         /// To verify whether the region is safe to read, use hat::process::is_readable.
         [[nodiscard]] std::span<std::byte> get_module_data() const;
 
+        /// Returns the executable memory region containing machine code for the module. The standard segment or section
+        /// which contains executable code for the current platform will be returned first. If it cannot be identified
+        /// by name, the first executable region defined by the module will be returned instead.
+        [[nodiscard]] std::span<std::byte> get_executable_data() const;
+
         /// Returns the memory region for a named section. On Linux-based platforms this is implemented via
         /// {@code for_each_section}, and subsequently requires file I/O and parsing (see below). Caching the return
         /// value should be considered if repeated calls are frequently made. If looking up multiple named sections is

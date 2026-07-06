@@ -18,10 +18,12 @@ namespace hat::process {
 
 #ifdef LIBHAT_LP64
     using elf_ehdr_t = Elf64_Ehdr;
+    using elf_phdr_t = Elf64_Phdr;
     using elf_shdr_t = Elf64_Shdr;
     static constexpr unsigned char elf_class = ELFCLASS64;
 #else
     using elf_ehdr_t = Elf32_Ehdr;
+    using elf_phdr_t = Elf32_Phdr;
     using elf_shdr_t = Elf32_Shdr;
     static constexpr unsigned char elf_class = ELFCLASS32;
 #endif
@@ -29,6 +31,32 @@ namespace hat::process {
     using Handle = std::unique_ptr<void, decltype([](void* handle) {
         dlclose(handle);
     })>;
+
+    static void for_each_segment_impl(const uintptr_t address, std::predicate<const elf_phdr_t&> auto&& callback) {
+        auto phdrCallback = [&](const dl_phdr_info& info) {
+            const auto addr = std::bit_cast<uintptr_t>(info.dlpi_addr);
+            if (addr != address) {
+                return 0;
+            }
+
+            for (size_t i = 0; i < info.dlpi_phnum; i++) {
+                auto& header = info.dlpi_phdr[i];
+                if (header.p_type == PT_LOAD || header.p_type == PT_GNU_RELRO) {
+                    if (!callback(header)) {
+                        break;
+                    }
+                }
+            }
+
+            return 1;
+        };
+
+        dl_iterate_phdr(
+            [](dl_phdr_info* info, size_t, void* data) {
+                return (*static_cast<decltype(phdrCallback)*>(data))(*info);
+            },
+            &phdrCallback);
+    }
 
     hat::process::module get_process_module() {
         const auto module = get_module({});
@@ -40,32 +68,27 @@ namespace hat::process {
 
     std::span<std::byte> module::get_module_data() const {
         size_t max{};
-
-        auto callback = [&](const dl_phdr_info& info) {
-            const auto addr = std::bit_cast<uintptr_t>(info.dlpi_addr);
-            if (addr != this->address()) {
-                return 0;
-            }
-
-            for (size_t i = 0; i < info.dlpi_phnum; i++) {
-                auto& header = info.dlpi_phdr[i];
-                if (header.p_type != PT_LOAD && header.p_type != PT_GNU_RELRO) {
-                    continue;
-                }
-                max = std::max(max, detail::fast_align_up(header.p_vaddr + header.p_memsz,
-                    header.p_align ? header.p_align : 1));
-            }
-
-            return 1;
-        };
-
-        dl_iterate_phdr(
-            [](dl_phdr_info* info, size_t, void* data) {
-                return (*static_cast<decltype(callback)*>(data))(*info);
-            },
-            &callback);
-
+        for_each_segment_impl(this->address(), [&](const elf_phdr_t& header) {
+            max = std::max(max, detail::fast_align_up(header.p_vaddr + header.p_memsz,
+                header.p_align ? header.p_align : 1));
+            return true;
+        });
         return {reinterpret_cast<std::byte*>(this->address()), max};
+    }
+
+    std::span<std::byte> module::get_executable_data() const {
+        std::span<std::byte> data{};
+        for_each_segment_impl(this->address(), [&](const elf_phdr_t& header) {
+            if ((header.p_flags & PF_R) && !(header.p_flags & PF_W) && (header.p_flags & PF_X)) {
+                data = {
+                    reinterpret_cast<std::byte*>(this->address() + header.p_vaddr),
+                    header.p_memsz
+                };
+                return false;
+            }
+            return true;
+        });
+        return data;
     }
 
     std::span<std::byte> module::get_section_data(std::string_view name) const {
@@ -176,41 +199,19 @@ namespace hat::process {
     }
 
     void module::for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const {
-        auto phdrCallback = [&](const dl_phdr_info& info) {
-            const auto addr = std::bit_cast<uintptr_t>(info.dlpi_addr);
-            if (addr != this->address()) {
-                return 0;
-            }
+        for_each_segment_impl(this->address(), [&](const elf_phdr_t& header) {
+            const std::span data{
+                reinterpret_cast<std::byte*>(this->address() + header.p_vaddr),
+                header.p_memsz
+            };
 
-            for (size_t i = 0; i < info.dlpi_phnum; i++) {
-                auto& header = info.dlpi_phdr[i];
-                if (header.p_type != PT_LOAD && header.p_type != PT_GNU_RELRO) {
-                    continue;
-                }
+            hat::protection prot{};
+            if (header.p_flags & PF_R) prot |= hat::protection::Read;
+            if (header.p_flags & PF_W) prot |= hat::protection::Write;
+            if (header.p_flags & PF_X) prot |= hat::protection::Execute;
 
-                const std::span data{
-                    reinterpret_cast<std::byte*>(this->address() + header.p_vaddr),
-                    header.p_memsz
-                };
-
-                hat::protection prot{};
-                if (header.p_flags & PF_R) prot |= hat::protection::Read;
-                if (header.p_flags & PF_W) prot |= hat::protection::Write;
-                if (header.p_flags & PF_X) prot |= hat::protection::Execute;
-
-                if (!callback(data, prot)) {
-                    break;
-                }
-            }
-
-            return 1;
-        };
-
-        dl_iterate_phdr(
-            [](dl_phdr_info* info, size_t, void* data) {
-                return (*static_cast<decltype(phdrCallback)*>(data))(*info);
-            },
-            &phdrCallback);
+            return callback(data, prot);
+        });
     }
 
     std::optional<hat::process::module> get_module(const std::string_view name) {

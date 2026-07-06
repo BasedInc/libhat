@@ -115,6 +115,27 @@ namespace hat::process {
         return {reinterpret_cast<std::byte*>(this->address()), max};
     }
 
+    std::span<std::byte> module::get_executable_data() const {
+        if (const auto text = this->get_section_data("__TEXT,__text"); !text.empty()) {
+            return text;
+        }
+
+        std::span<std::byte> data{};
+        for_each_section_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg, const section_t* sec) {
+            if ((seg->initprot & VM_PROT_READ) && !(seg->initprot & VM_PROT_WRITE) && (seg->initprot & VM_PROT_EXECUTE)) {
+                if (sec->flags & S_ATTR_PURE_INSTRUCTIONS) {
+                    data = {
+                        reinterpret_cast<std::byte*>(sec->addr + slide),
+                        sec->size
+                    };
+                    return false;
+                }
+            }
+            return true;
+        });
+        return {};
+    }
+
     std::span<std::byte> module::get_section_data(std::string_view name) const {
         std::span<std::byte> data{};
         for_each_section_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg, const section_t* sec) {
