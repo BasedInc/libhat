@@ -6,7 +6,7 @@
 TEST(SystemTest, ValidateSystemPageSize) {
     auto& system = hat::get_system();
     EXPECT_GE(system.page_size, 4096);
-    EXPECT_TRUE((system.page_size & (system.page_size - 1)) == 0);
+    EXPECT_EQ((system.page_size & (system.page_size - 1)), 0);
 }
 
 TEST(ProcessTest, ProcessModuleMatchesEmptyStr) {
@@ -16,7 +16,15 @@ TEST(ProcessTest, ProcessModuleMatchesEmptyStr) {
 TEST(ProcessTest, ProcessModuleDataContainsGTest) {
     const auto func = reinterpret_cast<void*>(&RUN_ALL_TESTS);
     const auto text = hat::process::get_process_module().get_module_data();
-    EXPECT_TRUE(std::to_address(text.begin()) <= func && std::to_address(text.end()) > func);
+    EXPECT_LE(std::to_address(text.begin()), func);
+    EXPECT_GT(std::to_address(text.end()), func);
+}
+
+TEST(ProcessTest, ProcessExecutableDataContainsGTest) {
+    const auto func = reinterpret_cast<void*>(&RUN_ALL_TESTS);
+    const auto text = hat::process::get_process_module().get_executable_data();
+    EXPECT_LE(std::to_address(text.begin()), func);
+    EXPECT_GT(std::to_address(text.end()), func);
 }
 
 TEST(ProcessTest, ProcessModuleHasDefaultSegments) {
