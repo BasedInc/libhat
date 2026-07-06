@@ -27,6 +27,14 @@ TEST(ProcessTest, ProcessExecutableDataContainsGTest) {
     EXPECT_GT(std::to_address(text.end()), func);
 }
 
+TEST(ProcessTest, ModuleAtMatchesModuleBounds) {
+    const auto mod = hat::process::get_process_module();
+    const auto data = mod.get_module_data();
+
+    EXPECT_EQ(hat::process::module_at(&data.front()), mod);
+    EXPECT_EQ(hat::process::module_at(&data.back()), mod);
+}
+
 TEST(ProcessTest, ProcessModuleHasDefaultSegments) {
     bool rx = false; // .text
 #ifdef LIBHAT_MAC
