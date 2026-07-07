@@ -43,7 +43,7 @@ namespace {
             header(header) {}
 
         Handle handle;
-        mach_header_t* header;
+        const mach_header_t* header;
     };
 }
 
