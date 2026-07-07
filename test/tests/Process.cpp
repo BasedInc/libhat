@@ -18,7 +18,9 @@ std::shared_ptr<std::byte> virtual_allocate(const hat::protection prot, const si
     return std::shared_ptr<std::byte>{
         static_cast<std::byte*>(mmap(nullptr, size, to_system_prot(prot), MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)),
         [size](void* ptr) {
-            munmap(ptr, size);
+            if (ptr) {
+                munmap(ptr, size);
+            }
         }
     };
 }
