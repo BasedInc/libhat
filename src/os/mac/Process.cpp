@@ -16,8 +16,7 @@
 #include <memory>
 #include <string>
 
-namespace hat::process {
-
+namespace {
 #ifdef LIBHAT_LP64
     using mach_header_t = ::mach_header_64;
     using segment_command_t = ::segment_command_64;
@@ -33,6 +32,22 @@ namespace hat::process {
     static constexpr uint32_t mh_cigam = MH_CIGAM;
     static constexpr uint32_t lc_segment = LC_SEGMENT;
 #endif
+
+    using Handle = std::unique_ptr<void, decltype([](void* handle) {
+        dlclose(handle);
+    })>;
+
+    struct module_implementation {
+        module_implementation(Handle handle, const mach_header_t* header) :
+            handle(std::move(handle)),
+            header(header) {}
+
+        Handle handle;
+        mach_header_t* header;
+    };
+}
+
+namespace hat::process {
 
     static hat::protection to_hat_prot(const vm_prot_t prot) {
         hat::protection ret{};
@@ -144,10 +159,18 @@ namespace hat::process {
             }
 
             if (header->filetype == MH_EXECUTE) {
-                return hat::process::module{std::bit_cast<uintptr_t>(header)};
+                return hat::process::module{std::make_shared<module_implementation>(
+                    Handle{dlopen(_dyld_get_image_name(i), RTLD_LAZY | RTLD_NOLOAD)},
+                    header
+                )};
             }
         }
         std::abort();
+    }
+
+    uintptr_t module::address() const {
+        const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
+        return std::bit_cast<uintptr_t>(mimpl->header);
     }
 
     std::span<std::byte> module::get_module_data() const {
@@ -249,10 +272,6 @@ namespace hat::process {
             return get_process_module();
         }
 
-        using Handle = std::unique_ptr<void, decltype([](void* handle) {
-            dlclose(handle);
-        })>;
-
         const std::string buffer{name};
         const Handle handle{dlopen(buffer.c_str(), RTLD_LAZY | RTLD_NOLOAD)};
         if (!handle) {
@@ -267,20 +286,36 @@ namespace hat::process {
             }
 
             const Handle h{dlopen(_dyld_get_image_name(i), RTLD_LAZY | RTLD_NOLOAD)};
-            if (h == handle) {
-                return hat::process::module{std::bit_cast<uintptr_t>(header)};
+            if (h != handle) {
+                continue;
             }
+
+            return hat::process::module{std::make_shared<module_implementation>(std::move(h), header)};
         }
 
         return {};
     }
 
     std::optional<hat::process::module> module_at(void* address) {
-        Dl_info info{};
-        if (dladdr(address, &info)) {
-            return hat::process::module{std::bit_cast<uintptr_t>(info.dli_fbase)};
+        Dl_info dlinfo{};
+        if (!dladdr(address, &dlinfo)) {
+            return {};
         }
-        return std::nullopt;
+
+        const uint32_t count = _dyld_image_count();
+        for (uint32_t i = 0; i < count; i++) {
+            const auto* header = reinterpret_cast<const mach_header_t*>(_dyld_get_image_header(i));
+            if (header != dlinfo.dli_fbase) {
+                continue;
+            }
+
+            return hat::process::module{std::make_shared<module_implementation>(
+                Handle{dlopen(_dyld_get_image_name(i), RTLD_LAZY | RTLD_NOLOAD)},
+                header
+            )};
+        }
+
+        return {};
     }
 }
 

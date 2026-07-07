@@ -4,6 +4,7 @@
     #include <cstddef>
     #include <cstdint>
     #include <functional>
+    #include <memory>
     #include <optional>
     #include <span>
     #include <string_view>
@@ -17,9 +18,7 @@ LIBHAT_EXPORT namespace hat::process {
     class module {
     public:
         /// Returns the base address of the module in memory, as a uintptr_t
-        [[nodiscard]] uintptr_t address() const {
-            return this->baseAddress;
-        }
+        [[nodiscard]] uintptr_t address() const;
 
         /// Returns the complete memory region for the given module. This may include portions which are uncommitted.
         /// To verify whether the region is safe to read, use hat::process::is_readable.
@@ -50,17 +49,23 @@ LIBHAT_EXPORT namespace hat::process {
         /// segment headers, and may not reflect the current virtual protections for the relevant memory pages.
         void for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const;
 
-        [[nodiscard]] constexpr auto operator<=>(const module&) const noexcept = default;
+        [[nodiscard]] bool operator==(const module& other) const noexcept {
+            return this->address() == other.address();
+        }
+
+        [[nodiscard]] auto operator<=>(const module& other) const noexcept {
+            return this->address() <=> other.address();
+        }
 
     private:
-        explicit module(const uintptr_t baseAddress)
-            : baseAddress(baseAddress) {}
+        explicit module(std::shared_ptr<void> impl)
+            : impl(std::move(impl)) {}
 
         friend hat::process::module get_process_module();
         friend std::optional<hat::process::module> get_module(std::string_view);
         friend std::optional<hat::process::module> module_at(void* address);
 
-        uintptr_t baseAddress{};
+        std::shared_ptr<void> impl{};
     };
 
     /// Returns whether the entirety of a given memory region is readable

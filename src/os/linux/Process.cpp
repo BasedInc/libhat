@@ -14,23 +14,41 @@
 #include "Common.hpp"
 #include "../../Utils.hpp"
 
-namespace hat::process {
+namespace {
+
+    using elf_ehdr_t = ElfW(Ehdr);
+    using elf_phdr_t = ElfW(Phdr);
+    using elf_shdr_t = ElfW(Shdr);
+    using elf_addr_t = ElfW(Addr);
+    using elf_half_t = ElfW(Half);
 
 #ifdef LIBHAT_LP64
-    using elf_ehdr_t = Elf64_Ehdr;
-    using elf_phdr_t = Elf64_Phdr;
-    using elf_shdr_t = Elf64_Shdr;
-    static constexpr unsigned char elf_class = ELFCLASS64;
+    constexpr unsigned char elf_class = ELFCLASS64;
 #else
-    using elf_ehdr_t = Elf32_Ehdr;
-    using elf_phdr_t = Elf32_Phdr;
-    using elf_shdr_t = Elf32_Shdr;
-    static constexpr unsigned char elf_class = ELFCLASS32;
+    constexpr unsigned char elf_class = ELFCLASS32;
 #endif
 
     using Handle = std::unique_ptr<void, decltype([](void* handle) {
         dlclose(handle);
     })>;
+
+    struct module_implementation {
+        module_implementation(Handle handle, const dl_phdr_info& info) :
+            handle(std::move(handle)),
+            dlpi_addr(info.dlpi_addr),
+            dlpi_name(info.dlpi_name),
+            dlpi_phdr(info.dlpi_phdr),
+            dlpi_phnum(info.dlpi_phnum) {}
+
+        Handle handle;
+        elf_addr_t dlpi_addr;
+        const char* dlpi_name;
+        const elf_phdr_t* dlpi_phdr;
+        elf_half_t dlpi_phnum;
+    };
+}
+
+namespace hat::process {
 
     static void for_each_segment_impl(const uintptr_t address, std::predicate<const elf_phdr_t&> auto&& callback) {
         auto phdrCallback = [&](const dl_phdr_info& info) {
@@ -64,6 +82,11 @@ namespace hat::process {
             std::abort();
         }
         return *module;
+    }
+
+    uintptr_t module::address() const {
+        const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
+        return static_cast<uintptr_t>(mimpl->dlpi_addr);
     }
 
     std::span<std::byte> module::get_module_data() const {
@@ -225,12 +248,13 @@ namespace hat::process {
         std::optional<hat::process::module> module{};
         auto callback = [&](const dl_phdr_info& info) {
             if (!info.dlpi_addr) return 0;
-            const Handle h{dlopen(info.dlpi_name, RTLD_LAZY | RTLD_NOLOAD)};
-            if (h == handle) {
-                module = hat::process::module{std::bit_cast<uintptr_t>(info.dlpi_addr)};
-                return 1;
+            Handle h{dlopen(info.dlpi_name, RTLD_LAZY | RTLD_NOLOAD)};
+            if (h != handle) {
+                return 0;
             }
-            return 0;
+
+            module = hat::process::module{std::make_shared<module_implementation>(std::move(h), info)};
+            return 1;
         };
 
         dl_iterate_phdr(
@@ -273,11 +297,31 @@ namespace hat::process {
     }
 
     std::optional<hat::process::module> module_at(void* address) {
-        Dl_info info{};
-        if (dladdr(address, &info)) {
-            return hat::process::module{std::bit_cast<uintptr_t>(info.dli_fbase)};
+        Dl_info dlinfo{};
+        if (!dladdr(address, &dlinfo)) {
+            return {};
         }
-        return std::nullopt;
+
+        std::optional<hat::process::module> module{};
+        auto callback = [&](const dl_phdr_info& info) {
+            if (info.dlpi_addr != std::bit_cast<elf_addr_t>(dlinfo.dli_fbase)) {
+                return 0;
+            }
+
+            module = hat::process::module{std::make_shared<module_implementation>(
+                Handle{dlopen(info.dlpi_name, RTLD_LAZY | RTLD_NOLOAD)},
+                info
+            )};
+            return 1;
+        };
+
+        dl_iterate_phdr(
+            [](dl_phdr_info* info, size_t, void* data) {
+                return (*static_cast<decltype(callback)*>(data))(*info);
+            },
+            &callback);
+
+        return module;
     }
 
     bool is_readable(const std::span<const std::byte> region) {

@@ -17,7 +17,23 @@
 
 namespace hat::process {
 
-    static const IMAGE_NT_HEADERS& getNTHeaders(const hat::process::module mod) {
+    static std::shared_ptr<void> create_impl(const HMODULE module, const bool owning) {
+        // CRUCIAL performance optimization to reduce indirection (vs. having an implementation struct)
+        if (owning) {
+            return std::shared_ptr<void>{
+                module,
+                [](const HMODULE p) {
+                    if (p) {
+                        FreeLibrary(p);
+                    }
+                }
+            };
+        } else {
+            return std::shared_ptr<void>{module, [](const HMODULE) {}};
+        }
+    }
+
+    static const IMAGE_NT_HEADERS& getNTHeaders(const hat::process::module& mod) {
         const auto* scanBytes = reinterpret_cast<const std::byte*>(mod.address());
         const auto* dosHeader = reinterpret_cast<const IMAGE_DOS_HEADER*>(mod.address());
         return *reinterpret_cast<const IMAGE_NT_HEADERS*>(scanBytes + dosHeader->e_lfanew);
@@ -67,7 +83,7 @@ namespace hat::process {
     }
 
     hat::process::module get_process_module() {
-        return module{reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr))};
+        return module{create_impl(GetModuleHandleW(nullptr), false)};
     }
 
     std::optional<hat::process::module> get_module(const std::string_view name) {
@@ -85,8 +101,9 @@ namespace hat::process {
         }
 
         const wchar_t* file = buffer.empty() ? nullptr : buffer.c_str();
-        if (const auto handle = GetModuleHandleW(file); handle) {
-            return hat::process::module{std::bit_cast<uintptr_t>(handle)};
+        HMODULE out{};
+        if (GetModuleHandleExW(0, file, &out)) {
+            return hat::process::module{create_impl(out, true)};
         }
         return {};
     }
@@ -94,14 +111,18 @@ namespace hat::process {
     std::optional<hat::process::module> module_at(void* address) {
         HMODULE out{};
         const auto status = GetModuleHandleExW(
-            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
             reinterpret_cast<LPCWSTR>(address),
             &out
         );
         if (status) {
-            return hat::process::module{std::bit_cast<uintptr_t>(out)};
+            return hat::process::module{create_impl(out, true)};
         }
         return {};
+    }
+
+    uintptr_t module::address() const {
+        return std::bit_cast<uintptr_t>(this->impl.get());
     }
 
     std::span<std::byte> hat::process::module::get_module_data() const {
