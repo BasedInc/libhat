@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <bit>
+
+#include <libhat/memory_protector.hpp>
 #include <libhat/process.hpp>
 #include <libhat/system.hpp>
 
@@ -119,6 +122,27 @@ TEST(ProcessTest, IsRWX) {
         EXPECT_FALSE(hat::process::is_writable(subdata));
         EXPECT_TRUE(hat::process::is_executable(subdata));
     }
+}
+
+TEST(ProcessTest, MemoryProtector) {
+    constexpr size_t size = 0x1000;
+    const auto page = ::virtual_allocate(hat::protection::Read, size);
+
+    const std::span data{page.get(), size};
+    EXPECT_TRUE(hat::process::is_readable(data));
+    EXPECT_FALSE(hat::process::is_writable(data));
+    EXPECT_DEATH({ *page = std::byte{0xFF}; }, "");
+
+    {
+        hat::memory_protector rw{std::bit_cast<uintptr_t>(page.get()), size, hat::protection::Read | hat::protection::Write};
+        EXPECT_TRUE(hat::process::is_readable(data));
+        EXPECT_TRUE(hat::process::is_writable(data));
+        *page = std::byte{0xFF};
+    }
+
+    EXPECT_TRUE(hat::process::is_readable(data));
+    EXPECT_FALSE(hat::process::is_writable(data));
+    EXPECT_DEATH({ *page = std::byte{0xFF}; }, "");
 }
 
 TEST(ProcessTest, ProcessModuleMatchesEmptyStr) {
