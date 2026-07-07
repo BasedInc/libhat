@@ -77,9 +77,9 @@
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#define LIBHAT_TARGET(arch) __attribute__((target(arch)))
+    #define LIBHAT_TARGET(arch) __attribute__((target(arch)))
 #else
-#define LIBHAT_TARGET(arch)
+    #define LIBHAT_TARGET(arch)
 #endif
 
 #if __has_cpp_attribute(no_unique_address)
