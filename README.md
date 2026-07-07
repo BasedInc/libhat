@@ -63,7 +63,7 @@ The table below compares the single threaded throughput in bytes/s (real time) b
 libhat and [two other](test/benchmark/vendor) commonly used implementations for pattern
 scanning. The input buffers were randomly generated using a fixed seed, and the pattern
 scanned does not contain any match in the buffer. The benchmark was compiled on Windows
-with `clang-cl` 21.1.1, using the MSVC 14.44.35207 toolchain and the default release mode
+with `clang-cl` 22.1.1, using the MSVC 14.51.36231 toolchain and the default release mode
 flags (`/GR /EHsc /MD /O2 /Ob2`). The benchmark was run on a system with an i7-14700K
 (supporting [AVX2](src/arch/x86/AVX2.cpp)) and 64GB (4x16GB) DDR5 6000 MT/s (30-38-38-96).
 The full source code is available [here](test/benchmark/Compare.cpp).
@@ -71,30 +71,49 @@ The full source code is available [here](test/benchmark/Compare.cpp).
 ---------------------------------------------------------------------------------------------------
 Benchmark                                        Time             CPU   Iterations bytes_per_second
 ---------------------------------------------------------------------------------------------------
-BM_Throughput_libhat/4MiB                    67686 ns        67816 ns        82254      57.7110Gi/s
-BM_Throughput_libhat/16MiB                  319801 ns       319558 ns        18287      48.8585Gi/s
-BM_Throughput_libhat/128MiB                5325733 ns      5282315 ns         1056      23.4709Gi/s
-BM_Throughput_libhat/256MiB               10921878 ns     10814951 ns          510      22.8898Gi/s
+BM_Throughput_libhat/4MiB                    67015 ns        66389 ns        82139      58.2888Gi/s
+BM_Throughput_libhat/16MiB                  311783 ns       310116 ns        18088      50.1151Gi/s
+BM_Throughput_libhat/128MiB                5371248 ns      5355461 ns         1062      23.2721Gi/s
+BM_Throughput_libhat/256MiB               10871393 ns     10787260 ns          520      22.9961Gi/s
 
-BM_Throughput_std_search/4MiB              1364050 ns      1361672 ns         4108      2.86372Gi/s
-BM_Throughput_std_search/16MiB             5470025 ns      5458783 ns         1019      2.85648Gi/s
-BM_Throughput_std_search/128MiB           43622456 ns     43483527 ns          129      2.86550Gi/s
-BM_Throughput_std_search/256MiB           88093320 ns     87158203 ns           64      2.83790Gi/s
+BM_Throughput_std_search/4MiB              1372621 ns      1366807 ns         4104      2.84583Gi/s
+BM_Throughput_std_search/16MiB             5412159 ns      5385316 ns         1030      2.88702Gi/s
+BM_Throughput_std_search/128MiB           43333000 ns     43120155 ns          129      2.88464Gi/s
+BM_Throughput_std_search/256MiB           86809503 ns     86181641 ns           64      2.87987Gi/s
 
-BM_Throughput_std_find_std_equal/4MiB       178567 ns       178586 ns        31410      21.8755Gi/s
-BM_Throughput_std_find_std_equal/16MiB      806394 ns       805228 ns         7005      19.3764Gi/s
-BM_Throughput_std_find_std_equal/128MiB    8944718 ns      8953652 ns          623      13.9747Gi/s
-BM_Throughput_std_find_std_equal/256MiB   18092713 ns     18102751 ns          309      13.8177Gi/s
+BM_Throughput_std_find_std_equal/4MiB       189240 ns       189051 ns        29506      20.6418Gi/s
+BM_Throughput_std_find_std_equal/16MiB      861429 ns       857686 ns         6613      18.1385Gi/s
+BM_Throughput_std_find_std_equal/128MiB    9384011 ns      9385575 ns          591      13.3205Gi/s
+BM_Throughput_std_find_std_equal/256MiB   18979502 ns     18939394 ns          297      13.1721Gi/s
 
-BM_Throughput_UC1/4MiB                     1727027 ns      1721236 ns         3268      2.26183Gi/s
-BM_Throughput_UC1/16MiB                    6878188 ns      6849054 ns          819      2.27167Gi/s
-BM_Throughput_UC1/128MiB                  55181849 ns     55300245 ns          102      2.26524Gi/s
-BM_Throughput_UC1/256MiB                 110209374 ns    110000000 ns           50      2.26841Gi/s
+BM_Throughput_UC1/4MiB                     1742814 ns      1732316 ns         3202      2.24135Gi/s
+BM_Throughput_UC1/16MiB                    6983502 ns      6909938 ns          805      2.23742Gi/s
+BM_Throughput_UC1/128MiB                  55866828 ns     55847772 ns          101      2.23746Gi/s
+BM_Throughput_UC1/256MiB                 111606018 ns    111250000 ns           50      2.24002Gi/s
 
-BM_Throughput_UC2/4MiB                     4011942 ns      4001524 ns         1394      997.023Mi/s
-BM_Throughput_UC2/16MiB                   16136510 ns     16166908 ns          346      991.540Mi/s
-BM_Throughput_UC2/128MiB                 130954740 ns    130087209 ns           43      977.437Mi/s
-BM_Throughput_UC2/256MiB                 261157833 ns    261160714 ns           21      980.250Mi/s
+BM_Throughput_UC2/4MiB                     4080670 ns      4068654 ns         1371      980.231Mi/s
+BM_Throughput_UC2/16MiB                   16422699 ns     16314338 ns          340      974.261Mi/s
+BM_Throughput_UC2/128MiB                 132357452 ns    132440476 ns           42      967.078Mi/s
+BM_Throughput_UC2/256MiB                 265336400 ns    264880952 ns           21      964.813Mi/s
+```
+
+Using the appropriate configuration, libhat is able to maintain its high throughput when searching 
+machine code at a speed comparable to searching uniform buffers. The table below once again compares
+the single threaded throughput in bytes/s (real time) against the same two alternative pattern scanners.
+The buffer being scanned is `chrome.dll` from a Chromium
+[snapshot](https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Win_x64/),
+and the pattern matches at the first instruction of `DllMain`.
+The full source code is available [here](test/benchmark/Chromium.cpp).
+```
+---------------------------------------------------------------------------------------------------
+Benchmark                                        Time             CPU   Iterations bytes_per_second
+---------------------------------------------------------------------------------------------------
+BM_find                                   36383054 ns     36254085 ns          153      6.09333Gi/s
+BM_find_align                             11898416 ns     11876327 ns          471      18.6322Gi/s
+BM_find_hint                               9687339 ns      9644397 ns          580      22.8849Gi/s
+BM_find_align_hint                         9689014 ns      9636324 ns          574      22.8810Gi/s
+BM_UC1                                   236431167 ns    236979167 ns           24      960.172Mi/s
+BM_UC2                                   427872923 ns    427884615 ns           13      530.565Mi/s
 ```
 
 ## Platforms
