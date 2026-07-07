@@ -285,7 +285,7 @@ namespace hat::process {
                 continue;
             }
 
-            const Handle h{dlopen(_dyld_get_image_name(i), RTLD_LAZY | RTLD_NOLOAD)};
+            Handle h{dlopen(_dyld_get_image_name(i), RTLD_LAZY | RTLD_NOLOAD)};
             if (h != handle) {
                 continue;
             }
