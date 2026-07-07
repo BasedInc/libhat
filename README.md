@@ -101,8 +101,8 @@ Using the appropriate configuration, libhat is able to maintain its high through
 machine code at a speed comparable to searching uniform buffers. The table below once again compares
 the single threaded throughput in bytes/s (real time) against the same two alternative pattern scanners.
 The buffer being scanned is `chrome.dll` from a Chromium
-[snapshot](https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Win_x64/),
-and the pattern matches at the first instruction of `DllMain`.
+[snapshot](https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Win_x64/)
+(~227MiB of code), and the pattern matches at the first instruction of `DllMain`.
 The full source code is available [here](test/benchmark/Chromium.cpp).
 ```
 ---------------------------------------------------------------------------------------------------
