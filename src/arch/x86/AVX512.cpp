@@ -11,7 +11,7 @@
 namespace hat::detail {
 
     LIBHAT_TARGET("avx512f")
-    inline void load_signature_512(const signature_view signature, __m512i& bytes, __m512i& mask) {
+    static void load_signature_512(const signature_view signature, __m512i& bytes, __m512i& mask) {
         alignas(64) std::byte byteBuffer[64]{}; // The remaining signature bytes
         alignas(64) std::byte maskBuffer[64]{}; // A bitmask for the signature bytes we care about
         for (size_t i = 0; i < signature.size(); i++) {
@@ -24,7 +24,7 @@ namespace hat::detail {
 
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
     LIBHAT_TARGET("avx512f,avx512bw,bmi")
-    const_scan_result find_pattern_avx512(const std::byte* begin, const std::byte* end, const scan_context& context) {
+    static const_scan_result find_pattern_avx512(const std::byte* begin, const std::byte* end, const scan_context& context) {
         const auto signature = context.signature;
         const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
 

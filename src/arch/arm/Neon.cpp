@@ -9,19 +9,17 @@
 #include <arm_neon.h>
 
 #ifdef _MSC_VER
-#include <intrin.h>
+    #include <intrin.h>
 
-    namespace hat::detail {
-        inline unsigned long bsf(unsigned __int64 num) noexcept {
-            unsigned long offset;
-            _BitScanForward64(&offset, num);
-            return offset;
-        }
+    static unsigned long bsf64(const unsigned __int64 num) noexcept {
+        unsigned long offset;
+        _BitScanForward64(&offset, num);
+        return offset;
     }
 
-#define LIBHAT_BSF64(num) hat::detail::bsf(num)
+    #define LIBHAT_BSF64(num) bsf64(num)
 #else
-#define LIBHAT_BSF64(num) __builtin_ctzll(num)
+    #define LIBHAT_BSF64(num) __builtin_ctzll(num)
 #endif
 
 #ifdef LIBHAT_AARCH64
@@ -32,7 +30,7 @@
 
 namespace hat::detail {
 
-    inline void load_signature_128(const signature_view signature, uint8x16_t& bytes, uint8x16_t& mask) {
+    static void load_signature_128(const signature_view signature, uint8x16_t& bytes, uint8x16_t& mask) {
         uint8_t byteBuffer[16]{}; // The remaining signature bytes
         uint8_t maskBuffer[16]{}; // A bitmask for the signature bytes we care about
         for (size_t i = 0; i < signature.size(); i++) {
@@ -53,7 +51,7 @@ namespace hat::detail {
     }
 
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
-    const_scan_result find_pattern_neon(const std::byte* begin, const std::byte* end, const scan_context& context) {
+    static const_scan_result find_pattern_neon(const std::byte* begin, const std::byte* end, const scan_context& context) {
         const auto signature = context.signature;
         const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
 

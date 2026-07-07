@@ -11,22 +11,20 @@
 #ifdef _MSC_VER
     #include <intrin.h>
 
-    namespace hat::detail {
-        inline unsigned long bsf(unsigned long num) noexcept {
-            unsigned long offset;
-            _BitScanForward(&offset, num);
-            return offset;
-        }
+    static unsigned long bsf32(const unsigned long num) noexcept {
+        unsigned long offset;
+        _BitScanForward(&offset, num);
+        return offset;
     }
 
-    #define LIBHAT_BSF32(num) hat::detail::bsf(num)
+    #define LIBHAT_BSF32(num) bsf32(num)
 #else
     #define LIBHAT_BSF32(num) __builtin_ctz(num)
 #endif
 
 namespace hat::detail {
 
-    inline void load_signature_128(const signature_view signature, __m128i& bytes, __m128i& mask) {
+    static void load_signature_128(const signature_view signature, __m128i& bytes, __m128i& mask) {
         std::byte byteBuffer[16]{}; // The remaining signature bytes
         std::byte maskBuffer[16]{}; // A bitmask for the signature bytes we care about
         for (size_t i = 0; i < signature.size(); i++) {
@@ -39,7 +37,7 @@ namespace hat::detail {
 
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
     LIBHAT_TARGET("sse4.1")
-    const_scan_result find_pattern_sse(const std::byte* begin, const std::byte* end, const scan_context& context) {
+    static const_scan_result find_pattern_sse(const std::byte* begin, const std::byte* end, const scan_context& context) {
         const auto signature = context.signature;
         const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
 
