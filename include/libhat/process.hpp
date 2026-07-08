@@ -15,32 +15,32 @@
 
 LIBHAT_EXPORT namespace hat::process {
 
+    /// A shared reference to a loaded module in the current process. The underlying module will not be unloaded so long
+    /// as the associated @code hat::process::module@endcode is within scope.
     class module {
     public:
         /// Returns the base address of the module in memory, as a uintptr_t
         [[nodiscard]] uintptr_t address() const;
 
         /// Returns the complete memory region for the given module. This may include portions which are uncommitted.
-        /// To verify whether the region is safe to read, use hat::process::is_readable.
+        /// To verify whether the region is safe to read, use @code hat::process::is_readable@endcode.
         [[nodiscard]] std::span<std::byte> get_module_data() const;
 
-        /// Returns the executable memory region containing machine code for the module. The standard segment or section
-        /// which contains executable code for the current platform will be returned first. If it cannot be identified
+        /// Returns the executable memory region containing machine code for the module. The standard section which
+        /// contains executable code for the current platform will be returned first. If it cannot be identified
         /// by name, the first executable region defined by the module will be returned instead.
         [[nodiscard]] std::span<std::byte> get_executable_data() const;
 
-        /// Returns the memory region for a named section. On Linux-based platforms this is implemented via
-        /// {@code for_each_section}, and subsequently requires file I/O and parsing (see below). Caching the return
-        /// value should be considered if repeated calls are frequently made. If looking up multiple named sections is
-        /// required, consider doing so with a single call to {@code for_each_section}. On systems using the Mach-O
-        /// format, "SEGNAME,SECNAME" is supported for disambiguation. i.e. "__TEXT,__const" vs "__DATA,__const"
+        /// Returns the memory region for a named section. On Linux-based platforms, section names are lazily loaded
+        /// from the file that initialized the module, and internally cached for subsequent calls. On systems using the
+        /// Mach-O format, "SEGNAME,SECNAME" is supported for disambiguation. i.e. "__TEXT,__const" vs "__DATA,__const"
         [[nodiscard]] std::span<std::byte> get_section_data(std::string_view name) const;
 
         /// Invokes the callback for each named linker section defined by this module as long as it returns true. The
         /// returned byte range is not guaranteed to have page aligned begin and end addresses. The returned protections
         /// are yielded from the section headers, and may not reflect the current virtual protections for the relevant
-        /// memory pages. On Linux-based platforms, section information is not mapped into memory by the loader, so the
-        /// implementation of this function has to read the module's associated ELF and parse the respective headers.
+        /// memory pages. On Linux-based platforms, section names are lazily loaded from the file that initialized the
+        /// module, and internally cached for subsequent calls.
         void for_each_section(const std::function<bool(std::string_view name, std::span<std::byte>, hat::protection)>& callback) const;
 
         /// Invokes the callback for each memory segment defined by this module as long as it returns true. Depending on
