@@ -173,10 +173,10 @@ namespace hat::process {
 
         size_t max{};
         mimpl->for_each_segment([&](std::ptrdiff_t slide, const segment_command_t* seg) {
-            max = std::max(max, static_cast<size_t>(seg->vmaddr + static_cast<uintptr_t>(slide) - this->address() + seg->vmsize));
+            max = std::max(max, static_cast<size_t>(seg->vmaddr + static_cast<uintptr_t>(slide) - mimpl->address() + seg->vmsize));
             return true;
         });
-        return {reinterpret_cast<std::byte*>(this->address()), max};
+        return {reinterpret_cast<std::byte*>(mimpl->address()), max};
     }
 
     std::span<std::byte> module::get_executable_data() const {
@@ -206,7 +206,7 @@ namespace hat::process {
         const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
 
         std::span<std::byte> data{};
-        mimpl->for_each_section(this->address(), [&](std::ptrdiff_t slide, const segment_command_t* seg, const section_t* sec) {
+        mimpl->for_each_section([&](std::ptrdiff_t slide, const segment_command_t* seg, const section_t* sec) {
             const std::string_view segmentName{
                 static_cast<const char*>(seg->segname),
                 strnlen(static_cast<const char*>(seg->segname), 16)
