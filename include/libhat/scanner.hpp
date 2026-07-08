@@ -385,7 +385,7 @@ LIBHAT_EXPORT namespace hat {
     [[nodiscard]] inline scan_result find_pattern(
         const signature_view   signature,
         const std::string_view section,
-        const process::module  mod = process::get_process_module(),
+        const process::module& mod = process::get_process_module(),
         const scan_alignment   alignment = scan_alignment::X1,
         const scan_hint        hints = scan_hint::none
     ) noexcept {
@@ -523,7 +523,7 @@ LIBHAT_EXPORT namespace hat::experimental {
     /// Gets the VTable address for a class by its mangled name
     template<compiler_type compiler>
     scan_result find_vtable(
-        const std::string&  className,
-        process::module     mod = process::get_process_module()
+        const std::string&     className,
+        const process::module& mod = process::get_process_module()
     );
 }

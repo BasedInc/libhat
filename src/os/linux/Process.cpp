@@ -9,153 +9,95 @@
 #include <string.h>
 
 #include <fstream>
+#include <map>
 #include <memory>
+#include <mutex>
 
 #include "Common.hpp"
 #include "../../Utils.hpp"
 
-namespace hat::process {
+namespace {
+
+    using elf_ehdr_t = ElfW(Ehdr);
+    using elf_phdr_t = ElfW(Phdr);
+    using elf_shdr_t = ElfW(Shdr);
+    using elf_addr_t = ElfW(Addr);
+    using elf_half_t = ElfW(Half);
 
 #ifdef LIBHAT_LP64
-    using elf_ehdr_t = Elf64_Ehdr;
-    using elf_phdr_t = Elf64_Phdr;
-    using elf_shdr_t = Elf64_Shdr;
-    static constexpr unsigned char elf_class = ELFCLASS64;
+    constexpr unsigned char elf_class = ELFCLASS64;
 #else
-    using elf_ehdr_t = Elf32_Ehdr;
-    using elf_phdr_t = Elf32_Phdr;
-    using elf_shdr_t = Elf32_Shdr;
-    static constexpr unsigned char elf_class = ELFCLASS32;
+    constexpr unsigned char elf_class = ELFCLASS32;
 #endif
 
     using Handle = std::unique_ptr<void, decltype([](void* handle) {
         dlclose(handle);
     })>;
 
-    static void for_each_segment_impl(const uintptr_t address, std::predicate<const elf_phdr_t&> auto&& callback) {
-        auto phdrCallback = [&](const dl_phdr_info& info) {
-            const auto addr = std::bit_cast<uintptr_t>(info.dlpi_addr);
-            if (addr != address) {
-                return 0;
-            }
+    struct module_implementation {
+        module_implementation(Handle handle, const dl_phdr_info& info) :
+            handle(std::move(handle)),
+            base_address(static_cast<uintptr_t>(info.dlpi_addr)),
+            path(info.dlpi_name && *info.dlpi_name != '\0' ? info.dlpi_name : "/proc/self/exe"),
+            program_headers(info.dlpi_phdr),
+            num_program_headers(info.dlpi_phnum) {}
 
-            for (size_t i = 0; i < info.dlpi_phnum; i++) {
-                auto& header = info.dlpi_phdr[i];
-                if (header.p_type == PT_LOAD || header.p_type == PT_GNU_RELRO) {
-                    if (!callback(header)) {
-                        break;
-                    }
-                }
-            }
-
-            return 1;
-        };
-
-        dl_iterate_phdr(
-            [](dl_phdr_info* info, size_t, void* data) {
-                return (*static_cast<decltype(phdrCallback)*>(data))(*info);
-            },
-            &phdrCallback);
-    }
-
-    hat::process::module get_process_module() {
-        const auto module = get_module({});
-        if (!module) {
-            std::abort();
+        [[nodiscard]] uintptr_t address() const {
+            return this->base_address;
         }
-        return *module;
-    }
 
-    std::span<std::byte> module::get_module_data() const {
-        size_t max{};
-        for_each_segment_impl(this->address(), [&](const elf_phdr_t& header) {
-            max = std::max(max, static_cast<size_t>(header.p_vaddr + header.p_memsz));
-            return true;
-        });
-        return {reinterpret_cast<std::byte*>(this->address()), max};
-    }
+        [[nodiscard]] std::span<const elf_phdr_t> headers() const {
+            return {this->program_headers, this->num_program_headers};
+        }
 
-    std::span<std::byte> module::get_executable_data() const {
-        std::span<std::byte> data{};
-        for_each_segment_impl(this->address(), [&](const elf_phdr_t& header) {
-            if ((header.p_flags & PF_R) && !(header.p_flags & PF_W) && (header.p_flags & PF_X)) {
-                data = {
-                    reinterpret_cast<std::byte*>(this->address() + header.p_vaddr),
-                    header.p_memsz
-                };
-                return false;
-            }
-            return true;
-        });
-        return data;
-    }
+        [[nodiscard]] auto& sections() const {
+            std::call_once(this->init_sections_flag, &module_implementation::init_sections, this);
+            return std::as_const(this->name_to_section);
+        }
 
-    std::span<std::byte> module::get_section_data(std::string_view name) const {
-        std::span<std::byte> data{};
-        this->for_each_section([&](auto section_name, auto section_data, auto) -> bool {
-            if (section_name == name) {
-                data = section_data;
-                return false;
-            }
-            return true;
-        });
-        return data;
-    }
-
-    void module::for_each_section(const std::function<bool(std::string_view, std::span<std::byte>, hat::protection)>& callback) const {
-        auto phdrCallback = [&](const dl_phdr_info& info) {
-            const auto addr = std::bit_cast<uintptr_t>(info.dlpi_addr);
-            if (addr != this->address()) {
-                return 0;
-            }
-
-            const char* path = (info.dlpi_name && *info.dlpi_name != '\0')
-                ? info.dlpi_name : "/proc/self/exe";
-            std::ifstream file{path, std::ios::binary};
+    private:
+        void init_sections() const {
+            std::ifstream file{this->path, std::ios::binary};
             if (!file.is_open()) {
-                return 0; // ?????
+                return; // ?????
             }
 
             elf_ehdr_t ehdr{};
-            if (!file.read(reinterpret_cast<char*>(&ehdr), EI_NIDENT)) {
-                return 0; // Invalid ELF
+            if (!file.read(reinterpret_cast<char*>(&ehdr), sizeof(ehdr))) {
+                return; // Invalid ELF
             }
 
             const auto& e_ident = ehdr.e_ident;
             if (e_ident[EI_MAG0] != ELFMAG0 || e_ident[EI_MAG1] != ELFMAG1
                 || e_ident[EI_MAG2] != ELFMAG2 || e_ident[EI_MAG3] != ELFMAG3
                 || e_ident[EI_CLASS] != elf_class) {
-                return 0; // Invalid ELF
-            }
-
-            if (!file.read(reinterpret_cast<char*>(&ehdr) + EI_NIDENT, sizeof(ehdr) - EI_NIDENT)) {
-                return 0; // Invalid ELF
+                return; // Invalid ELF
             }
 
             if (!ehdr.e_shnum || ehdr.e_shentsize < sizeof(elf_shdr_t)) {
-                return 0; // No section header table, or entries are smaller than expected. Nothing to do
+                return; // No section header table, or entries are smaller than expected. Nothing to do
             }
 
             std::vector<char> sections(ehdr.e_shnum * ehdr.e_shentsize);
             if (!file.seekg(static_cast<std::streamoff>(ehdr.e_shoff), std::ios::beg)) {
-                return 0;
+                return;
             }
             if (!file.read(sections.data(), static_cast<std::streamsize>(sections.size()))) {
-                return 0;
+                return;
             }
 
             elf_shdr_t shstrtab{};
             if (ehdr.e_shstrndx >= ehdr.e_shnum) {
-                return 0;
+                return;
             }
             std::memcpy(&shstrtab, sections.data() + ehdr.e_shstrndx * ehdr.e_shentsize, sizeof(shstrtab));
 
             std::vector<char> strings(shstrtab.sh_size);
             if (!file.seekg(static_cast<std::streamoff>(shstrtab.sh_offset), std::ios::beg)) {
-                return 0;
+                return;
             }
             if (!file.read(strings.data(), static_cast<std::streamsize>(strings.size()))) {
-                return 0;
+                return;
             }
 
             for (auto it = sections.begin(); it != sections.end(); it += ehdr.e_shentsize) {
@@ -174,7 +116,7 @@ namespace hat::process {
                 const std::string_view name{cstr, size};
 
                 const std::span data{
-                    reinterpret_cast<std::byte*>(this->address()) + header.sh_addr,
+                    reinterpret_cast<std::byte*>(this->base_address) + header.sh_addr,
                     header.sh_size
                 };
 
@@ -182,25 +124,100 @@ namespace hat::process {
                 if (header.sh_flags & SHF_WRITE) prot |= hat::protection::Write;
                 if (header.sh_flags & SHF_EXECINSTR) prot |= hat::protection::Execute;
 
-                if (!callback(name, data, prot)) {
-                    break;
-                }
+                this->name_to_section.emplace(std::piecewise_construct,
+                    std::forward_as_tuple(name),
+                    std::forward_as_tuple(data, prot)
+                );
             }
+        }
 
-            return 1;
-        };
+        using sections_t = std::map<std::string, std::pair<std::span<std::byte>, hat::protection>, std::less<>>;
 
-        dl_iterate_phdr(
-            [](dl_phdr_info* info, size_t, void* data) {
-                return (*static_cast<decltype(phdrCallback)*>(data))(*info);
-            },
-            &phdrCallback);
+        Handle                 handle;
+        uintptr_t              base_address;
+        const char*            path;
+        const elf_phdr_t*      program_headers;
+        elf_half_t             num_program_headers;
+        mutable std::once_flag init_sections_flag;
+        mutable sections_t     name_to_section;
+    };
+}
+
+namespace hat::process {
+
+    hat::process::module get_process_module() {
+        const auto module = get_module({});
+        if (!module) {
+            std::abort();
+        }
+        return *module;
+    }
+
+    uintptr_t module::address() const {
+        const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
+        return mimpl->address();
+    }
+
+    std::span<std::byte> module::get_module_data() const {
+        const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
+
+        size_t max{};
+        for (auto& header : mimpl->headers()) {
+            max = std::max(max, static_cast<size_t>(header.p_vaddr + header.p_memsz));
+        }
+        return {reinterpret_cast<std::byte*>(mimpl->address()), max};
+    }
+
+    std::span<std::byte> module::get_executable_data() const {
+        if (const auto text = this->get_section_data(".text"); !text.empty()) {
+            return text;
+        }
+
+        const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
+
+        for (auto& [data, prot] : mimpl->sections() | std::views::values) {
+            if (prot == (hat::protection::Read | hat::protection::Execute)) {
+                return data;
+            }
+        }
+
+        for (auto& header : mimpl->headers()) {
+            if ((header.p_flags & PF_R) && !(header.p_flags & PF_W) && (header.p_flags & PF_X)) {
+                return {
+                    reinterpret_cast<std::byte*>(mimpl->address() + header.p_vaddr),
+                    header.p_memsz
+                };
+            }
+        }
+        return {};
+    }
+
+    std::span<std::byte> module::get_section_data(const std::string_view name) const {
+        const auto mimpl = static_cast<module_implementation*>(this->impl.get());
+
+        auto& sections = mimpl->sections();
+        if (const auto it = sections.find(name); it != sections.end()) {
+            return it->second.first;
+        }
+        return {};
+    }
+
+    void module::for_each_section(const std::function<bool(std::string_view, std::span<std::byte>, hat::protection)>& callback) const {
+        const auto mimpl = static_cast<module_implementation*>(this->impl.get());
+
+        for (auto& [name, section] : mimpl->sections()) {
+            if (!callback(name, section.first, section.second)) {
+                break;
+            }
+        }
     }
 
     void module::for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const {
-        for_each_segment_impl(this->address(), [&](const elf_phdr_t& header) {
+        const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
+
+        for (auto& header : mimpl->headers()) {
             const std::span data{
-                reinterpret_cast<std::byte*>(this->address() + header.p_vaddr),
+                reinterpret_cast<std::byte*>(mimpl->address() + header.p_vaddr),
                 header.p_memsz
             };
 
@@ -209,8 +226,10 @@ namespace hat::process {
             if (header.p_flags & PF_W) prot |= hat::protection::Write;
             if (header.p_flags & PF_X) prot |= hat::protection::Execute;
 
-            return callback(data, prot);
-        });
+            if (!callback(data, prot)) {
+                break;
+            }
+        }
     }
 
     std::optional<hat::process::module> get_module(const std::string_view name) {
@@ -225,12 +244,13 @@ namespace hat::process {
         std::optional<hat::process::module> module{};
         auto callback = [&](const dl_phdr_info& info) {
             if (!info.dlpi_addr) return 0;
-            const Handle h{dlopen(info.dlpi_name, RTLD_LAZY | RTLD_NOLOAD)};
-            if (h == handle) {
-                module = hat::process::module{std::bit_cast<uintptr_t>(info.dlpi_addr)};
-                return 1;
+            Handle h{dlopen(info.dlpi_name, RTLD_LAZY | RTLD_NOLOAD)};
+            if (h != handle) {
+                return 0;
             }
-            return 0;
+
+            module = hat::process::module{std::make_shared<module_implementation>(std::move(h), info)};
+            return 1;
         };
 
         dl_iterate_phdr(
@@ -242,7 +262,35 @@ namespace hat::process {
         return module;
     }
 
-    static bool regionHasFlags(const std::span<const std::byte> region, const uint32_t flags) {
+    std::optional<hat::process::module> module_at(void* address) {
+        Dl_info dlinfo{};
+        if (!dladdr(address, &dlinfo)) {
+            return {};
+        }
+
+        std::optional<hat::process::module> module{};
+        auto callback = [&](const dl_phdr_info& info) {
+            if (info.dlpi_addr != std::bit_cast<elf_addr_t>(dlinfo.dli_fbase)) {
+                return 0;
+            }
+
+            module = hat::process::module{std::make_shared<module_implementation>(
+                Handle{dlopen(info.dlpi_name, RTLD_LAZY | RTLD_NOLOAD)},
+                info
+            )};
+            return 1;
+        };
+
+        dl_iterate_phdr(
+            [](dl_phdr_info* info, size_t, void* data) {
+                return (*static_cast<decltype(callback)*>(data))(*info);
+            },
+            &callback);
+
+        return module;
+    }
+
+    static bool regionHasFlag(const std::span<const std::byte> region, const uint32_t flags) {
         if (region.empty()) {
             return false;
         }
@@ -272,24 +320,16 @@ namespace hat::process {
         return begin >= end;
     }
 
-    std::optional<hat::process::module> module_at(void* address) {
-        Dl_info info{};
-        if (dladdr(address, &info)) {
-            return hat::process::module{std::bit_cast<uintptr_t>(info.dli_fbase)};
-        }
-        return std::nullopt;
-    }
-
     bool is_readable(const std::span<const std::byte> region) {
-        return regionHasFlags(region, PROT_READ);
+        return regionHasFlag(region, PROT_READ);
     }
 
     bool is_writable(const std::span<const std::byte> region) {
-        return regionHasFlags(region, PROT_WRITE);
+        return regionHasFlag(region, PROT_WRITE);
     }
 
     bool is_executable(const std::span<const std::byte> region) {
-        return regionHasFlags(region, PROT_EXEC);
+        return regionHasFlag(region, PROT_EXEC);
     }
 }
 
