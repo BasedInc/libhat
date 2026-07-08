@@ -163,6 +163,26 @@ TEST(ProcessTest, ProcessExecutableDataContainsGTest) {
     EXPECT_GT(std::to_address(text.end()), func);
 }
 
+TEST(ProcessTest, ModuleSegmentsContainedInData) {
+    const auto mod = hat::process::get_process_module();
+    const auto data = mod.get_module_data();
+    mod.for_each_segment([&](auto seg_data, auto) {
+        EXPECT_GE(std::to_address(seg_data.begin()), std::to_address(data.begin()));
+        EXPECT_LE(std::to_address(seg_data.end()), std::to_address(data.end()));
+        return true;
+    });
+}
+
+TEST(ProcessTest, ModuleSectionsContainedInData) {
+    const auto mod = hat::process::get_process_module();
+    const auto data = mod.get_module_data();
+    mod.for_each_section([&](auto, auto sec_data, auto) {
+        EXPECT_GE(std::to_address(sec_data.begin()), std::to_address(data.begin()));
+        EXPECT_LE(std::to_address(sec_data.end()), std::to_address(data.end()));
+        return true;
+    });
+}
+
 TEST(ProcessTest, ModuleAtMatchesModuleBounds) {
     const auto mod = hat::process::get_process_module();
     const auto data = mod.get_module_data();
