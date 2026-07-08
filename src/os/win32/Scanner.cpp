@@ -6,7 +6,7 @@
 namespace hat::experimental {
 
     template<>
-    scan_result find_vtable<compiler_type::MSVC>(const std::string& className, hat::process::module mod) {
+    scan_result find_vtable<compiler_type::MSVC>(const std::string& className, const hat::process::module& mod) {
         // Tracing cross-references
         // Type Descriptor => Object Locator => VTable
         auto sig = string_to_signature(".?AV" + className + "@@").value();
@@ -50,7 +50,7 @@ namespace hat::experimental {
     }
 
     template<>
-    scan_result find_vtable<compiler_type::GNU>(const std::string& className, hat::process::module mod) {
+    scan_result find_vtable<compiler_type::GNU>(const std::string& className, const hat::process::module& mod) {
         // Tracing cross-references
         // Type Descriptor Name => Type Info => VTable
         const auto sig = string_to_signature(std::to_string(className.size()) + className + "\0").value();
