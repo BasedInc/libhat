@@ -41,13 +41,17 @@ namespace {
         module_implementation(Handle handle, const mach_header_t* header, std::ptrdiff_t slide) :
             handle(std::move(handle)),
             header(header),
-            slide(slide) {}
+            vmaddr_slide(slide) {}
 
         [[nodiscard]] uintptr_t address() const {
             return std::bit_cast<uintptr_t>(this->header);
         }
 
-        void for_each_segment(std::predicate<std::ptrdiff_t, const segment_command_t*> auto&& callback) const {
+        [[nodiscard]] std::ptrdiff_t slide() const {
+            return this->vmaddr_slide;
+        }
+
+        void for_each_segment(std::predicate<const segment_command_t*> auto&& callback) const {
             const auto* cmd = reinterpret_cast<const load_command*>(
                 reinterpret_cast<const std::byte*>(header) + sizeof(mach_header_t));
 
@@ -55,7 +59,7 @@ namespace {
                 if (cmd->cmd == lc_segment) {
                     const auto* seg = reinterpret_cast<const segment_command_t*>(cmd);
                     if (seg->vmsize != 0 && seg->initprot != 0) {
-                        if (!callback(this->slide, seg)) {
+                        if (!callback(seg)) {
                             return;
                         }
                     }
@@ -65,14 +69,14 @@ namespace {
             }
         }
 
-        void for_each_section(std::predicate<std::ptrdiff_t, const segment_command_t*, const section_t*> auto&& callback) const {
-            this->for_each_segment([&](std::ptrdiff_t slide, const segment_command_t* seg) {
+        void for_each_section(std::predicate<const segment_command_t*, const section_t*> auto&& callback) const {
+            this->for_each_segment([&](const segment_command_t* seg) {
                 const auto* sections = reinterpret_cast<const section_t*>(
                     reinterpret_cast<const std::byte*>(seg) + sizeof(segment_command_t));
                 for (uint32_t i = 0; i < seg->nsects; i++) {
                     auto* sec = &sections[i];
                     if (sec->addr) {
-                        if (!callback(slide, seg, sec)) {
+                        if (!callback(seg, sec)) {
                             return false;
                         }
                     }
@@ -84,7 +88,7 @@ namespace {
     private:
         Handle               handle;
         const mach_header_t* header;
-        std::ptrdiff_t       slide;
+        std::ptrdiff_t       vmaddr_slide;
     };
 }
 
@@ -171,9 +175,10 @@ namespace hat::process {
     std::span<std::byte> module::get_module_data() const {
         const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
 
+        const uintptr_t offset = static_cast<uintptr_t>(mimpl->slide()) - mimpl->address();
         size_t max{};
-        mimpl->for_each_segment([&](std::ptrdiff_t slide, const segment_command_t* seg) {
-            max = std::max(max, static_cast<size_t>(seg->vmaddr + static_cast<uintptr_t>(slide) - mimpl->address() + seg->vmsize));
+        mimpl->for_each_segment([&](const segment_command_t* seg) {
+            max = std::max(max, static_cast<size_t>(seg->vmaddr + seg->vmsize + offset));
             return true;
         });
         return {reinterpret_cast<std::byte*>(mimpl->address()), max};
@@ -187,11 +192,11 @@ namespace hat::process {
         const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
 
         std::span<std::byte> data{};
-        mimpl->for_each_section([&](std::ptrdiff_t slide, const segment_command_t* seg, const section_t* sec) {
+        mimpl->for_each_section([&](const segment_command_t* seg, const section_t* sec) {
             if ((seg->initprot & VM_PROT_READ) && !(seg->initprot & VM_PROT_WRITE) && (seg->initprot & VM_PROT_EXECUTE)) {
                 if (sec->flags & S_ATTR_PURE_INSTRUCTIONS) {
                     data = {
-                        reinterpret_cast<std::byte*>(sec->addr) + slide,
+                        reinterpret_cast<std::byte*>(sec->addr) + mimpl->slide(),
                         sec->size
                     };
                     return false;
@@ -206,7 +211,7 @@ namespace hat::process {
         const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
 
         std::span<std::byte> data{};
-        mimpl->for_each_section([&](std::ptrdiff_t slide, const segment_command_t* seg, const section_t* sec) {
+        mimpl->for_each_section([&](const segment_command_t* seg, const section_t* sec) {
             const std::string_view segmentName{
                 static_cast<const char*>(seg->segname),
                 strnlen(static_cast<const char*>(seg->segname), 16)
@@ -216,7 +221,7 @@ namespace hat::process {
                 strnlen(static_cast<const char*>(sec->sectname), 16)
             };
             const std::span sectionData{
-                reinterpret_cast<std::byte*>(sec->addr) + slide,
+                reinterpret_cast<std::byte*>(sec->addr) + mimpl->slide(),
                 sec->size
             };
 
@@ -238,7 +243,7 @@ namespace hat::process {
     void module::for_each_section(const std::function<bool(std::string_view, std::span<std::byte>, hat::protection)>& callback) const {
         const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
 
-        mimpl->for_each_section([&](std::ptrdiff_t slide, const segment_command_t* seg, const section_t* sec) {
+        mimpl->for_each_section([&](const segment_command_t* seg, const section_t* sec) {
             const std::string_view segmentName{
                 static_cast<const char*>(seg->segname),
                 strnlen(static_cast<const char*>(seg->segname), 16)
@@ -248,7 +253,7 @@ namespace hat::process {
                 strnlen(static_cast<const char*>(sec->sectname), 16)
             };
             const std::span data{
-                reinterpret_cast<std::byte*>(sec->addr) + slide,
+                reinterpret_cast<std::byte*>(sec->addr) + mimpl->slide(),
                 sec->size
             };
             std::string qualified;
@@ -263,9 +268,9 @@ namespace hat::process {
     void module::for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const {
         const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
 
-        mimpl->for_each_segment([&](std::ptrdiff_t slide, const segment_command_t* seg) {
+        mimpl->for_each_segment([&](const segment_command_t* seg) {
             const std::span data{
-                reinterpret_cast<std::byte*>(seg->vmaddr) + slide,
+                reinterpret_cast<std::byte*>(seg->vmaddr) + mimpl->slide(),
                 seg->vmsize
             };
             return callback(data, to_hat_prot(seg->initprot));
