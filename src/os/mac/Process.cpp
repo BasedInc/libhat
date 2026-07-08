@@ -38,12 +38,53 @@ namespace {
     })>;
 
     struct module_implementation {
-        module_implementation(Handle handle, const mach_header_t* header) :
+        module_implementation(Handle handle, const mach_header_t* header, std::ptrdiff_t slide) :
             handle(std::move(handle)),
-            header(header) {}
+            header(header),
+            slide(slide) {}
 
-        Handle handle;
+        [[nodiscard]] uintptr_t address() const {
+            return std::bit_cast<uintptr_t>(this->header);
+        }
+
+        void for_each_segment(std::predicate<std::ptrdiff_t, const segment_command_t*> auto&& callback) const {
+            const auto* cmd = reinterpret_cast<const load_command*>(
+                reinterpret_cast<const std::byte*>(header) + sizeof(mach_header_t));
+
+            for (uint32_t j = 0; j < header->ncmds; j++) {
+                if (cmd->cmd == lc_segment) {
+                    const auto* seg = reinterpret_cast<const segment_command_t*>(cmd);
+                    if (seg->vmsize != 0 && seg->initprot != 0) {
+                        if (!callback(this->slide, seg)) {
+                            return;
+                        }
+                    }
+                }
+                cmd = reinterpret_cast<const load_command*>(
+                    reinterpret_cast<const std::byte*>(cmd) + cmd->cmdsize);
+            }
+        }
+
+        void for_each_section(std::predicate<std::ptrdiff_t, const segment_command_t*, const section_t*> auto&& callback) const {
+            this->for_each_segment([&](std::ptrdiff_t slide, const segment_command_t* seg) {
+                const auto* sections = reinterpret_cast<const section_t*>(
+                    reinterpret_cast<const std::byte*>(seg) + sizeof(segment_command_t));
+                for (uint32_t i = 0; i < seg->nsects; i++) {
+                    auto* sec = &sections[i];
+                    if (sec->addr) {
+                        if (!callback(slide, seg, sec)) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            });
+        }
+
+    private:
+        Handle               handle;
         const mach_header_t* header;
+        std::ptrdiff_t       slide;
     };
 }
 
@@ -59,53 +100,6 @@ namespace hat::process {
 
     static bool is_valid_header(const mach_header_t* header) {
         return header && (header->magic == mh_magic || header->magic == mh_cigam);
-    }
-
-    static void for_each_segment_impl(const uintptr_t address, std::predicate<uintptr_t, const segment_command_t*> auto&& callback) {
-        const uint32_t imageCount = _dyld_image_count();
-        for (uint32_t i = 0; i < imageCount; i++) {
-            const auto* header = reinterpret_cast<const mach_header_t*>(_dyld_get_image_header(i));
-            if (!is_valid_header(header)) {
-                continue;
-            }
-            if (std::bit_cast<uintptr_t>(header) != address) {
-                continue;
-            }
-
-            const auto slide = static_cast<uintptr_t>(_dyld_get_image_vmaddr_slide(i));
-            const auto* cmd = reinterpret_cast<const load_command*>(
-                reinterpret_cast<const std::byte*>(header) + sizeof(mach_header_t));
-
-            for (uint32_t j = 0; j < header->ncmds; j++) {
-                if (cmd->cmd == lc_segment) {
-                    const auto* seg = reinterpret_cast<const segment_command_t*>(cmd);
-                    if (seg->vmsize != 0 && seg->initprot != 0) {
-                        if (!callback(slide, seg)) {
-                            return;
-                        }
-                    }
-                }
-                cmd = reinterpret_cast<const load_command*>(
-                    reinterpret_cast<const std::byte*>(cmd) + cmd->cmdsize);
-            }
-            return;
-        }
-    }
-
-    static void for_each_section_impl(const uintptr_t address, std::predicate<uintptr_t, const segment_command_t*, const section_t*> auto&& callback) {
-        for_each_segment_impl(address, [&](uintptr_t slide, const segment_command_t* seg) {
-            const auto* sections = reinterpret_cast<const section_t*>(
-                reinterpret_cast<const std::byte*>(seg) + sizeof(segment_command_t));
-            for (uint32_t i = 0; i < seg->nsects; i++) {
-                auto* sec = &sections[i];
-                if (sec->addr) {
-                    if (!callback(slide, seg, sec)) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        });
     }
 
 #ifdef LIBHAT_LP64
@@ -161,7 +155,8 @@ namespace hat::process {
             if (header->filetype == MH_EXECUTE) {
                 return hat::process::module{std::make_shared<module_implementation>(
                     Handle{dlopen(_dyld_get_image_name(i), RTLD_LAZY | RTLD_NOLOAD)},
-                    header
+                    header,
+                    _dyld_get_image_vmaddr_slide(i)
                 )};
             }
         }
@@ -170,13 +165,15 @@ namespace hat::process {
 
     uintptr_t module::address() const {
         const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
-        return std::bit_cast<uintptr_t>(mimpl->header);
+        return mimpl->address();
     }
 
     std::span<std::byte> module::get_module_data() const {
+        const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
+
         size_t max{};
-        for_each_segment_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg) {
-            max = std::max(max, static_cast<size_t>(seg->vmaddr + slide - this->address() + seg->vmsize));
+        mimpl->for_each_segment([&](std::ptrdiff_t slide, const segment_command_t* seg) {
+            max = std::max(max, static_cast<size_t>(seg->vmaddr + static_cast<uintptr_t>(slide) - this->address() + seg->vmsize));
             return true;
         });
         return {reinterpret_cast<std::byte*>(this->address()), max};
@@ -187,12 +184,14 @@ namespace hat::process {
             return text;
         }
 
+        const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
+
         std::span<std::byte> data{};
-        for_each_section_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg, const section_t* sec) {
+        mimpl->for_each_section([&](std::ptrdiff_t slide, const segment_command_t* seg, const section_t* sec) {
             if ((seg->initprot & VM_PROT_READ) && !(seg->initprot & VM_PROT_WRITE) && (seg->initprot & VM_PROT_EXECUTE)) {
                 if (sec->flags & S_ATTR_PURE_INSTRUCTIONS) {
                     data = {
-                        reinterpret_cast<std::byte*>(sec->addr + slide),
+                        reinterpret_cast<std::byte*>(sec->addr) + slide,
                         sec->size
                     };
                     return false;
@@ -204,8 +203,10 @@ namespace hat::process {
     }
 
     std::span<std::byte> module::get_section_data(std::string_view name) const {
+        const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
+
         std::span<std::byte> data{};
-        for_each_section_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg, const section_t* sec) {
+        mimpl->for_each_section(this->address(), [&](std::ptrdiff_t slide, const segment_command_t* seg, const section_t* sec) {
             const std::string_view segmentName{
                 static_cast<const char*>(seg->segname),
                 strnlen(static_cast<const char*>(seg->segname), 16)
@@ -215,7 +216,7 @@ namespace hat::process {
                 strnlen(static_cast<const char*>(sec->sectname), 16)
             };
             const std::span sectionData{
-                reinterpret_cast<std::byte*>(sec->addr + slide),
+                reinterpret_cast<std::byte*>(sec->addr) + slide,
                 sec->size
             };
 
@@ -235,7 +236,9 @@ namespace hat::process {
     }
 
     void module::for_each_section(const std::function<bool(std::string_view, std::span<std::byte>, hat::protection)>& callback) const {
-        for_each_section_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg, const section_t* sec) {
+        const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
+
+        mimpl->for_each_section([&](std::ptrdiff_t slide, const segment_command_t* seg, const section_t* sec) {
             const std::string_view segmentName{
                 static_cast<const char*>(seg->segname),
                 strnlen(static_cast<const char*>(seg->segname), 16)
@@ -245,7 +248,7 @@ namespace hat::process {
                 strnlen(static_cast<const char*>(sec->sectname), 16)
             };
             const std::span data{
-                reinterpret_cast<std::byte*>(sec->addr + slide),
+                reinterpret_cast<std::byte*>(sec->addr) + slide,
                 sec->size
             };
             std::string qualified;
@@ -258,9 +261,11 @@ namespace hat::process {
     }
 
     void module::for_each_segment(const std::function<bool(std::span<std::byte>, hat::protection)>& callback) const {
-        for_each_segment_impl(this->address(), [&](uintptr_t slide, const segment_command_t* seg) {
+        const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
+
+        mimpl->for_each_segment([&](std::ptrdiff_t slide, const segment_command_t* seg) {
             const std::span data{
-                reinterpret_cast<std::byte*>(seg->vmaddr + slide),
+                reinterpret_cast<std::byte*>(seg->vmaddr) + slide,
                 seg->vmsize
             };
             return callback(data, to_hat_prot(seg->initprot));
@@ -290,7 +295,11 @@ namespace hat::process {
                 continue;
             }
 
-            return hat::process::module{std::make_shared<module_implementation>(std::move(h), header)};
+            return hat::process::module{std::make_shared<module_implementation>(
+                std::move(h),
+                header,
+                _dyld_get_image_vmaddr_slide(i)
+            )};
         }
 
         return {};
@@ -311,7 +320,8 @@ namespace hat::process {
 
             return hat::process::module{std::make_shared<module_implementation>(
                 Handle{dlopen(_dyld_get_image_name(i), RTLD_LAZY | RTLD_NOLOAD)},
-                header
+                header,
+                _dyld_get_image_vmaddr_slide(i)
             )};
         }
 
