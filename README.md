@@ -1,4 +1,11 @@
 # libhat
+
+[![CMake](https://github.com/BasedInc/libhat/actions/workflows/cmake.yml/badge.svg)](https://github.com/BasedInc/libhat/actions)
+[![LICENSE](https://img.shields.io/github/license/BasedInc/libhat?color=blue)](https://github.com/BasedInc/libhat/blob/master/LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/BasedInc/libhat)](https://github.com/BasedInc/libhat/releases)
+[![vcpkg port](https://img.shields.io/vcpkg/v/libhat)](https://vcpkg.link/ports/libhat)
+[![xmake package](https://img.shields.io/badge/xmake-v0.10.0-orange?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgeG1sbnM6dj0iaHR0cHM6Ly92ZWN0YS5pby9uYW5vIj48ZGVmcz48ZmlsdGVyIGlkPSJBIj48ZmVHYXVzc2lhbkJsdXIgaW49IlNvdXJjZUdyYXBoaWMiIHN0ZERldmlhdGlvbj0iLjUiLz48ZmVPZmZzZXQgZHg9Ii0wLjMiIGR5PSItMC4zIi8%2BPGZlTWVyZ2U%2BPGZlTWVyZ2VOb2RlLz48ZmVNZXJnZU5vZGUgaW49IlNvdXJjZUdyYXBoaWMiLz48L2ZlTWVyZ2U%2BPC9maWx0ZXI%2BPGNsaXBQYXRoIGlkPSJCIj48Y2lyY2xlIGN4PSIzMiIgY3k9IjMyIiByPSIyNyIvPjwvY2xpcFBhdGg%2BPHBhdGggaWQ9IkMiIGQ9Ik02NCA0djU4bC0yIDJIMWwtMS0xVjQwTDYwIDN6Ii8%2BPC9kZWZzPjxjaXJjbGUgIGN4PSIzMiIgY3k9IjMyIiByPSIzMCIgZmlsdGVyPSJ1cmwoI0EpIiBmaWxsPSJyZ2JhKDAsMCwwLDAuMikiLz48Y2lyY2xlICBjeD0iMzIiIGN5PSIzMiIgcj0iMzAiIGZpbGw9IiNlMGYyZjEiLz48ZyAgZmlsdGVyPSJ1cmwoI0EpIj48ZyAgY2xpcC1wYXRoPSJ1cmwoI0IpIj48ZyAgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCA1KSI%2BPHVzZSAgaHJlZj0iI0MiIGZpbGw9IiNmZmYiLz48cGF0aCAgZD0iTTAgNjNsMSAxaDYxbDItMlY1MEw0IDEzbC0zLS41LTEgLjV6IiBmaWxsPSIjOGJjMzRhIi8%2BPHVzZSAgaHJlZj0iI0MiIGZpbGw9InJnYmEoMCwxNTAsMTM2LDAuNzYpIi8%2BPC9nPjwvZz48L2c%2BPC9zdmc%2B)](https://packages.xmake.io/packages/libhat)
+
 A modern, high-performance C++20 library designed for game hacking in user space. Features an [incredibly](#Benchmarks)
 fast SIMD-accelerated signature scanner, and a set of platform-agnostic APIs for interfacing with loaded modules,
 modifying virtual memory protections, and more.
