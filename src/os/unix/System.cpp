@@ -7,7 +7,7 @@
 namespace hat {
 
     system_info::system_info() {
-        this->page_size = static_cast<size_t>(sysconf(_SC_PAGESIZE));
+        this->page_size = static_cast<std::size_t>(sysconf(_SC_PAGESIZE));
     }
 }
 

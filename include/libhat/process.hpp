@@ -20,7 +20,7 @@ LIBHAT_EXPORT namespace hat::process {
     class module {
     public:
         /// Returns the base address of the module in memory, as a uintptr_t
-        [[nodiscard]] uintptr_t address() const;
+        [[nodiscard]] std::uintptr_t address() const;
 
         /// Returns the complete memory region for the given module. This may include portions which are uncommitted.
         /// To verify whether the region is safe to read, use @code hat::process::is_readable@endcode.

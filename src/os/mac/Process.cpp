@@ -21,16 +21,16 @@ namespace {
     using mach_header_t = ::mach_header_64;
     using segment_command_t = ::segment_command_64;
     using section_t = ::section_64;
-    static constexpr uint32_t mh_magic = MH_MAGIC_64;
-    static constexpr uint32_t mh_cigam = MH_CIGAM_64;
-    static constexpr uint32_t lc_segment = LC_SEGMENT_64;
+    static constexpr std::uint32_t mh_magic = MH_MAGIC_64;
+    static constexpr std::uint32_t mh_cigam = MH_CIGAM_64;
+    static constexpr std::uint32_t lc_segment = LC_SEGMENT_64;
 #else
     using mach_header_t = ::mach_header;
     using segment_command_t = ::segment_command;
     using section_t = ::section;
-    static constexpr uint32_t mh_magic = MH_MAGIC;
-    static constexpr uint32_t mh_cigam = MH_CIGAM;
-    static constexpr uint32_t lc_segment = LC_SEGMENT;
+    static constexpr std::uint32_t mh_magic = MH_MAGIC;
+    static constexpr std::uint32_t mh_cigam = MH_CIGAM;
+    static constexpr std::uint32_t lc_segment = LC_SEGMENT;
 #endif
 
     using Handle = std::unique_ptr<void, decltype([](void* handle) {
@@ -43,8 +43,8 @@ namespace {
             header(header),
             vmaddr_slide(slide) {}
 
-        [[nodiscard]] uintptr_t address() const {
-            return std::bit_cast<uintptr_t>(this->header);
+        [[nodiscard]] std::uintptr_t address() const {
+            return std::bit_cast<std::uintptr_t>(this->header);
         }
 
         [[nodiscard]] std::ptrdiff_t slide() const {
@@ -55,7 +55,7 @@ namespace {
             const auto* cmd = reinterpret_cast<const load_command*>(
                 reinterpret_cast<const std::byte*>(header) + sizeof(mach_header_t));
 
-            for (uint32_t j = 0; j < header->ncmds; j++) {
+            for (std::uint32_t j = 0; j < header->ncmds; j++) {
                 if (cmd->cmd == lc_segment) {
                     const auto* seg = reinterpret_cast<const segment_command_t*>(cmd);
                     if (seg->vmsize != 0 && seg->initprot != 0) {
@@ -73,7 +73,7 @@ namespace {
             this->for_each_segment([&](const segment_command_t* seg) {
                 const auto* sections = reinterpret_cast<const section_t*>(
                     reinterpret_cast<const std::byte*>(seg) + sizeof(segment_command_t));
-                for (uint32_t i = 0; i < seg->nsects; i++) {
+                for (std::uint32_t i = 0; i < seg->nsects; i++) {
                     auto* sec = &sections[i];
                     if (sec->addr) {
                         if (!callback(seg, sec)) {
@@ -149,8 +149,8 @@ namespace hat::process {
 #endif
 
     hat::process::module get_process_module() {
-        const uint32_t count = _dyld_image_count();
-        for (uint32_t i = 0; i != count; i++) {
+        const std::uint32_t count = _dyld_image_count();
+        for (std::uint32_t i = 0; i != count; i++) {
             const auto* header = reinterpret_cast<const mach_header_t*>(_dyld_get_image_header(i));
             if (!is_valid_header(header)) {
                 continue;
@@ -167,7 +167,7 @@ namespace hat::process {
         std::abort();
     }
 
-    uintptr_t module::address() const {
+    std::uintptr_t module::address() const {
         const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
         return mimpl->address();
     }
@@ -175,10 +175,10 @@ namespace hat::process {
     std::span<std::byte> module::get_module_data() const {
         const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
 
-        const uintptr_t offset = static_cast<uintptr_t>(mimpl->slide()) - mimpl->address();
-        size_t max{};
+        const std::uintptr_t offset = static_cast<std::uintptr_t>(mimpl->slide()) - mimpl->address();
+        std::size_t max{};
         mimpl->for_each_segment([&](const segment_command_t* seg) {
-            max = std::max(max, static_cast<size_t>(seg->vmaddr + seg->vmsize + offset));
+            max = std::max(max, static_cast<std::size_t>(seg->vmaddr + seg->vmsize + offset));
             return true;
         });
         return {reinterpret_cast<std::byte*>(mimpl->address()), max};
@@ -288,8 +288,8 @@ namespace hat::process {
             return {};
         }
 
-        const uint32_t count = _dyld_image_count();
-        for (uint32_t i = 0; i < count; i++) {
+        const std::uint32_t count = _dyld_image_count();
+        for (std::uint32_t i = 0; i < count; i++) {
             const auto* header = reinterpret_cast<const mach_header_t*>(_dyld_get_image_header(i));
             if (!is_valid_header(header)) {
                 continue;
@@ -316,8 +316,8 @@ namespace hat::process {
             return {};
         }
 
-        const uint32_t count = _dyld_image_count();
-        for (uint32_t i = 0; i < count; i++) {
+        const std::uint32_t count = _dyld_image_count();
+        for (std::uint32_t i = 0; i < count; i++) {
             const auto* header = reinterpret_cast<const mach_header_t*>(_dyld_get_image_header(i));
             if (header != dlinfo.dli_fbase) {
                 continue;

@@ -34,7 +34,7 @@ LIBHAT_EXPORT namespace hat {
 
         constexpr basic_cstring_view() noexcept = default;
         constexpr basic_cstring_view(const CharT* const c_str) noexcept(noexcept(impl_t{c_str})) : impl(c_str) {}
-        constexpr basic_cstring_view(null_terminated_t, const CharT* const c_str, size_t size)
+        constexpr basic_cstring_view(null_terminated_t, const CharT* const c_str, std::size_t size)
             noexcept(noexcept(impl_t{c_str, size})) : impl(c_str, size) {}
         constexpr basic_cstring_view(const std::basic_string<CharT, Traits>& str) noexcept : impl(str) {}
         constexpr basic_cstring_view(const basic_cstring_view&) noexcept = default;
@@ -336,25 +336,25 @@ constexpr hat::detail::comparison_category_t<Traits> operator<=>(
 
 LIBHAT_EXPORT namespace hat::inline literals::inline cstring_view_literals {
 
-    [[nodiscard]] constexpr cstring_view operator""_csv(const char* str, size_t size) {
+    [[nodiscard]] constexpr cstring_view operator""_csv(const char* str, std::size_t size) {
         return {null_terminated, str, size};
     }
 
-    [[nodiscard]] constexpr wcstring_view operator""_csv(const wchar_t* str, size_t size) {
+    [[nodiscard]] constexpr wcstring_view operator""_csv(const wchar_t* str, std::size_t size) {
         return {null_terminated, str, size};
     }
 
 #ifdef __cpp_lib_char8_t
-    [[nodiscard]] constexpr u8cstring_view operator""_csv(const char8_t* str, size_t size) {
+    [[nodiscard]] constexpr u8cstring_view operator""_csv(const char8_t* str, std::size_t size) {
         return {null_terminated, str, size};
     }
 #endif
 
-    [[nodiscard]] constexpr u16cstring_view operator""_csv(const char16_t* str, size_t size) {
+    [[nodiscard]] constexpr u16cstring_view operator""_csv(const char16_t* str, std::size_t size) {
         return {null_terminated, str, size};
     }
 
-    [[nodiscard]] constexpr u32cstring_view operator""_csv(const char32_t* str, size_t size) {
+    [[nodiscard]] constexpr u32cstring_view operator""_csv(const char32_t* str, std::size_t size) {
         return {null_terminated, str, size};
     }
 }

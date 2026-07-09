@@ -29,10 +29,10 @@ LIBHAT_EXPORT namespace hat {
         /// Reads an integer of the specified type located at an offset from the signature result. If there is no
         /// result, the behavior is undefined.
         template<std::integral Int>
-        [[nodiscard]] constexpr Int read(const size_t offset) const noexcept {
+        [[nodiscard]] constexpr Int read(const std::size_t offset) const noexcept {
             if LIBHAT_IF_CONSTEVAL {
-                constexpr size_t N = sizeof(Int);
-                return std::bit_cast<Int>([=, this]<size_t... Index>(std::index_sequence<Index...>) {
+                constexpr std::size_t N = sizeof(Int);
+                return std::bit_cast<Int>([=, this]<std::size_t... Index>(std::index_sequence<Index...>) {
                     return std::array<T, N>{(this->result + offset)[Index]...};
                 }(std::make_index_sequence<N>{}));
             } else {
@@ -45,8 +45,8 @@ LIBHAT_EXPORT namespace hat {
         /// Reads an integer of the specified type, which represents an index into an array with the given element type.
         /// If there is no result, the behavior is undefined.
         template<std::integral Int, typename ArrayType>
-        [[nodiscard]] constexpr size_t index(const size_t offset) const noexcept {
-            return static_cast<size_t>(read<Int>(offset)) / sizeof(ArrayType);
+        [[nodiscard]] constexpr std::size_t index(const std::size_t offset) const noexcept {
+            return static_cast<std::size_t>(read<Int>(offset)) / sizeof(ArrayType);
         }
 
         /// Resolve the relative address located at an offset from the signature result. If there is no result, nullptr
@@ -72,11 +72,11 @@ LIBHAT_EXPORT namespace hat {
         /// The "0x0" operand comes after the relative address. The absolute address referred to by the RIP relative
         /// address in this case is 0x12353BE + 0x7 = 0x12353C5. Simply using rel(2) would yield an incorrect result of
         /// 0x12353C4. In this case, rel(2, 1) would yield the expected 0x12353C5.
-        [[nodiscard]] constexpr underlying_type rel(size_t offset, size_t remaining = 0) const noexcept {
+        [[nodiscard]] constexpr underlying_type rel(std::size_t offset, std::size_t remaining = 0) const noexcept {
             if (!this->has_result()) LIBHAT_UNLIKELY {
                 return nullptr;
             }
-            using rel32_t = int32_t;
+            using rel32_t = std::int32_t;
             return this->result + this->read<rel32_t>(offset) + offset + sizeof(rel32_t) + remaining;
         }
 
@@ -101,13 +101,13 @@ LIBHAT_EXPORT namespace hat {
     using scan_result = scan_result_base<std::byte>;
     using const_scan_result = scan_result_base<const std::byte>;
 
-    enum class scan_alignment : uint8_t {
+    enum class scan_alignment : std::uint8_t {
         X1 = 1,
         X4 = 4,
         X16 = 16
     };
 
-    enum class scan_hint : uint64_t {
+    enum class scan_hint : std::uint64_t {
         none    = 0,      // no hints
         x86_64  = 1 << 0, // The data being scanned is x86_64 machine code
         pair0   = 1 << 1, // Only utilize byte pair based scanning if the signature starts with a byte pair
@@ -142,7 +142,7 @@ namespace hat::detail {
     using scan_function_t = const_scan_result(*)(const std::byte* begin, const std::byte* end, const scan_context& context);
 
     struct scanner_context {
-        size_t vectorSize{};
+        std::size_t vectorSize{};
     };
 
     enum class scan_mode {
@@ -160,11 +160,11 @@ namespace hat::detail {
         scan_function_t scanner{};
         scan_alignment alignment{};
         scan_hint hints{};
-        size_t cmpIndex{};
-        std::optional<size_t> pairIndex{};
+        std::size_t cmpIndex{};
+        std::optional<std::size_t> pairIndex{};
 
         [[nodiscard]] constexpr const_scan_result scan(const std::byte* begin, const std::byte* end) const {
-            if (signature.size() > static_cast<size_t>(std::distance(begin, end))) LIBHAT_UNLIKELY {
+            if (signature.size() > static_cast<std::size_t>(std::distance(begin, end))) LIBHAT_UNLIKELY {
                 return {};
             }
             return this->scanner(begin, end, *this);
@@ -189,32 +189,32 @@ namespace hat::detail {
     template<std::integral type, scan_alignment alignment>
     LIBHAT_FORCEINLINE consteval auto create_alignment_mask() {
         type mask{};
-        for (size_t i = 0; i < sizeof(type) * 8; i += alignment_stride<alignment>) {
+        for (std::size_t i = 0; i < sizeof(type) * 8; i += alignment_stride<alignment>) {
             mask |= static_cast<type>(type(1) << i);
         }
         return mask;
     }
 
-    template<size_t alignment>
+    template<std::size_t alignment>
     LIBHAT_FORCEINLINE const std::byte* align_up(const std::byte* ptr) {
-        const uintptr_t mod = reinterpret_cast<uintptr_t>(ptr) % alignment;
+        const std::uintptr_t mod = reinterpret_cast<std::uintptr_t>(ptr) % alignment;
         ptr += mod ? alignment - mod : 0;
         return std::assume_aligned<alignment>(ptr);
     }
 
-    template<typename Vector, size_t alignment, bool veccmp>
+    template<typename Vector, std::size_t alignment, bool veccmp>
     LIBHAT_FORCEINLINE auto segment_scan(
         const std::byte* begin,
         const std::byte* end,
-        const size_t signatureSize,
-        const size_t cmpOffset
+        const std::size_t signatureSize,
+        const std::size_t cmpOffset
     ) -> std::tuple<std::span<const std::byte>, std::span<const Vector>, std::span<const std::byte>> {
         // Alignment may not match due to function-targeted architecture flags
         // The size should though...
         static_assert(sizeof(Vector) == alignment);
 
         auto validateRange = [signatureSize](const std::byte* b, const std::byte* e) -> std::span<const std::byte> {
-            if (b <= e && static_cast<size_t>(e - b) >= signatureSize) {
+            if (b <= e && static_cast<std::size_t>(e - b) >= signatureSize) {
                 return {b, e};
             }
             return {};
@@ -226,8 +226,8 @@ namespace hat::detail {
             return {validateRange(begin, end), {}, {}};
         }
 
-        const size_t vecAvailable = static_cast<size_t>(end - reinterpret_cast<const std::byte*>(vecBegin));
-        const size_t requiredAfter = veccmp ? sizeof(Vector) : signatureSize;
+        const std::size_t vecAvailable = static_cast<std::size_t>(end - reinterpret_cast<const std::byte*>(vecBegin));
+        const std::size_t requiredAfter = veccmp ? sizeof(Vector) : signatureSize;
         const auto vecEnd = vecBegin + (vecAvailable >= requiredAfter ? (vecAvailable - requiredAfter) / sizeof(Vector) : 0);
 
         // If the scan can't be vectorized, just do the single byte scanner "pre" part
@@ -327,7 +327,7 @@ namespace hat::detail {
 
     template<scan_mode mode>
     constexpr scan_context scan_context::create(const signature_view signature, const scan_alignment alignment, const scan_hint hints) {
-        size_t cmpIndex{};
+        std::size_t cmpIndex{};
         for (const auto& elem : signature) {
             if (elem.all()) {
                 break;
@@ -448,7 +448,7 @@ LIBHAT_EXPORT namespace hat {
     /// iterator. The entire input range will be searched and all results written to the output range. The number of
     /// matches found is returned.
     template<detail::byte_input_iterator In, std::output_iterator<detail::result_type_for<In>> Out>
-    constexpr size_t find_all_pattern(
+    constexpr std::size_t find_all_pattern(
         const In              beginIn,
         const In              endIn,
         const Out             beginOut,
@@ -462,7 +462,7 @@ LIBHAT_EXPORT namespace hat {
 
         auto i = begin;
         auto out = beginOut;
-        size_t matches{};
+        std::size_t matches{};
 
         while (i < end) {
             const auto result = context.scan(i, end);
@@ -478,7 +478,7 @@ LIBHAT_EXPORT namespace hat {
     }
 
     template<detail::byte_input_range In, std::output_iterator<detail::result_type_for<std::ranges::iterator_t<In>>> Out>
-    constexpr size_t find_all_pattern(
+    constexpr std::size_t find_all_pattern(
         In&&                  rangeIn,
         const Out             beginOut,
         const signature_view  signature,

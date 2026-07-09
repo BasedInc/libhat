@@ -13,11 +13,11 @@
 
 namespace hat::detail {
 
-    static constexpr uint16_t NUM_PAIRS = 512;
+    static constexpr std::uint16_t NUM_PAIRS = 512;
 
     using pair_hint_t = std::tuple<
         const std::array<std::pair<std::byte, std::byte>, NUM_PAIRS>&,
-        const std::array<uint16_t, NUM_PAIRS>&
+        const std::array<std::uint16_t, NUM_PAIRS>&
     >;
 
     static constexpr auto get_pair_hint(const scan_hint hints) -> std::optional<pair_hint_t> {
@@ -39,17 +39,17 @@ namespace hat::detail {
 
         const auto pair_hint = get_pair_hint(this->hints);
         if (pair_hint && !pair0 && scanner.vectorSize) {
-            const auto getScore = [&](const std::byte a, const std::byte b) -> uint16_t {
+            const auto getScore = [&](const std::byte a, const std::byte b) -> std::uint16_t {
                 const auto& [pairs, scores] = *pair_hint;
                 const std::pair pair{a, b};
                 const auto it = std::ranges::lower_bound(pairs, pair);
-                const auto index = static_cast<uint16_t>(it - pairs.begin());
+                const auto index = static_cast<std::uint16_t>(it - pairs.begin());
                 return it != pairs.end() && *it == pair ? scores[index] : NUM_PAIRS;
             };
 
-            std::optional<std::pair<size_t, uint16_t>> bestPair{};
+            std::optional<std::pair<std::size_t, std::uint16_t>> bestPair{};
             for (auto it = this->signature.begin(); it != std::prev(this->signature.end()); it++) {
-                const auto i = static_cast<size_t>(it - this->signature.begin());
+                const auto i = static_cast<std::size_t>(it - this->signature.begin());
                 auto& a = *it;
                 auto& b = *std::next(it);
 
@@ -69,7 +69,7 @@ namespace hat::detail {
         // If no "optimal" pair was found, find the first byte pair in the signature
         if (!this->pairIndex.has_value()) {
             for (auto it = this->signature.begin(); it != std::prev(this->signature.end()); it++) {
-                const auto i = static_cast<size_t>(it - this->signature.begin());
+                const auto i = static_cast<std::size_t>(it - this->signature.begin());
                 auto& a = *it;
                 auto& b = *std::next(it);
 

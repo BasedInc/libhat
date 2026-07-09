@@ -95,7 +95,7 @@ namespace hat::process {
                 return {};
             }
 
-            buffer.resize(static_cast<size_t>(size));
+            buffer.resize(static_cast<std::size_t>(size));
 
             MultiByteToWideChar(CP_UTF8, 0, name.data(), static_cast<int>(name.size()), buffer.data(), size);
         }
@@ -121,13 +121,13 @@ namespace hat::process {
         return {};
     }
 
-    uintptr_t module::address() const {
-        return std::bit_cast<uintptr_t>(this->impl.get());
+    std::uintptr_t module::address() const {
+        return std::bit_cast<std::uintptr_t>(this->impl.get());
     }
 
     std::span<std::byte> hat::process::module::get_module_data() const {
         auto* const scanBytes = reinterpret_cast<std::byte*>(this->address());
-        const size_t sizeOfImage = getNTHeaders(*this).OptionalHeader.SizeOfImage;
+        const std::size_t sizeOfImage = getNTHeaders(*this).OptionalHeader.SizeOfImage;
         return {scanBytes, sizeOfImage};
     }
 
@@ -164,7 +164,7 @@ namespace hat::process {
             if (sectionName == name) {
                 return {
                     reinterpret_cast<std::byte*>(this->address() + sectionHeader->VirtualAddress),
-                    static_cast<size_t>(sectionHeader->Misc.VirtualSize)
+                    static_cast<std::size_t>(sectionHeader->Misc.VirtualSize)
                 };
             }
         }

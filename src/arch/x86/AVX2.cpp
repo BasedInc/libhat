@@ -14,7 +14,7 @@ namespace hat::detail {
     static void load_signature_256(const signature_view signature, __m256i& bytes, __m256i& mask) {
         std::byte byteBuffer[32]{}; // The remaining signature bytes
         std::byte maskBuffer[32]{}; // A bitmask for the signature bytes we care about
-        for (size_t i = 0; i < signature.size(); i++) {
+        for (std::size_t i = 0; i < signature.size(); i++) {
             byteBuffer[i] = signature[i].value();
             maskBuffer[i] = signature[i].mask();
         }
@@ -29,11 +29,11 @@ namespace hat::detail {
         const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
 
         // 256 bit vector containing first signature byte repeated
-        const auto firstByte = _mm256_set1_epi8(static_cast<int8_t>(*signature[cmpIndex]));
+        const auto firstByte = _mm256_set1_epi8(static_cast<std::int8_t>(*signature[cmpIndex]));
 
         __m256i secondByte;
         if constexpr (cmpeq2) {
-            secondByte = _mm256_set1_epi8(static_cast<int8_t>(*signature[cmpIndex + 1]));
+            secondByte = _mm256_set1_epi8(static_cast<std::int8_t>(*signature[cmpIndex + 1]));
         }
 
         __m256i signatureBytes, signatureMask;
@@ -54,18 +54,18 @@ namespace hat::detail {
         const auto vec_end = std::to_address(vec.end());
         for (auto it = vec_begin; it != vec_end; it++) {
             const auto cmp = _mm256_cmpeq_epi8(firstByte, _mm256_load_si256(it));
-            auto mask = static_cast<uint32_t>(_mm256_movemask_epi8(cmp));
+            auto mask = static_cast<std::uint32_t>(_mm256_movemask_epi8(cmp));
 
             if constexpr (cmpeq2) {
                 const auto cmp2 = _mm256_cmpeq_epi8(secondByte, _mm256_load_si256(it));
-                auto mask2 = static_cast<uint32_t>(_mm256_movemask_epi8(cmp2));
+                auto mask2 = static_cast<std::uint32_t>(_mm256_movemask_epi8(cmp2));
                 // avoid loading unaligned memory by letting a match of the first signature byte in the last
                 // position imply that the second byte also matched
                 mask &= (mask2 >> 1) | (0b1u << 31);
             }
 
             if constexpr (alignment != scan_alignment::X1) {
-                mask &= std::rotl(create_alignment_mask<uint32_t, alignment>(), static_cast<int>(cmpIndex));
+                mask &= std::rotl(create_alignment_mask<std::uint32_t, alignment>(), static_cast<int>(cmpIndex));
                 if (!mask) continue;
             }
 

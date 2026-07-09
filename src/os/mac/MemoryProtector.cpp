@@ -11,7 +11,7 @@
 
 namespace hat {
 
-    static std::optional<uint32_t> get_page_prot(const uintptr_t address) {
+    static std::optional<std::uint32_t> get_page_prot(const std::uintptr_t address) {
         mach_vm_address_t addr = static_cast<mach_vm_address_t>(address);
         mach_vm_size_t size{};
         vm_region_basic_info_64 info{};
@@ -32,7 +32,7 @@ namespace hat {
             return std::nullopt;
         }
 
-        return static_cast<uint32_t>(info.protection);
+        return static_cast<std::uint32_t>(info.protection);
     }
 
     static vm_prot_t to_system_prot(const protection flags) {
@@ -43,7 +43,7 @@ namespace hat {
         return prot;
     }
 
-    memory_protector::memory_protector(const uintptr_t address, const size_t size, const protection flags) : address(address), size(size) {
+    memory_protector::memory_protector(const std::uintptr_t address, const std::size_t size, const protection flags) : address(address), size(size) {
         const auto oldProt = get_page_prot(address);
         if (!oldProt) {
             return; // Failure indicated via is_set()

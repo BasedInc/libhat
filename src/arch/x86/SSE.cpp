@@ -27,7 +27,7 @@ namespace hat::detail {
     static void load_signature_128(const signature_view signature, __m128i& bytes, __m128i& mask) {
         std::byte byteBuffer[16]{}; // The remaining signature bytes
         std::byte maskBuffer[16]{}; // A bitmask for the signature bytes we care about
-        for (size_t i = 0; i < signature.size(); i++) {
+        for (std::size_t i = 0; i < signature.size(); i++) {
             byteBuffer[i] = signature[i].value();
             maskBuffer[i] = signature[i].mask();
         }
@@ -42,11 +42,11 @@ namespace hat::detail {
         const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
 
         // 128 bit vector containing first signature byte repeated
-        const auto firstByte = _mm_set1_epi8(static_cast<int8_t>(*signature[cmpIndex]));
+        const auto firstByte = _mm_set1_epi8(static_cast<std::int8_t>(*signature[cmpIndex]));
 
         __m128i secondByte;
         if constexpr (cmpeq2) {
-            secondByte = _mm_set1_epi8(static_cast<int8_t>(*signature[cmpIndex + 1]));
+            secondByte = _mm_set1_epi8(static_cast<std::int8_t>(*signature[cmpIndex + 1]));
         }
 
         __m128i signatureBytes, signatureMask;
@@ -67,16 +67,16 @@ namespace hat::detail {
         const auto vec_end = std::to_address(vec.end());
         for (auto it = vec_begin; it != vec_end; it++) {
             const auto cmp = _mm_cmpeq_epi8(firstByte, _mm_load_si128(it));
-            auto mask = static_cast<uint16_t>(_mm_movemask_epi8(cmp));
+            auto mask = static_cast<std::uint16_t>(_mm_movemask_epi8(cmp));
 
             if constexpr (cmpeq2) {
                 const auto cmp2 = _mm_cmpeq_epi8(secondByte, _mm_load_si128(it));
-                auto mask2 = static_cast<uint16_t>(_mm_movemask_epi8(cmp2));
-                mask &= static_cast<uint16_t>((mask2 >> 1) | (0b1u << 15));
+                auto mask2 = static_cast<std::uint16_t>(_mm_movemask_epi8(cmp2));
+                mask &= static_cast<std::uint16_t>((mask2 >> 1) | (0b1u << 15));
             }
 
             if constexpr (alignment != scan_alignment::X1) {
-                mask &= std::rotl(create_alignment_mask<uint16_t, alignment>(), static_cast<int>(cmpIndex));
+                mask &= std::rotl(create_alignment_mask<std::uint16_t, alignment>(), static_cast<int>(cmpIndex));
             }
 
             while (mask) {

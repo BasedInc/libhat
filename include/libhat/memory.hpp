@@ -9,7 +9,7 @@
 
 LIBHAT_EXPORT namespace hat {
 
-    enum class protection : uint8_t {
+    enum class protection : std::uint8_t {
         Read    = 0b001,
         Write   = 0b010,
         Execute = 0b100

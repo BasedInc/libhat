@@ -48,7 +48,7 @@ namespace hat::detail {
             : compressed_pair(firstArgs, secondArgs, std::index_sequence_for<Args1...>{}, std::index_sequence_for<Args2...>{}) {}
 
     private:
-        template<typename Tuple1, typename Tuple2, size_t... Indices1, size_t... Indices2>
+        template<typename Tuple1, typename Tuple2, std::size_t... Indices1, std::size_t... Indices2>
         constexpr compressed_pair(Tuple1& first, Tuple2& second, std::index_sequence<Indices1...>, std::index_sequence<Indices2...>)
             : first(std::get<Indices1>(std::move(first))...), second(std::get<Indices2>(std::move(second))...) {}
     };

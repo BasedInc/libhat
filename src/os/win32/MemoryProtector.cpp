@@ -26,7 +26,7 @@ namespace hat {
         return PAGE_NOACCESS;
     }
 
-    memory_protector::memory_protector(const uintptr_t address, const size_t size, const protection flags) : address(address), size(size) {
+    memory_protector::memory_protector(const std::uintptr_t address, const std::size_t size, const protection flags) : address(address), size(size) {
         this->set = 0 != VirtualProtect(
             reinterpret_cast<LPVOID>(this->address),
             this->size,

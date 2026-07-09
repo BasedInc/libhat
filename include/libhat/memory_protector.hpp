@@ -15,7 +15,7 @@ LIBHAT_EXPORT namespace hat {
     /// RAII wrapper for setting memory protection flags
     class memory_protector {
     public:
-        [[nodiscard]] memory_protector(uintptr_t address, size_t size, protection flags);
+        [[nodiscard]] memory_protector(std::uintptr_t address, std::size_t size, protection flags);
 
         ~memory_protector() {
             if (this->set) {
@@ -41,9 +41,9 @@ LIBHAT_EXPORT namespace hat {
     private:
         void restore();
 
-        uintptr_t address;
-        size_t size;
-        uint32_t oldProtection{}; // Memory protection flags native to Operating System
+        std::uintptr_t address;
+        std::size_t size;
+        std::uint32_t oldProtection{}; // Memory protection flags native to Operating System
         bool set{};
     };
 }

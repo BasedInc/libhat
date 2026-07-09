@@ -12,7 +12,7 @@
 
 LIBHAT_EXPORT namespace hat {
 
-    template<typename Char, size_t N, template<size_t> typename Derived>
+    template<typename Char, std::size_t N, template<std::size_t> typename Derived>
     struct basic_fixed_string {
         using value_type      = Char;
         using pointer         = Char*;
@@ -22,7 +22,7 @@ LIBHAT_EXPORT namespace hat {
         using iterator        = pointer;
         using const_iterator  = const_pointer;
 
-        static constexpr auto npos = static_cast<size_t>(-1);
+        static constexpr auto npos = static_cast<std::size_t>(-1);
 
         constexpr basic_fixed_string(std::basic_string_view<Char> str) {
             std::copy_n(str.data(), N, value);
@@ -56,19 +56,19 @@ LIBHAT_EXPORT namespace hat {
             return this->end();
         }
 
-        [[nodiscard]] constexpr reference operator[](size_t pos) noexcept {
+        [[nodiscard]] constexpr reference operator[](std::size_t pos) noexcept {
             return this->value[pos];
         }
 
-        [[nodiscard]] constexpr reference at(size_t pos) noexcept {
+        [[nodiscard]] constexpr reference at(std::size_t pos) noexcept {
             return this->value[pos];
         }
 
-        [[nodiscard]] constexpr const_reference operator[](size_t pos) const noexcept {
+        [[nodiscard]] constexpr const_reference operator[](std::size_t pos) const noexcept {
             return this->value[pos];
         }
 
-        [[nodiscard]] constexpr const_reference at(size_t pos) const noexcept {
+        [[nodiscard]] constexpr const_reference at(std::size_t pos) const noexcept {
             return this->value[pos];
         }
 
@@ -104,7 +104,7 @@ LIBHAT_EXPORT namespace hat {
             return this->c_str();
         }
 
-        [[nodiscard]] constexpr size_t size() const noexcept {
+        [[nodiscard]] constexpr std::size_t size() const noexcept {
             return N;
         }
 
@@ -113,9 +113,9 @@ LIBHAT_EXPORT namespace hat {
         }
 
         template<
-            size_t Pos = 0,
-            size_t Count = npos,
-            size_t M = (Count == npos ? N - Pos : Count)
+            std::size_t Pos = 0,
+            std::size_t Count = npos,
+            std::size_t M = (Count == npos ? N - Pos : Count)
         >
         [[nodiscard]] constexpr auto substr() const -> Derived<M> {
             static_assert(Pos + M <= N);
@@ -124,7 +124,7 @@ LIBHAT_EXPORT namespace hat {
             return buf;
         }
 
-        template<size_t M, size_t K = N + M>
+        template<std::size_t M, std::size_t K = N + M>
         constexpr auto operator+(const basic_fixed_string<Char, M, Derived>& str) const -> Derived<K> {
             Char buf[K + 1]{};
             std::copy_n(this->value, this->size(), buf);
@@ -132,12 +132,12 @@ LIBHAT_EXPORT namespace hat {
             return buf;
         }
 
-        template<size_t M>
+        template<std::size_t M>
         constexpr auto operator+(const Char (&str)[M]) const {
             return *this + Derived<M - 1>{str};
         }
 
-        template<size_t M>
+        template<std::size_t M>
         constexpr bool operator==(const basic_fixed_string<Char, M, Derived>& str) const {
             return std::equal(this->begin(), this->end(), str.begin(), str.end());
         }
@@ -174,13 +174,13 @@ LIBHAT_EXPORT namespace hat {
     };
 
     #define LIBHAT_DEFINE_FIXED_STRING(name, type)                                                          \
-    template<size_t N>                                                                                      \
+    template<std::size_t N>                                                                                      \
     struct name : public basic_fixed_string<type, N, name> {                                                \
         using basic_fixed_string<type, N, name>::basic_fixed_string;                                        \
     };                                                                                                      \
-    template<size_t N>                                                                                      \
+    template<std::size_t N>                                                                                      \
     name(const type(&str)[N]) -> name<N - 1>;                                                               \
-    template<size_t N, size_t M>                                                                            \
+    template<std::size_t N, std::size_t M>                                                                            \
     constexpr inline auto operator+(const type (&cstr)[N], const basic_fixed_string<type, M, name>& lstr) { \
         return name{cstr} + lstr;                                                                           \
     }

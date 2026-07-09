@@ -14,7 +14,7 @@ namespace hat::detail {
     static void load_signature_512(const signature_view signature, __m512i& bytes, __m512i& mask) {
         alignas(64) std::byte byteBuffer[64]{}; // The remaining signature bytes
         alignas(64) std::byte maskBuffer[64]{}; // A bitmask for the signature bytes we care about
-        for (size_t i = 0; i < signature.size(); i++) {
+        for (std::size_t i = 0; i < signature.size(); i++) {
             byteBuffer[i] = signature[i].value();
             maskBuffer[i] = signature[i].mask();
         }
@@ -29,11 +29,11 @@ namespace hat::detail {
         const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
 
         // 512 bit vector containing first signature byte repeated
-        const auto firstByte = _mm512_set1_epi8(static_cast<int8_t>(*signature[cmpIndex]));
+        const auto firstByte = _mm512_set1_epi8(static_cast<std::int8_t>(*signature[cmpIndex]));
 
         __m512i secondByte;
         if constexpr (cmpeq2) {
-            secondByte = _mm512_set1_epi8(static_cast<int8_t>(*signature[cmpIndex + 1]));
+            secondByte = _mm512_set1_epi8(static_cast<std::int8_t>(*signature[cmpIndex + 1]));
         }
 
         __m512i signatureBytes;
@@ -62,7 +62,7 @@ namespace hat::detail {
             }
 
             if constexpr (alignment != scan_alignment::X1) {
-                mask &= std::rotl(create_alignment_mask<uint64_t, alignment>(), static_cast<int>(cmpIndex));
+                mask &= std::rotl(create_alignment_mask<std::uint64_t, alignment>(), static_cast<int>(cmpIndex));
                 if (!mask) continue;
             }
 

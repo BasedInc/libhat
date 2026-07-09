@@ -11,9 +11,9 @@
 
 namespace hat {
 
-    static std::optional<uint32_t> get_page_prot(const uintptr_t address) {
-        std::optional<uint32_t> result;
-        iter_mapped_regions([&](const uintptr_t begin, const uintptr_t end, uint32_t prot) {
+    static std::optional<std::uint32_t> get_page_prot(const std::uintptr_t address) {
+        std::optional<std::uint32_t> result;
+        iter_mapped_regions([&](const std::uintptr_t begin, const std::uintptr_t end, std::uint32_t prot) {
             if (address >= begin && address < end) {
                 result = prot;
                 return false;
@@ -31,7 +31,7 @@ namespace hat {
         return prot;
     }
 
-    memory_protector::memory_protector(const uintptr_t address, const size_t size, const protection flags) : address(address), size(size) {
+    memory_protector::memory_protector(const std::uintptr_t address, const std::size_t size, const protection flags) : address(address), size(size) {
         const auto pageSize = hat::get_system().page_size;
 
         const auto oldProt = get_page_prot(address);
@@ -42,7 +42,7 @@ namespace hat {
         this->oldProtection = *oldProt;
         this->set = 0 == mprotect(
             reinterpret_cast<void*>(detail::fast_align_down(address, pageSize)),
-            static_cast<size_t>(detail::fast_align_up(size, pageSize)),
+            static_cast<std::size_t>(detail::fast_align_up(size, pageSize)),
             to_system_prot(flags)
         );
     }
@@ -51,8 +51,8 @@ namespace hat {
         const auto pageSize = hat::get_system().page_size;
         mprotect(
             reinterpret_cast<void*>(detail::fast_align_down(address, pageSize)),
-            static_cast<size_t>(detail::fast_align_up(size, pageSize)),
-            static_cast<int32_t>(this->oldProtection)
+            static_cast<std::size_t>(detail::fast_align_up(size, pageSize)),
+            static_cast<std::int32_t>(this->oldProtection)
         );
     }
 }

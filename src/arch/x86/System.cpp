@@ -82,11 +82,11 @@ namespace hat {
         std::bitset<32> f_1_EDX_{};
         std::bitset<32> f_7_EBX_{};
         if (nIds >= 1) {
-            f_1_ECX_ = (uint32_t) data[1][2];
-            f_1_EDX_ = (uint32_t) data[1][3];
+            f_1_ECX_ = static_cast<std::uint32_t>(data[1][2]);
+            f_1_EDX_ = static_cast<std::uint32_t>(data[1][3]);
         }
         if (nIds >= 7) {
-            f_7_EBX_ = (uint32_t) data[7][1];
+            f_7_EBX_ = static_cast<std::uint32_t>(data[7][1]);
         }
 
         // Read extended info

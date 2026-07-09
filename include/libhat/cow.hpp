@@ -276,7 +276,7 @@ LIBHAT_EXPORT namespace hat {
             if constexpr (uses_allocator) {
                 // I deeply apologize for this diabolical hack to preserve the current allocator.
                 return [&]<class... AlArgs>(std::tuple<AlArgs...> tup) -> owned_type& {
-                    return [&]<size_t... Idxs>(std::index_sequence<Idxs...>) -> owned_type& {
+                    return [&]<std::size_t... Idxs>(std::index_sequence<Idxs...>) -> owned_type& {
                         return this->impl.template emplace<owned_type>(std::get<Idxs>(std::move(tup))...);
                     }(std::make_index_sequence<sizeof...(AlArgs)>{});
                 }(std::uses_allocator_construction_args<owned_type>(this->get_allocator(), std::forward<Args>(args)...));
@@ -303,7 +303,7 @@ LIBHAT_EXPORT namespace hat {
         template<typename... Args>
         constexpr explicit cow(owned_from_tuple_hack, std::tuple<Args...> args) : cow(std::move(args), std::make_index_sequence<sizeof...(Args)>{}) {}
 
-        template<typename... Args, size_t... Idxs>
+        template<typename... Args, std::size_t... Idxs>
         constexpr explicit cow(std::tuple<Args...> args, std::index_sequence<Idxs...>) : cow(in_place_owned, std::get<Idxs>(std::move(args))...) {}
     };
 

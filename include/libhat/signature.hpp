@@ -61,13 +61,13 @@ LIBHAT_EXPORT namespace hat {
             return this->mask_ == std::byte{0x00};
         }
 
-        [[nodiscard]] constexpr bool has(const uint8_t digit) const noexcept {
-            const auto m = std::to_integer<uint8_t>(this->mask_);
+        [[nodiscard]] constexpr bool has(const std::uint8_t digit) const noexcept {
+            const auto m = std::to_integer<std::uint8_t>(this->mask_);
             return (m & (1u << digit)) != 0;
         }
 
-        [[nodiscard]] constexpr bool at(const uint8_t digit) const noexcept {
-            const auto v = std::to_integer<uint8_t>(this->value_);
+        [[nodiscard]] constexpr bool at(const std::uint8_t digit) const noexcept {
+            const auto v = std::to_integer<std::uint8_t>(this->value_);
             return (v & (1u << digit)) != 0;
         }
 
@@ -85,7 +85,7 @@ LIBHAT_EXPORT namespace hat {
     using signature = std::vector<signature_element>;
     using signature_view = std::span<const signature_element>;
 
-    template<size_t N>
+    template<std::size_t N>
     using fixed_signature = std::array<signature_element, N>;
 
     enum class signature_error {
@@ -97,7 +97,7 @@ LIBHAT_EXPORT namespace hat {
     };
 
     /// Convert raw byte storage into a signature
-    template<size_t N> requires (N != std::dynamic_extent && N > 0)
+    template<std::size_t N> requires (N != std::dynamic_extent && N > 0)
     [[nodiscard]] constexpr auto bytes_to_signature(std::span<const std::byte, N> bytes) {
         fixed_signature<N> result;
         std::ranges::copy(bytes, result.begin());
@@ -114,7 +114,7 @@ LIBHAT_EXPORT namespace hat {
 
     template<typename T>
     [[nodiscard]] constexpr auto object_to_signature(const T& value) {
-        constexpr size_t N = sizeof(T);
+        constexpr std::size_t N = sizeof(T);
         using view = std::span<const std::byte, N>;
         if LIBHAT_IF_CONSTEVAL {
             return bytes_to_signature(view{std::bit_cast<std::array<std::byte, N>>(value)});
@@ -149,19 +149,19 @@ LIBHAT_EXPORT namespace hat {
 
     namespace detail {
 
-        LIBHAT_CONSTEXPR_RESULT std::optional<signature_element> parse_signature_element(const std::string_view str, const uint8_t base) {
-            uint8_t value{};
-            uint8_t mask{};
+        LIBHAT_CONSTEXPR_RESULT std::optional<signature_element> parse_signature_element(const std::string_view str, const std::uint8_t base) {
+            std::uint8_t value{};
+            std::uint8_t mask{};
             for (auto& ch : str) {
                 value *= base;
                 mask *= base;
                 if (ch != '?') {
-                    auto digit = hat::parse_int<uint8_t>(&ch, &ch + 1, base);
+                    auto digit = hat::parse_int<std::uint8_t>(&ch, &ch + 1, base);
                     if (!digit.has_value()) [[unlikely]] {
                         return std::nullopt;
                     }
                     value += digit.value();
-                    mask += static_cast<uint8_t>(base - 1);
+                    mask += static_cast<std::uint8_t>(base - 1);
                 }
             }
 
@@ -169,8 +169,8 @@ LIBHAT_EXPORT namespace hat {
         }
     }
 
-    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<size_t, signature_error> parse_signature_to(std::output_iterator<signature_element> auto out, const std::string_view str) {
-        size_t written = 0;
+    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<std::size_t, signature_error> parse_signature_to(std::output_iterator<signature_element> auto out, const std::string_view str) {
+        std::size_t written = 0;
         bool containsByte = false;
 
         for (auto&& sub : str | std::views::split(' ')) {
@@ -189,7 +189,7 @@ LIBHAT_EXPORT namespace hat {
                 }
                 case 2:
                 case 8: {
-                    const uint8_t base = word.size() == 2 ? 16 : 2;
+                    const std::uint8_t base = word.size() == 2 ? 16 : 2;
                     auto element = detail::parse_signature_element(word, base);
                     if (element) {
                         *out++ = *element;
@@ -229,8 +229,8 @@ LIBHAT_EXPORT namespace hat {
 namespace hat::detail {
 
 #ifdef LIBHAT_HAS_CONSTEXPR_RESULT
-    template<size_t N>
-    [[nodiscard]] consteval std::pair<std::array<signature_element, N>, size_t> compile_signature_max_size(std::string_view str) {
+    template<std::size_t N>
+    [[nodiscard]] consteval std::pair<std::array<signature_element, N>, std::size_t> compile_signature_max_size(std::string_view str) {
         std::array<signature_element, N> array;
         auto size = parse_signature_to(array.begin(), str);
         return {array, size.value()};
@@ -263,8 +263,8 @@ LIBHAT_EXPORT namespace hat {
             const bool b = (element.mask() & std::byte{0x0F}) == std::byte{0x0F};
             if (a || b) {
                 ret += {
-                    a ? hex[static_cast<size_t>(element.value() >> 4) & 0xFu] : '?',
-                    b ? hex[static_cast<size_t>(element.value() >> 0) & 0xFu] : '?',
+                    a ? hex[static_cast<std::size_t>(element.value() >> 4) & 0xFu] : '?',
+                    b ? hex[static_cast<std::size_t>(element.value() >> 0) & 0xFu] : '?',
                     ' '
                 };
             } else if (element.none()) {

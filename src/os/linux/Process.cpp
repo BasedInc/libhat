@@ -37,12 +37,12 @@ namespace {
     struct module_implementation {
         module_implementation(Handle handle, const dl_phdr_info& info) :
             handle(std::move(handle)),
-            base_address(static_cast<uintptr_t>(info.dlpi_addr)),
+            base_address(static_cast<std::uintptr_t>(info.dlpi_addr)),
             path(info.dlpi_name && *info.dlpi_name != '\0' ? info.dlpi_name : "/proc/self/exe"),
             program_headers(info.dlpi_phdr),
             num_program_headers(info.dlpi_phnum) {}
 
-        [[nodiscard]] uintptr_t address() const {
+        [[nodiscard]] std::uintptr_t address() const {
             return this->base_address;
         }
 
@@ -112,7 +112,7 @@ namespace {
                 }
 
                 const char* cstr = strings.data() + header.sh_name;
-                const size_t size = strnlen(cstr, strings.size() - header.sh_name);
+                const std::size_t size = strnlen(cstr, strings.size() - header.sh_name);
                 const std::string_view name{cstr, size};
 
                 const std::span data{
@@ -134,7 +134,7 @@ namespace {
         using sections_t = std::map<std::string, std::pair<std::span<std::byte>, hat::protection>, std::less<>>;
 
         Handle                 handle;
-        uintptr_t              base_address;
+        std::uintptr_t         base_address;
         const char*            path;
         const elf_phdr_t*      program_headers;
         elf_half_t             num_program_headers;
@@ -153,7 +153,7 @@ namespace hat::process {
         return *module;
     }
 
-    uintptr_t module::address() const {
+    std::uintptr_t module::address() const {
         const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
         return mimpl->address();
     }
@@ -161,9 +161,9 @@ namespace hat::process {
     std::span<std::byte> module::get_module_data() const {
         const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
 
-        size_t max{};
+        std::size_t max{};
         for (auto& header : mimpl->headers()) {
-            max = std::max(max, static_cast<size_t>(header.p_vaddr + header.p_memsz));
+            max = std::max(max, static_cast<std::size_t>(header.p_vaddr + header.p_memsz));
         }
         return {reinterpret_cast<std::byte*>(mimpl->address()), max};
     }
@@ -254,7 +254,7 @@ namespace hat::process {
         };
 
         dl_iterate_phdr(
-            [](dl_phdr_info* info, size_t, void* data) {
+            [](dl_phdr_info* info, std::size_t, void* data) {
                 return (*static_cast<decltype(callback)*>(data))(*info);
             },
             &callback);
@@ -282,7 +282,7 @@ namespace hat::process {
         };
 
         dl_iterate_phdr(
-            [](dl_phdr_info* info, size_t, void* data) {
+            [](dl_phdr_info* info, std::size_t, void* data) {
                 return (*static_cast<decltype(callback)*>(data))(*info);
             },
             &callback);
@@ -290,15 +290,15 @@ namespace hat::process {
         return module;
     }
 
-    static bool regionHasFlag(const std::span<const std::byte> region, const uint32_t flags) {
+    static bool regionHasFlag(const std::span<const std::byte> region, const std::uint32_t flags) {
         if (region.empty()) {
             return false;
         }
 
-        auto begin = std::bit_cast<uintptr_t>(region.data());
+        auto begin = std::bit_cast<std::uintptr_t>(region.data());
         const auto end = begin + region.size();
 
-        iter_mapped_regions([&, found = false](const uintptr_t b, const uintptr_t e, const uint32_t prot) mutable {
+        iter_mapped_regions([&, found = false](const std::uintptr_t b, const std::uintptr_t e, const std::uint32_t prot) mutable {
             if (found) {
                 // intervals must be contiguous
                 if (b != begin) {
