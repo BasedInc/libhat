@@ -44,6 +44,13 @@ typedef enum libhat_alignment {
     libhat_alignment_x16 = 16,
 } libhat_alignment;
 
+typedef enum libhat_hint {
+    libhat_hint_none    = 0,
+    libhat_hint_x86_64  = 1 << 0,
+    libhat_hint_pair0   = 1 << 1,
+    libhat_hint_aarch64 = 1 << 2,
+} libhat_hint;
+
 typedef enum libhat_protection {
     libhat_protection_none    = 0b000,
     libhat_protection_read    = 0b001,
@@ -78,14 +85,16 @@ LIBHAT_API const void* libhat_find_pattern(
     const libhat_signature* signature,
     const void*             buffer,
     size_t                  size,
-    libhat_alignment        align
+    libhat_alignment        align = libhat_alignment_x1,
+    libhat_hint             hints = libhat_hint_none
 );
 
 LIBHAT_API const void* libhat_find_pattern_mod(
     const libhat_signature* signature,
     const libhat_module*    module,
     const char*             section,
-    libhat_alignment        align
+    libhat_alignment        align = libhat_alignment_x1,
+    libhat_hint             hints = libhat_hint_none
 );
 
 LIBHAT_API uintptr_t libhat_module_address(const libhat_module* module);

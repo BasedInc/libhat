@@ -101,18 +101,20 @@ public final class Hat {
      * range including {@link ByteBuffer#position()} and up to but excluding {@link ByteBuffer#limit()}. If a match is
      * found, an {@link OptionalInt} containing the absolute position into {@code buffer} is returned. The underlying
      * memory address of the returned result will be byte aligned per the specified {@link ScanAlignment}. The specified
-     * {@link ByteBuffer} must be a direct buffer.
+     * {@link ByteBuffer} must be a direct buffer. Additional hints may be specified to optimize the scan based on known
+     * properties of the buffer contents.
      *
      * @param signature The pattern to match
      * @param buffer    The buffer to search
      * @param alignment The result address alignment
+     * @param hints     The hints to use
      * @return The absolute position into {@code buffer} where a match was found,
      *         or {@link OptionalInt#empty()} if there was no match
      * @throws IllegalArgumentException if the buffer is not direct
      * @throws NullPointerException if any arguments are {@code null}
      */
     public static OptionalInt findPattern(@NotNull final Signature signature, @NotNull final ByteBuffer buffer,
-                                          @NotNull final ScanAlignment alignment) {
+                                          @NotNull final ScanAlignment alignment, @NotNull final ScanHint... hints) {
         Objects.requireNonNull(signature);
         Objects.requireNonNull(buffer);
         Objects.requireNonNull(alignment);
@@ -128,7 +130,8 @@ public final class Hat {
             Objects.requireNonNull(signature.handle),
             new Pointer(start),
             new Libhat.size_t(count),
-            alignment.alignment()
+            alignment.alignment(),
+            ScanHint.mask(hints)
         );
 
         if (result == Pointer.NULL) {
@@ -157,16 +160,19 @@ public final class Hat {
      * Finds the byte pattern described by the given {@link Signature} in the specified {@code section} of the
      * specified {@code module}. If a match is found, an {@link Optional} containing a Pointer to the match is returned.
      * The underlying memory address of the returned result will be byte aligned per the specified {@link ScanAlignment}.
+     * Additional hints may be specified to optimize the scan based on known properties of the buffer contents.
      *
      * @param signature The pattern to match
      * @param module    The target module
      * @param section   The section to search in the module
      * @param alignment The result address alignment
+     * @param hints     The hints to use
      * @return A pointer to the memory where a match was identified, or {@link Optional#empty()} if none was found.
      * @throws NullPointerException if any arguments are {@code null}
      */
     public static Optional<Pointer> findPattern(@NotNull final Signature signature, @NotNull final ProcessModule module,
-                                                @NotNull final String section, @NotNull final ScanAlignment alignment) {
+                                                @NotNull final String section, @NotNull final ScanAlignment alignment,
+                                                @NotNull final ScanHint... hints) {
         Objects.requireNonNull(signature);
         Objects.requireNonNull(module);
         Objects.requireNonNull(section);
@@ -174,9 +180,10 @@ public final class Hat {
 
         final Pointer result = Libhat.INSTANCE.libhat_find_pattern_mod(
             Objects.requireNonNull(signature.handle),
-            module.handle,
+            Objects.requireNonNull(module.handle),
             section,
-            alignment.alignment()
+            alignment.alignment(),
+            ScanHint.mask(hints)
         );
 
         return Optional.ofNullable(result);

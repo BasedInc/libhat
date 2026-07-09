@@ -96,20 +96,22 @@ public interface Libhat extends Library {
      *     const libhat_signature* signature,
      *     const void*             buffer,
      *     size_t                  size,
-     *     libhat_alignment        align
+     *     libhat_alignment        align,
+    *      libhat_hint             hints
      * );
      */
-    Pointer libhat_find_pattern(Pointer signature, Pointer buffer, size_t size, int alignment);
+    Pointer libhat_find_pattern(Pointer signature, Pointer buffer, size_t size, int alignment, int hints);
 
     /*
      * const void* libhat_find_pattern_mod(
      *     const libhat_signature* signature,
      *     const libhat_module*    module,
      *     const char*             section,
-     *     libhat_alignment        align
+     *     libhat_alignment        align,
+     *     libhat_hint             hints
      * );
      */
-    Pointer libhat_find_pattern_mod(Pointer signature, Pointer module, String section, int alignment);
+    Pointer libhat_find_pattern_mod(Pointer signature, Pointer module, String section, int alignment, int hints);
 
     /*
      * uintptr_t libhat_module_address(const libhat_module* module);

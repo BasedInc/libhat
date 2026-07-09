@@ -37,6 +37,10 @@ static hat::scan_alignment to_cpp_align(const libhat_alignment align) {
     exit(EXIT_FAILURE);
 }
 
+static hat::scan_hint to_cpp_hints(const libhat_hint hints) {
+    return static_cast<hat::scan_hint>(hints);
+}
+
 extern "C" {
 
 LIBHAT_API libhat_status libhat_parse_signature(const char* signatureStr, const libhat_signature** signatureOut) {
@@ -80,11 +84,12 @@ LIBHAT_API const void* libhat_find_pattern(
     const libhat_signature* signature,
     const void*             buffer,
     const size_t            size,
-    const libhat_alignment  align
+    const libhat_alignment  align,
+    const libhat_hint       hints
 ) {
     const auto begin = static_cast<const std::byte*>(buffer);
     const auto end = static_cast<const std::byte*>(buffer) + size;
-    const auto result = hat::find_pattern(begin, end, *signature, to_cpp_align(align));
+    const auto result = hat::find_pattern(begin, end, *signature, to_cpp_align(align), to_cpp_hints(hints));
     return result.has_result() ? result.get() : nullptr;
 }
 
@@ -92,9 +97,10 @@ LIBHAT_API const void* libhat_find_pattern_mod(
     const libhat_signature* signature,
     const libhat_module*    module,
     const char*             section,
-    const libhat_alignment  align
+    const libhat_alignment  align,
+    const libhat_hint       hints
 ) {
-    const auto result = hat::find_pattern(*signature, section, *module, to_cpp_align(align));
+    const auto result = hat::find_pattern(*signature, section, *module, to_cpp_align(align), to_cpp_hints(hints));
     return result.has_result() ? result.get() : nullptr;
 }
 
