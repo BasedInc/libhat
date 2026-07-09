@@ -12,6 +12,11 @@ modifying virtual memory protections, and more.
 - Convenience wrappers over OS APIs
 - Language bindings (C, C#, Java)
 - Supports Windows, Linux, macOS, and Android
+- General-purpose library features
+  - `hat::cow`
+  - `hat::cstring_view`
+  - `hat::fixed_string`
+  - `hat::string_literal`
 
 ## Versioning
 This project adheres to [semantic versioning](https://semver.org/spec/v2.0.0.html). Any declaration that
