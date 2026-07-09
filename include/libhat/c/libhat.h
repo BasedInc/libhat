@@ -63,15 +63,15 @@ typedef bool(*libhat_for_each_section_cb)(const char* name, libhat_span data, li
 typedef bool(*libhat_for_each_segment_cb)(libhat_span data, libhat_protection prot, void* user_data);
 
 LIBHAT_API libhat_status libhat_parse_signature(
-    const char*        signatureStr,
-    libhat_signature** signatureOut
+    const char*              signatureStr,
+    const libhat_signature** signatureOut
 );
 
 LIBHAT_API libhat_status libhat_create_signature(
-    const char*        bytes,
-    const char*        mask,
-    size_t             size,
-    libhat_signature** signatureOut
+    const char*              bytes,
+    const char*              mask,
+    size_t                   size,
+    const libhat_signature** signatureOut
 );
 
 LIBHAT_API const void* libhat_find_pattern(
@@ -96,9 +96,17 @@ LIBHAT_API libhat_span libhat_module_get_executable_data(const libhat_module* mo
 
 LIBHAT_API libhat_span libhat_module_get_section_data(const libhat_module* module, const char* name);
 
-LIBHAT_API void libhat_module_for_each_section(const libhat_module* module, libhat_for_each_section_cb callback, void* user_data);
+LIBHAT_API void libhat_module_for_each_section(
+    const libhat_module*       module,
+    libhat_for_each_section_cb callback,
+    void*                      user_data
+);
 
-LIBHAT_API void libhat_module_for_each_segment(const libhat_module* module, libhat_for_each_segment_cb callback, void* user_data);
+LIBHAT_API void libhat_module_for_each_segment(
+    const libhat_module*       module,
+    libhat_for_each_segment_cb callback,
+    void*                      user_data
+);
 
 LIBHAT_API const libhat_module* libhat_get_process_module();
 

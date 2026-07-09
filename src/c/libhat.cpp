@@ -39,7 +39,7 @@ static hat::scan_alignment to_cpp_align(const libhat_alignment align) {
 
 extern "C" {
 
-LIBHAT_API libhat_status libhat_parse_signature(const char* signatureStr, libhat_signature** signatureOut) {
+LIBHAT_API libhat_status libhat_parse_signature(const char* signatureStr, const libhat_signature** signatureOut) {
     auto result = hat::parse_signature(signatureStr);
     if (!result.has_value()) {
         *signatureOut = nullptr;
@@ -58,10 +58,10 @@ LIBHAT_API libhat_status libhat_parse_signature(const char* signatureStr, libhat
 }
 
 LIBHAT_API libhat_status libhat_create_signature(
-    const char*        bytes,
-    const char*        mask,
-    const size_t       size,
-    libhat_signature** signatureOut
+    const char*              bytes,
+    const char*              mask,
+    const size_t             size,
+    const libhat_signature** signatureOut
 ) {
     hat::signature signature{};
     signature.reserve(size);
