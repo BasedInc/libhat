@@ -5,8 +5,8 @@
     #include <utility>
 #endif
 
-#include "defines.hpp"
-#include "type_traits.hpp"
+#include "../defines.hpp"
+#include "../type_traits.hpp"
 
 namespace hat::detail {
 

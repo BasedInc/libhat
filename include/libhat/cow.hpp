@@ -11,8 +11,8 @@
     #include <vector>
 #endif
 
-#include "compressed_pair.hpp"
 #include "concepts.hpp"
+#include "detail/compressed_pair.hpp"
 #include "cstring_view.hpp"
 #include "export.hpp"
 
