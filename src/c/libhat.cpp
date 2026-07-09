@@ -102,6 +102,35 @@ LIBHAT_API uintptr_t libhat_module_address(const libhat_module* module) {
     return module->address();
 }
 
+LIBHAT_API libhat_span libhat_module_get_data(const libhat_module* module) {
+    const auto data = module->get_module_data();
+    return {data.data(), data.size()};
+}
+
+LIBHAT_API libhat_span libhat_module_get_executable_data(const libhat_module* module) {
+    const auto data = module->get_executable_data();
+    return {data.data(), data.size()};
+}
+
+LIBHAT_API libhat_span libhat_module_get_section_data(const libhat_module* module, const char* name) {
+    const auto data = module->get_section_data(name);
+    return {data.data(), data.size()};
+}
+
+LIBHAT_API void libhat_module_for_each_section(const libhat_module* module, const libhat_for_each_section_cb callback, void* user_data) {
+    std::string buffer;
+    module->for_each_section([=, &buffer](auto name, auto data, auto prot) {
+        buffer.assign(name);
+        return callback(buffer.c_str(), {data.data(), data.size()}, static_cast<libhat_protection>(prot), user_data);
+    });
+}
+
+LIBHAT_API void libhat_module_for_each_segment(const libhat_module* module, const libhat_for_each_segment_cb callback, void* user_data) {
+    module->for_each_segment([=](auto data, auto prot) {
+        return callback({data.data(), data.size()}, static_cast<libhat_protection>(prot), user_data);
+    });
+}
+
 LIBHAT_API const libhat_module* libhat_get_process_module() {
     return new libhat_module{hat::process::get_process_module()};
 }
