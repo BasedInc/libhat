@@ -108,6 +108,12 @@ LIBHAT_API void libhat_module_for_each_segment(
     void*                      user_data
 );
 
+LIBHAT_API bool libhat_is_readable(const void* data, size_t size);
+
+LIBHAT_API bool libhat_is_writable(const void* data, size_t size);
+
+LIBHAT_API bool libhat_is_executable(const void* data, size_t size);
+
 LIBHAT_API const libhat_module* libhat_get_process_module();
 
 LIBHAT_API const libhat_module* libhat_get_module(const char* name);

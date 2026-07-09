@@ -131,6 +131,18 @@ LIBHAT_API void libhat_module_for_each_segment(const libhat_module* module, cons
     });
 }
 
+LIBHAT_API bool libhat_is_readable(const void* data, size_t size) {
+    return hat::process::is_readable({static_cast<const std::byte*>(data), size});
+}
+
+LIBHAT_API bool libhat_is_writable(const void* data, size_t size) {
+    return hat::process::is_writable({static_cast<const std::byte*>(data), size});
+}
+
+LIBHAT_API bool libhat_is_executable(const void* data, size_t size) {
+    return hat::process::is_executable({static_cast<const std::byte*>(data), size});
+}
+
 LIBHAT_API const libhat_module* libhat_get_process_module() {
     return new libhat_module{hat::process::get_process_module()};
 }
