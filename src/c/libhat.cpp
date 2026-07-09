@@ -3,23 +3,35 @@
 #include <libhat/scanner.hpp>
 #include <cstring>
 
-static signature_t* allocate_signature(const hat::signature_view signature) {
-    const auto bytes = std::as_bytes(signature);
-    auto* mem = malloc(sizeof(signature_t) + bytes.size());
-    auto* sig = static_cast<signature_t*>(mem);
-    sig->data = static_cast<std::byte*>(mem) + sizeof(signature_t);
-    sig->count = signature.size();
-    std::memcpy(sig->data, bytes.data(), bytes.size());
-    return sig;
+namespace {
+
+    struct libhat_ffi_object {
+        virtual ~libhat_ffi_object() = default;
+    };
+
+    template<typename T>
+    struct libhat_ffi_wrapper : libhat_ffi_object, T {
+
+        template<typename... Args>
+        explicit libhat_ffi_wrapper(Args&&... args) : T(std::forward<Args>(args)...) {}
+    };
 }
 
-static hat::scan_alignment to_cpp_align(const scan_alignment align) {
+struct libhat_signature final : libhat_ffi_wrapper<hat::signature> {
+    using libhat_ffi_wrapper::libhat_ffi_wrapper;
+};
+
+struct libhat_module final : libhat_ffi_wrapper<hat::process::module> {
+    using libhat_ffi_wrapper::libhat_ffi_wrapper;
+};
+
+static hat::scan_alignment to_cpp_align(const libhat_alignment align) {
     switch (align) {
-        case scan_alignment_x1:
+        case libhat_alignment_x1:
             return hat::scan_alignment::X1;
-        case scan_alignment_x4:
+        case libhat_alignment_x4:
             return hat::scan_alignment::X4;
-        case scan_alignment_x16:
+        case libhat_alignment_x16:
             return hat::scan_alignment::X16;
     }
     exit(EXIT_FAILURE);
@@ -27,7 +39,7 @@ static hat::scan_alignment to_cpp_align(const scan_alignment align) {
 
 extern "C" {
 
-LIBHAT_API libhat_status_t libhat_parse_signature(const char* signatureStr, signature_t** signatureOut) {
+LIBHAT_API libhat_status libhat_parse_signature(const char* signatureStr, libhat_signature** signatureOut) {
     auto result = hat::parse_signature(signatureStr);
     if (!result.has_value()) {
         *signatureOut = nullptr;
@@ -41,15 +53,15 @@ LIBHAT_API libhat_status_t libhat_parse_signature(const char* signatureStr, sign
         }
         return libhat_err_unknown;
     }
-    *signatureOut = allocate_signature(result.value());
+    *signatureOut = new libhat_signature(std::move(result).value());
     return libhat_success;
 }
 
-LIBHAT_API libhat_status_t libhat_create_signature(
-    const char*   bytes,
-    const char*   mask,
-    const size_t  size,
-    signature_t** signatureOut
+LIBHAT_API libhat_status libhat_create_signature(
+    const char*        bytes,
+    const char*        mask,
+    const size_t       size,
+    libhat_signature** signatureOut
 ) {
     hat::signature signature{};
     signature.reserve(size);
@@ -60,59 +72,45 @@ LIBHAT_API libhat_status_t libhat_create_signature(
             signature.emplace_back(std::nullopt);
         }
     }
-    *signatureOut = allocate_signature(signature);
+    *signatureOut = new libhat_signature(std::move(signature));
     return libhat_success;
 }
 
 LIBHAT_API const void* libhat_find_pattern(
-    const signature_t*   signature,
-    const void*          buffer,
-    const size_t         size,
-    const scan_alignment align
+    const libhat_signature* signature,
+    const void*             buffer,
+    const size_t            size,
+    const libhat_alignment  align
 ) {
-    const hat::signature_view view{
-        static_cast<hat::signature_element*>(signature->data),
-        signature->count
-    };
-
     const auto begin = static_cast<const std::byte*>(buffer);
     const auto end = static_cast<const std::byte*>(buffer) + size;
-    const auto result = hat::find_pattern(begin, end, view, to_cpp_align(align));
+    const auto result = hat::find_pattern(begin, end, *signature, to_cpp_align(align));
     return result.has_result() ? result.get() : nullptr;
 }
 
 LIBHAT_API const void* libhat_find_pattern_mod(
-    const signature_t*   signature,
-    const void*          module,
-    const char*          section,
-    const scan_alignment align
+    const libhat_signature* signature,
+    const libhat_module*    module,
+    const char*             section,
+    const libhat_alignment  align
 ) {
-    const hat::signature_view view{
-        static_cast<hat::signature_element*>(signature->data),
-        signature->count
-    };
-
-    const auto mod = hat::process::module_at(const_cast<void*>(module));
-    if (!mod.has_value()) {
-        return nullptr;
-    }
-    const auto result = hat::find_pattern(view, section, mod.value(), to_cpp_align(align));
+    const auto result = hat::find_pattern(*signature, section, *module, to_cpp_align(align));
     return result.has_result() ? result.get() : nullptr;
 }
 
-LIBHAT_API const void* libhat_get_module(const char* name) {
+LIBHAT_API const libhat_module* libhat_get_module(const char* name) {
     if (name) {
-        if (const auto mod = hat::process::get_module(name); mod.has_value()) {
-            return reinterpret_cast<const void*>(mod.value().address());
+        if (auto mod = hat::process::get_module(name); mod.has_value()) {
+            return new libhat_module(std::move(mod).value());
         } else {
             return nullptr;
         }
     }
-    return reinterpret_cast<const void*>(hat::process::get_process_module().address());
+    return new libhat_module(hat::process::get_process_module());
 }
 
 LIBHAT_API void libhat_free(void* mem) {
-    free(mem);
+    delete static_cast<libhat_ffi_object*>(mem);
 }
 
 } // extern "C"

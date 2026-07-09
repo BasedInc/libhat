@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-typedef enum libhat_status_t {
+typedef enum libhat_status {
     libhat_success,         // The operation was successful
     libhat_err_unknown,
     libhat_err_sig_missing_masked_byte,
@@ -34,46 +34,44 @@ typedef enum libhat_status_t {
     libhat_err_sig_empty_signature,
     libhat_err_sig_expected_wildcard,
     libhat_err_sig_invalid_token_length,
-} libhat_status_t;
+} libhat_status;
 
-typedef enum scan_alignment {
-    scan_alignment_x1 = 1,
-    scan_alignment_x4 = 4,
-    scan_alignment_x16 = 16,
-} scan_alignment_t;
+typedef enum libhat_alignment {
+    libhat_alignment_x1 = 1,
+    libhat_alignment_x4 = 4,
+    libhat_alignment_x16 = 16,
+} libhat_alignment;
 
-typedef struct signature {
-    void* data;
-    size_t count;
-} signature_t;
+typedef struct libhat_signature libhat_signature;
+typedef struct libhat_module libhat_module;
 
-LIBHAT_API libhat_status_t libhat_parse_signature(
-    const char*   signatureStr,
-    signature_t** signatureOut
+LIBHAT_API libhat_status libhat_parse_signature(
+    const char*        signatureStr,
+    libhat_signature** signatureOut
 );
 
-LIBHAT_API libhat_status_t libhat_create_signature(
-    const char*   bytes,
-    const char*   mask,
-    size_t        size,
-    signature_t** signatureOut
+LIBHAT_API libhat_status libhat_create_signature(
+    const char*        bytes,
+    const char*        mask,
+    size_t             size,
+    libhat_signature** signatureOut
 );
 
 LIBHAT_API const void* libhat_find_pattern(
-    const signature_t*  signature,
-    const void*         buffer,
-    size_t              size,
-    scan_alignment_t    align
+    const libhat_signature* signature,
+    const void*             buffer,
+    size_t                  size,
+    libhat_alignment        align
 );
 
 LIBHAT_API const void* libhat_find_pattern_mod(
-    const signature_t*  signature,
-    const void*         module,
-    const char*         section,
-    scan_alignment_t    align
+    const libhat_signature* signature,
+    const libhat_module*    module,
+    const char*             section,
+    libhat_alignment        align
 );
 
-LIBHAT_API const void* libhat_get_module(const char* name);
+LIBHAT_API const libhat_module* libhat_get_module(const char* name);
 
 LIBHAT_API void libhat_free(void* mem);
 
