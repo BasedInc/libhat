@@ -100,7 +100,7 @@ public interface Libhat extends Library {
     *      libhat_hint             hints
      * );
      */
-    Pointer libhat_find_pattern(Pointer signature, Pointer buffer, size_t size, int alignment, int hints);
+    Pointer libhat_find_pattern(Pointer signature, Pointer buffer, size_t size, int align, int hints);
 
     /*
      * const void* libhat_find_pattern_mod(
@@ -111,7 +111,7 @@ public interface Libhat extends Library {
      *     libhat_hint             hints
      * );
      */
-    Pointer libhat_find_pattern_mod(Pointer signature, Pointer module, String section, int alignment, int hints);
+    Pointer libhat_find_pattern_mod(Pointer signature, Pointer module, String section, int align, int hints);
 
     /*
      * uintptr_t libhat_module_address(const libhat_module* module);
