@@ -23,9 +23,9 @@
 #endif
 
 #ifdef LIBHAT_AARCH64
-#define LIBHAT_TEST_ZERO(x) (vmaxvq_u32(vreinterpretq_u32_u8(x)) == 0)
+    #define LIBHAT_TEST_ZERO(x) (vmaxvq_u32(vreinterpretq_u32_u8(x)) == 0)
 #else
-#define LIBHAT_TEST_ZERO(x) (!(vgetq_lane_u64(vreinterpretq_u64_u8(x), 0) | vgetq_lane_u64(vreinterpretq_u64_u8(x), 1)))
+    #define LIBHAT_TEST_ZERO(x) (!(vgetq_lane_u64(vreinterpretq_u64_u8(x), 0) | vgetq_lane_u64(vreinterpretq_u64_u8(x), 1)))
 #endif
 
 namespace hat::detail {
