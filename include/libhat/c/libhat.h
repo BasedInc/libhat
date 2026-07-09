@@ -21,6 +21,7 @@
 #endif
 
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,9 +72,15 @@ LIBHAT_API const void* libhat_find_pattern_mod(
     libhat_alignment        align
 );
 
+LIBHAT_API uintptr_t libhat_module_address(const libhat_module* module);
+
+LIBHAT_API const libhat_module* libhat_get_process_module();
+
 LIBHAT_API const libhat_module* libhat_get_module(const char* name);
 
-LIBHAT_API void libhat_free(void* mem);
+LIBHAT_API const libhat_module* libhat_module_at(const void* address);
+
+LIBHAT_API void libhat_free(const void* object);
 
 #ifdef __cplusplus
 }

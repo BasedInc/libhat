@@ -53,7 +53,7 @@ LIBHAT_API libhat_status libhat_parse_signature(const char* signatureStr, libhat
         }
         return libhat_err_unknown;
     }
-    *signatureOut = new libhat_signature(std::move(result).value());
+    *signatureOut = new libhat_signature{std::move(result).value()};
     return libhat_success;
 }
 
@@ -72,7 +72,7 @@ LIBHAT_API libhat_status libhat_create_signature(
             signature.emplace_back(std::nullopt);
         }
     }
-    *signatureOut = new libhat_signature(std::move(signature));
+    *signatureOut = new libhat_signature{std::move(signature)};
     return libhat_success;
 }
 
@@ -98,19 +98,33 @@ LIBHAT_API const void* libhat_find_pattern_mod(
     return result.has_result() ? result.get() : nullptr;
 }
 
-LIBHAT_API const libhat_module* libhat_get_module(const char* name) {
-    if (name) {
-        if (auto mod = hat::process::get_module(name); mod.has_value()) {
-            return new libhat_module(std::move(mod).value());
-        } else {
-            return nullptr;
-        }
-    }
-    return new libhat_module(hat::process::get_process_module());
+LIBHAT_API uintptr_t libhat_module_address(const libhat_module* module) {
+    return module->address();
 }
 
-LIBHAT_API void libhat_free(void* mem) {
-    delete static_cast<libhat_ffi_object*>(mem);
+LIBHAT_API const libhat_module* libhat_get_process_module() {
+    return new libhat_module{hat::process::get_process_module()};
+}
+
+LIBHAT_API const libhat_module* libhat_get_module(const char* name) {
+    if (!name) {
+        return libhat_get_process_module();
+    }
+    if (auto mod = hat::process::get_module(name); mod.has_value()) {
+        return new libhat_module{std::move(mod).value()};
+    }
+    return nullptr;
+}
+
+LIBHAT_API const libhat_module* libhat_module_at(const void* address) {
+    if (auto mod = hat::process::module_at(address); mod.has_value()) {
+        return new libhat_module{std::move(mod).value()};
+    }
+    return nullptr;
+}
+
+LIBHAT_API void libhat_free(const void* object) {
+    delete static_cast<const libhat_ffi_object*>(object);
 }
 
 } // extern "C"

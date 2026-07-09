@@ -310,7 +310,7 @@ namespace hat::process {
         return {};
     }
 
-    std::optional<hat::process::module> module_at(void* address) {
+    std::optional<hat::process::module> module_at(const void* address) {
         Dl_info dlinfo{};
         if (!dladdr(address, &dlinfo)) {
             return {};

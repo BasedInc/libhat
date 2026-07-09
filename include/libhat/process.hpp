@@ -63,7 +63,7 @@ LIBHAT_EXPORT namespace hat::process {
 
         friend hat::process::module get_process_module();
         friend std::optional<hat::process::module> get_module(std::string_view);
-        friend std::optional<hat::process::module> module_at(void* address);
+        friend std::optional<hat::process::module> module_at(const void* address);
 
         std::shared_ptr<void> impl{};
     };
@@ -86,5 +86,5 @@ LIBHAT_EXPORT namespace hat::process {
 
     /// Returns the module containing the specified address. If the given address is not located within a
     /// loaded module, std::nullopt is returned instead.
-    [[nodiscard]] std::optional<hat::process::module> module_at(void* address);
+    [[nodiscard]] std::optional<hat::process::module> module_at(const void* address);
 }
