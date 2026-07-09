@@ -2,6 +2,7 @@ package me.zero.libhat;
 
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
+import com.sun.jna.ptr.PointerByReference;
 import me.zero.libhat.jna.Libhat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,12 +43,12 @@ public final class Hat {
      */
     public static @NotNull Signature parseSignature(@NotNull final String signature) {
         Objects.requireNonNull(signature);
-        final Pointer[] handle = new Pointer[1];
-        final int status = Libhat.INSTANCE.libhat_parse_signature(signature, handle);
+        final PointerByReference out = new PointerByReference();
+        final int status = Libhat.INSTANCE.libhat_parse_signature(signature, out);
         if (status != 0) {
             throw new RuntimeException("libhat internal error " + Status.values()[status]);
         }
-        return new Signature(handle[0]);
+        return new Signature(out.getValue());
     }
 
     /**
@@ -69,12 +70,12 @@ public final class Hat {
         if (bytes.length != mask.length) {
             throw new IllegalArgumentException("Mismatch between bytes.length and mask.length");
         }
-        final Pointer[] handle = new Pointer[1];
-        final int status = Libhat.INSTANCE.libhat_create_signature(bytes, mask, bytes.length, handle);
+        final PointerByReference out = new PointerByReference();
+        final int status = Libhat.INSTANCE.libhat_create_signature(bytes, mask, new Libhat.size_t(bytes.length), out);
         if (status != 0) {
             throw new RuntimeException("libhat internal error " + Status.values()[status]);
         }
-        return new Signature(handle[0]);
+        return new Signature(out.getValue());
     }
 
     /**
@@ -126,7 +127,7 @@ public final class Hat {
         final Pointer result = Libhat.INSTANCE.libhat_find_pattern(
             Objects.requireNonNull(signature.handle),
             new Pointer(start),
-            count,
+            new Libhat.size_t(count),
             alignment.alignment()
         );
 
