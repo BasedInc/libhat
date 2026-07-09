@@ -1,5 +1,7 @@
 # libhat
-A modern, high-performance library for C++20 designed around game hacking
+A modern, high-performance C++20 library designed for game hacking in user space. Features an [incredibly](#Benchmarks)
+fast SIMD-accelerated signature scanner, and a set of platform-agnostic APIs for interfacing with loaded modules,
+modifying virtual memory protections, and more.
 
 ## Feature overview
 - Vectorized scanning for byte patterns
@@ -9,8 +11,7 @@ A modern, high-performance library for C++20 designed around game hacking
 - RAII memory protector
 - Convenience wrappers over OS APIs
 - Language bindings (C, C#, Java)
-- Full Windows support
-- Partial (WIP) Linux, macOS, and Android support
+- Supports Windows, Linux, macOS, and Android
 
 ## Versioning
 This project adheres to [semantic versioning](https://semver.org/spec/v2.0.0.html). Any declaration that
