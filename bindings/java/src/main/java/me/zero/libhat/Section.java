@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -21,10 +22,10 @@ public final class Section {
     @NotNull
     private final EnumSet<Protection> protection;
 
-    public Section(@NotNull final String name, @Nullable final ByteBuffer data, @NotNull final EnumSet<Protection> protection) {
-        this.name = name;
+    Section(@NotNull final String name, @Nullable final ByteBuffer data, @NotNull final EnumSet<Protection> protection) {
+        this.name = Objects.requireNonNull(name);
         this.data = data;
-        this.protection = protection;
+        this.protection = Objects.requireNonNull(protection);
     }
 
     public @NotNull String getName() {

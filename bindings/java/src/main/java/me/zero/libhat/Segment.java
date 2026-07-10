@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -18,9 +19,9 @@ public final class Segment {
     @NotNull
     private final EnumSet<Protection> protection;
 
-    public Segment(@Nullable final ByteBuffer data, @NotNull final EnumSet<Protection> protection) {
+    Segment(@Nullable final ByteBuffer data, @NotNull final EnumSet<Protection> protection) {
         this.data = data;
-        this.protection = protection;
+        this.protection = Objects.requireNonNull(protection);
     }
 
     public @NotNull Optional<ByteBuffer> getData() {

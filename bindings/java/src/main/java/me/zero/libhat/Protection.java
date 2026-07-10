@@ -18,7 +18,7 @@ public enum Protection {
         this.bit = (1 << this.ordinal());
     }
 
-    public static @NotNull EnumSet<Protection> fromFlags(final int flags) {
+    static @NotNull EnumSet<Protection> fromFlags(final int flags) {
         final EnumSet<Protection> set = EnumSet.noneOf(Protection.class);
         for (final Protection flag : Protection.values()) {
             if ((flags & flag.bit) != 0) {
