@@ -21,6 +21,9 @@ option(LIBHAT_MODULE_TARGET "Create target for the module interface" OFF)
 option(LIBHAT_USE_STD_MODULE "Compile the module target using the std module" OFF)
 option(LIBHAT_INSTALL_TARGET "Creates install rules for the libhat target" ON)
 
+# Compile Options
+option(LIBHAT_WARNINGS_AS_ERRORS "Treat warnings as compiler errors" ${PROJECT_IS_TOP_LEVEL})
+
 # Testing Options
 option(LIBHAT_TESTING "Enable tests" ${PROJECT_IS_TOP_LEVEL})
 option(LIBHAT_TESTING_SANITIZE "Enable address sanitizer when testing" ON)
@@ -85,12 +88,18 @@ target_compile_features(libhat PUBLIC cxx_std_20)
 
 if (MSVC)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        target_compile_options(libhat PRIVATE /clang:-Wall /clang:-Wextra /clang:-Wconversion /clang:-Werror)
+        target_compile_options(libhat PRIVATE /clang:-Wall /clang:-Wextra /clang:-Wconversion
+            $<$<BOOL:${LIBHAT_WARNINGS_AS_ERRORS}>:/clang:-Werror>
+        )
     else()
-        target_compile_options(libhat PRIVATE /W3 /WX)
+        target_compile_options(libhat PRIVATE /W3
+            $<$<BOOL:${LIBHAT_WARNINGS_AS_ERRORS}>:/WX>
+        )
     endif()
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(libhat PRIVATE -Wall -Wextra -Wconversion -Werror)
+    target_compile_options(libhat PRIVATE -Wall -Wextra -Wconversion
+        $<$<BOOL:${LIBHAT_WARNINGS_AS_ERRORS}>:-Werror>
+    )
 endif()
 
 target_include_directories(libhat PUBLIC
