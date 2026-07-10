@@ -29,8 +29,8 @@ option(LIBHAT_TESTING_SAMPLE_BIN "Enables tests that require downloading a large
 option(LIBHAT_EXAMPLES "Include example targets" ${PROJECT_IS_TOP_LEVEL})
 
 # Library Feature Options
-option(LIBHAT_DISABLE_SSE "Disables SSE scanning" OFF)
-option(LIBHAT_DISABLE_AVX512 "Disables AVX512 scanning" OFF)
+option(LIBHAT_FEATURE_SSE "Enables SSE scanning, has no effect if the target isn't x86 or x86_64" ON)
+option(LIBHAT_FEATURE_AVX512 "Enables AVX512 scanning, has no effect if the target isn't x86_64" ON)
 option(LIBHAT_HINT_X86_64 "Enables support for the x86_64 scan hint, requires a small (2KB) data table" ON)
 option(LIBHAT_HINT_AARCH64 "Enables support for the aarch64 scan hint, requires a small (2KB) data table" ON)
 
@@ -99,8 +99,8 @@ target_include_directories(libhat PUBLIC
 )
 
 target_compile_definitions(libhat PUBLIC
-    "$<$<BOOL:${LIBHAT_DISABLE_SSE}>:LIBHAT_DISABLE_SSE>"
-    "$<$<BOOL:${LIBHAT_DISABLE_AVX512}>:LIBHAT_DISABLE_AVX512>"
+    "$<$<BOOL:${LIBHAT_FEATURE_SSE}>:LIBHAT_FEATURE_SSE>"
+    "$<$<BOOL:${LIBHAT_FEATURE_AVX512}>:LIBHAT_FEATURE_AVX512>"
     "$<$<BOOL:${LIBHAT_HINT_X86_64}>:LIBHAT_HINT_X86_64>"
     "$<$<BOOL:${LIBHAT_HINT_AARCH64}>:LIBHAT_HINT_AARCH64>"
 )

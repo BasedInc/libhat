@@ -1,6 +1,6 @@
 #include <libhat/defines.hpp>
 
-#if defined(LIBHAT_X86_64) && !defined(LIBHAT_DISABLE_AVX512)
+#if defined(LIBHAT_X86_64) && defined(LIBHAT_FEATURE_AVX512)
 
 #include <libhat/scanner.hpp>
 

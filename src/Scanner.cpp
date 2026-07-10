@@ -89,7 +89,7 @@ namespace hat::detail {
         const auto& ext = get_system().extensions;
 #if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
         if (compiled_extensions.bmi || ext.bmi) {
-#if defined(LIBHAT_X86_64) && !defined(LIBHAT_DISABLE_AVX512)
+#if defined(LIBHAT_X86_64) && defined(LIBHAT_FEATURE_AVX512)
             if ((compiled_extensions.avx512f || ext.avx512f)
                 && (compiled_extensions.avx512bw || ext.avx512bw)) {
                 return resolve_scanner<scan_mode::AVX512>(context);
@@ -99,7 +99,7 @@ namespace hat::detail {
                 return resolve_scanner<scan_mode::AVX2>(context);
             }
         }
-#if !defined(LIBHAT_DISABLE_SSE)
+#if defined(LIBHAT_FEATURE_SSE)
         if (compiled_extensions.sse41 || ext.sse41) {
             return resolve_scanner<scan_mode::SSE>(context);
         }
