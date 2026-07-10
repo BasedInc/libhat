@@ -69,6 +69,8 @@ typedef struct libhat_span {
 typedef bool(*libhat_for_each_section_cb)(const char* name, libhat_span data, libhat_protection prot, void* user_data);
 typedef bool(*libhat_for_each_segment_cb)(libhat_span data, libhat_protection prot, void* user_data);
 
+LIBHAT_API const char* libhat_status_to_string(libhat_status status);
+
 LIBHAT_API libhat_status libhat_parse_signature(
     const char*              signatureStr,
     const libhat_signature** signatureOut

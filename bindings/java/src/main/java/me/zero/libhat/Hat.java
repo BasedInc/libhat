@@ -19,16 +19,6 @@ public final class Hat {
 
     private Hat() {}
 
-    public enum Status {
-        SUCCESS,
-        ERROR_UNKNOWN,
-        ERROR_SIG_MISSING_BYTE,
-        ERROR_SIG_ELEMENT_PARSE,
-        ERROR_SIG_EMPTY,
-        ERROR_SIG_EXPECTED_WILDCARD,
-        ERROR_SIG_INVALID_TOKEN_LENGTH,
-    }
-
     /**
      * Creates a new {@link Signature} from the specified string representation of a byte pattern. For example:
      * <ul>
@@ -49,7 +39,7 @@ public final class Hat {
         final PointerByReference out = new PointerByReference();
         final int status = Libhat.INSTANCE.libhat_parse_signature(signature, out);
         if (status != 0) {
-            throw new RuntimeException("libhat internal error " + Status.values()[status]);
+            throw new LibhatException(status);
         }
         return new Signature(out.getValue());
     }
@@ -76,7 +66,7 @@ public final class Hat {
         final PointerByReference out = new PointerByReference();
         final int status = Libhat.INSTANCE.libhat_create_signature(bytes, mask, new Libhat.size_t(bytes.length), out);
         if (status != 0) {
-            throw new RuntimeException("libhat internal error " + Status.values()[status]);
+            throw new LibhatException(status);
         }
         return new Signature(out.getValue());
     }

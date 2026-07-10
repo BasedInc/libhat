@@ -43,6 +43,21 @@ static hat::scan_hint to_cpp_hints(const libhat_hint hints) {
 
 extern "C" {
 
+LIBHAT_API const char* libhat_status_to_string(const libhat_status status) {
+#define STATUS_CASE(x) case x: return #x
+    switch (status) {
+        STATUS_CASE(libhat_success);
+        STATUS_CASE(libhat_err_unknown);
+        STATUS_CASE(libhat_err_sig_missing_masked_byte);
+        STATUS_CASE(libhat_err_sig_element_parse_error);
+        STATUS_CASE(libhat_err_sig_empty_signature);
+        STATUS_CASE(libhat_err_sig_expected_wildcard);
+        STATUS_CASE(libhat_err_sig_invalid_token_length);
+    }
+#undef STATUS_CASE
+    return "invalid value for libhat_status";
+}
+
 LIBHAT_API libhat_status libhat_parse_signature(const char* signatureStr, const libhat_signature** signatureOut) {
     auto result = hat::parse_signature(signatureStr);
     if (!result.has_value()) {

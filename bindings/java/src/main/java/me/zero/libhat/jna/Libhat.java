@@ -85,6 +85,11 @@ public interface Libhat extends Library {
     // ------------------------------------------------------------------------
 
     /*
+     * const char* libhat_status_to_string(libhat_status status);
+     */
+    String libhat_status_to_string(int status);
+
+    /*
      * libhat_status libhat_parse_signature(
      *     const char*              signatureStr,
      *     const libhat_signature** signatureOut
