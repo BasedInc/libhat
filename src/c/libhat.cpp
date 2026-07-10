@@ -6,22 +6,33 @@
 namespace {
 
     struct libhat_ffi_object {
-        virtual ~libhat_ffi_object() = default;
+    protected:
+        using destroy_t = void (*)(const libhat_ffi_object&);
+        destroy_t destroy;
+
+        explicit libhat_ffi_object(const destroy_t destroy)
+            : destroy(destroy) {}
+
+        friend void ::libhat_free(const void* object);
     };
 
-    template<typename T>
+    template<typename Derived, typename T>
     struct libhat_ffi_wrapper : libhat_ffi_object, T {
 
         template<typename... Args>
-        explicit libhat_ffi_wrapper(Args&&... args) : T(std::forward<Args>(args)...) {}
+        explicit libhat_ffi_wrapper(Args&&... args) :
+            libhat_ffi_object([](const libhat_ffi_object& object) {
+                delete static_cast<const Derived*>(&object);
+            }),
+            T(std::forward<Args>(args)...) {}
     };
 }
 
-struct libhat_signature final : libhat_ffi_wrapper<hat::signature> {
+struct libhat_signature final : libhat_ffi_wrapper<libhat_signature, hat::signature> {
     using libhat_ffi_wrapper::libhat_ffi_wrapper;
 };
 
-struct libhat_module final : libhat_ffi_wrapper<hat::process::module> {
+struct libhat_module final : libhat_ffi_wrapper<libhat_module, hat::process::module> {
     using libhat_ffi_wrapper::libhat_ffi_wrapper;
 };
 
@@ -189,7 +200,10 @@ LIBHAT_API const libhat_module* libhat_module_at(const void* address) {
 }
 
 LIBHAT_API void libhat_free(const void* object) {
-    delete static_cast<const libhat_ffi_object*>(object);
+    if (object) {
+        const auto p = static_cast<const libhat_ffi_object*>(object);
+        p->destroy(*p);
+    }
 }
 
 } // extern "C"
