@@ -5,7 +5,7 @@ import me.zero.libhat.jna.Libhat;
 /**
  * @author Brady
  */
-public class LibhatException extends RuntimeException {
+public final class LibhatException extends RuntimeException {
 
     private final int status;
 
@@ -17,7 +17,7 @@ public class LibhatException extends RuntimeException {
     /**
      * @return The actual status code representing the error that occurred
      */
-    public final int status() {
+    public int status() {
         return this.status;
     }
 }
