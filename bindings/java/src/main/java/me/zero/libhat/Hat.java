@@ -34,6 +34,7 @@ public final class Hat {
      * <ul>
      *     <li><code>48 8B 8D ? ? ? ? 48</code></li>
      *     <li><code>E8 ? ? ? ? 88 86</code></li>
+     *     <li><code>FF 15 ? ? ? ? 48 8? ?D</code></li>
      * </ul>
      * The returned {@link Signature} is backed by a native heap allocation, and {@link Signature#close()} must be
      * called when the object is done being used, either explicitly or through a try-with-resources block.
@@ -85,17 +86,20 @@ public final class Hat {
      * range including {@link ByteBuffer#position()} and up to but excluding {@link ByteBuffer#limit()}. If a match is
      * found, an {@link OptionalInt} containing the absolute position into {@code buffer} is returned. The underlying
      * memory address of the returned result will not be aligned on any particular boundary. The specified
-     * {@link ByteBuffer} must be a direct buffer.
+     * {@link ByteBuffer} must be a direct buffer. Additional hints may be specified to optimize the scan based on
+     * known properties of the buffer contents.
      *
      * @param signature The pattern to match
      * @param buffer    The buffer to search
+     * @param hints     The hints to use
      * @return The absolute position into {@code buffer} where a match was found,
      *         or {@link OptionalInt#empty()} if there was no match
      * @throws IllegalArgumentException if the buffer is not direct or the signature has already been closed
      * @throws NullPointerException if any arguments are {@code null}
      */
-    public static OptionalInt findPattern(@NotNull final Signature signature, @NotNull final ByteBuffer buffer) {
-        return findPattern(signature, buffer, ScanAlignment.X1);
+    public static OptionalInt findPattern(@NotNull final Signature signature, @NotNull final ByteBuffer buffer,
+                                          @NotNull final ScanHint... hints) {
+        return findPattern(signature, buffer, ScanAlignment.X1, hints);
     }
 
     /**
@@ -145,17 +149,19 @@ public final class Hat {
     /**
      * Finds the byte pattern described by the given {@link Signature} in the specified {@code section} of the
      * specified {@code module}. If a match is found, an {@link Optional} containing a Pointer to the match is returned.
-     * The underlying memory address of the returned result will not be aligned on any particular boundary.
+     * The underlying memory address of the returned result will not be aligned on any particular boundary. Additional
+     * hints may be specified to optimize the scan based on known properties of the buffer contents.
      *
      * @param signature The pattern to match
      * @param module    The target module
      * @param section   The section to search in the module
+     * @param hints     The hints to use
      * @return A pointer to the memory where a match was identified, or {@link Optional#empty()} if none was found.
      * @throws NullPointerException if any arguments are {@code null}
      */
     public static Optional<Pointer> findPattern(@NotNull final Signature signature, @NotNull final ProcessModule module,
-                                                @NotNull final String section) {
-        return findPattern(signature, module, section, ScanAlignment.X1);
+                                                @NotNull final String section, @NotNull final ScanHint... hints) {
+        return findPattern(signature, module, section, ScanAlignment.X1, hints);
     }
 
     /**
@@ -192,25 +198,30 @@ public final class Hat {
     }
 
     /**
-     * Wrapper around {@link #parseSignature(String)} and {@link #findPattern(Signature, ByteBuffer)}
+     * Wrapper around {@link #parseSignature(String)} and {@link #findPattern(Signature, ByteBuffer, ScanHint...)}.
+     * Additional hints may be specified to optimize the scan based on known properties of the buffer contents.
      *
      * @param signature A byte pattern string
-     * @param buffer The buffer to search
+     * @param buffer    The buffer to search
+     * @param hints     The hints to use
      * @return The search result
      * @throws NullPointerException if any arguments are {@code null}
      */
-    public static OptionalInt findPattern(@NotNull final String signature, @NotNull final ByteBuffer buffer) {
+    public static OptionalInt findPattern(@NotNull final String signature, @NotNull final ByteBuffer buffer,
+                                          @NotNull final ScanHint... hints) {
         try (final Signature sig = parseSignature(signature)) {
-            return findPattern(sig, buffer);
+            return findPattern(sig, buffer, hints);
         }
     }
 
     /**
-     * Wrapper around {@link #parseSignature(String)} and {@link #findPattern(Signature, ByteBuffer, ScanAlignment, ScanHint...)}
+     * Wrapper around {@link #parseSignature(String)} and {@link #findPattern(Signature, ByteBuffer, ScanAlignment, ScanHint...)}.
+     * Additional hints may be specified to optimize the scan based on known properties of the buffer contents.
      *
      * @param signature A byte pattern string
-     * @param buffer The buffer to search
+     * @param buffer    The buffer to search
      * @param alignment The memory address alignment of the result
+     * @param hints     The hints to use
      * @return The search result
      * @throws NullPointerException if any arguments are {@code null}
      */
