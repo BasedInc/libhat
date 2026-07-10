@@ -54,6 +54,14 @@ static hat::scan_hint to_cpp_hints(const libhat_hint hints) {
 
 extern "C" {
 
+LIBHAT_API const char* libhat_get_version() {
+    return LIBHAT_VERSION;
+}
+
+LIBHAT_API int libhat_get_version_num() {
+    return (LIBHAT_VERSION_MAJOR << 16) | (LIBHAT_VERSION_MINOR << 8) | LIBHAT_VERSION_PATCH;
+}
+
 LIBHAT_API const char* libhat_status_to_string(const libhat_status status) {
 #define STATUS_CASE(x) case x: return #x
     switch (status) {

@@ -136,6 +136,12 @@ if(LIBHAT_STATIC_C_LIB OR LIBHAT_SHARED_C_LIB)
         CXX_VISIBILITY_PRESET hidden
         VISIBILITY_INLINES_HIDDEN TRUE
     )
+    target_compile_definitions(libhat_c PRIVATE
+        LIBHAT_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+        LIBHAT_VERSION_MINOR=${PROJECT_VERSION_MINOR}
+        LIBHAT_VERSION_PATCH=${PROJECT_VERSION_PATCH}
+        LIBHAT_VERSION="${PROJECT_VERSION}"
+    )
 
     add_library(libhat::libhat_c ALIAS libhat_c)
     target_link_libraries(libhat_c PRIVATE libhat)

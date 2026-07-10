@@ -69,6 +69,12 @@ typedef struct libhat_span {
 typedef bool(*libhat_for_each_section_cb)(const char* name, libhat_span data, libhat_protection prot, void* user_data);
 typedef bool(*libhat_for_each_segment_cb)(libhat_span data, libhat_protection prot, void* user_data);
 
+/// Returns the libhat version as a string, in the form @code"major.minor.patch"@endcode
+LIBHAT_API const char* libhat_get_version();
+
+/// Returns the libhat version as a number, in the form @code(major << 16) | (minor << 8) | (patch)@endcode
+LIBHAT_API int libhat_get_version_num();
+
 LIBHAT_API const char* libhat_status_to_string(libhat_status status);
 
 LIBHAT_API libhat_status libhat_parse_signature(
