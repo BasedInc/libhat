@@ -98,7 +98,7 @@ LIBHAT_EXPORT namespace hat {
 #endif
         }
 
-        LIBHAT_CONSTEXPR_RESULT T& value() {
+        LIBHAT_CONSTEXPR_RESULT T& value() & {
 #ifdef LIBHAT_RESULT_EXPECTED
             return impl.value();
 #else
@@ -106,7 +106,15 @@ LIBHAT_EXPORT namespace hat {
 #endif
         }
 
-        LIBHAT_CONSTEXPR_RESULT const T& value() const {
+        LIBHAT_CONSTEXPR_RESULT T&& value() && {
+#ifdef LIBHAT_RESULT_EXPECTED
+            return std::move(impl).value();
+#else
+            return std::get<0>(std::move(impl));
+#endif
+        }
+
+        LIBHAT_CONSTEXPR_RESULT const T& value() const& {
 #ifdef LIBHAT_RESULT_EXPECTED
             return impl.value();
 #else
@@ -114,7 +122,15 @@ LIBHAT_EXPORT namespace hat {
 #endif
         }
 
-        LIBHAT_CONSTEXPR_RESULT E& error() {
+        LIBHAT_CONSTEXPR_RESULT const T&& value() const&& {
+#ifdef LIBHAT_RESULT_EXPECTED
+            return std::move(impl).value();
+#else
+            return std::get<0>(std::move(impl));
+#endif
+        }
+
+        LIBHAT_CONSTEXPR_RESULT E& error() & {
 #ifdef LIBHAT_RESULT_EXPECTED
             return impl.error();
 #else
@@ -122,11 +138,27 @@ LIBHAT_EXPORT namespace hat {
 #endif
         }
 
-        LIBHAT_CONSTEXPR_RESULT const E& error() const {
+        LIBHAT_CONSTEXPR_RESULT E&& error() && {
+#ifdef LIBHAT_RESULT_EXPECTED
+            return std::move(impl).error();
+#else
+            return std::get<1>(std::move(impl));
+#endif
+        }
+
+        LIBHAT_CONSTEXPR_RESULT const E& error() const& {
 #ifdef LIBHAT_RESULT_EXPECTED
             return impl.error();
 #else
             return std::get<1>(impl);
+#endif
+        }
+
+        LIBHAT_CONSTEXPR_RESULT const E&& error() const&& {
+#ifdef LIBHAT_RESULT_EXPECTED
+            return std::move(impl).error();
+#else
+            return std::get<1>(std::move(impl));
 #endif
         }
     };

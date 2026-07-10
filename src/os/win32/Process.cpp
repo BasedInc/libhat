@@ -108,7 +108,7 @@ namespace hat::process {
         return {};
     }
 
-    std::optional<hat::process::module> module_at(void* address) {
+    std::optional<hat::process::module> module_at(const void* address) {
         HMODULE out{};
         const auto status = GetModuleHandleExW(
             GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,

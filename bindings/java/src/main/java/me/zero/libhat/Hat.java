@@ -2,6 +2,7 @@ package me.zero.libhat;
 
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
+import com.sun.jna.ptr.PointerByReference;
 import me.zero.libhat.jna.Libhat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,19 +19,12 @@ public final class Hat {
 
     private Hat() {}
 
-    public enum Status {
-        SUCCESS,
-        ERR_UNKNOWN,
-        SIG_INVALID,
-        SIG_EMPTY,
-        SIG_NO_BYTE
-    }
-
     /**
      * Creates a new {@link Signature} from the specified string representation of a byte pattern. For example:
      * <ul>
      *     <li><code>48 8B 8D ? ? ? ? 48</code></li>
      *     <li><code>E8 ? ? ? ? 88 86</code></li>
+     *     <li><code>FF 15 ? ? ? ? 48 8? ?D</code></li>
      * </ul>
      * The returned {@link Signature} is backed by a native heap allocation, and {@link Signature#close()} must be
      * called when the object is done being used, either explicitly or through a try-with-resources block.
@@ -42,17 +36,17 @@ public final class Hat {
      */
     public static @NotNull Signature parseSignature(@NotNull final String signature) {
         Objects.requireNonNull(signature);
-        final Pointer[] handle = new Pointer[1];
-        final int status = Libhat.INSTANCE.libhat_parse_signature(signature, handle);
+        final PointerByReference out = new PointerByReference();
+        final int status = Libhat.INSTANCE.libhat_parse_signature(signature, out);
         if (status != 0) {
-            throw new RuntimeException("libhat internal error " + Status.values()[status]);
+            throw new LibhatException(status);
         }
-        return new Signature(handle[0]);
+        return new Signature(out.getValue());
     }
 
     /**
-     * Creates a new {@link Signature} that describes a pattern matching the specified {@code bytes} where the
-     * corresponding {@code mask} value is non-zero. In other words, a mask value of {@code 0} indicates a wildcard.
+     * Creates a new {@link Signature} that describes a pattern matching the bits of {@code bytes} where the
+     * corresponding {@code mask} bit is 1. In other words, where {@code (buffer & mask) == (bytes & mask)}.
      * The returned {@link Signature} is backed by a native heap allocation, and {@link Signature#close()} must be
      * called when the object is done being used, either explicitly or through a try-with-resources block.
      *
@@ -69,12 +63,12 @@ public final class Hat {
         if (bytes.length != mask.length) {
             throw new IllegalArgumentException("Mismatch between bytes.length and mask.length");
         }
-        final Pointer[] handle = new Pointer[1];
-        final int status = Libhat.INSTANCE.libhat_create_signature(bytes, mask, bytes.length, handle);
+        final PointerByReference out = new PointerByReference();
+        final int status = Libhat.INSTANCE.libhat_create_signature(bytes, mask, new Libhat.size_t(bytes.length), out);
         if (status != 0) {
-            throw new RuntimeException("libhat internal error " + Status.values()[status]);
+            throw new LibhatException(status);
         }
-        return new Signature(handle[0]);
+        return new Signature(out.getValue());
     }
 
     /**
@@ -82,17 +76,20 @@ public final class Hat {
      * range including {@link ByteBuffer#position()} and up to but excluding {@link ByteBuffer#limit()}. If a match is
      * found, an {@link OptionalInt} containing the absolute position into {@code buffer} is returned. The underlying
      * memory address of the returned result will not be aligned on any particular boundary. The specified
-     * {@link ByteBuffer} must be a direct buffer.
+     * {@link ByteBuffer} must be a direct buffer. Additional hints may be specified to optimize the scan based on
+     * known properties of the buffer contents.
      *
      * @param signature The pattern to match
      * @param buffer    The buffer to search
+     * @param hints     The hints to use
      * @return The absolute position into {@code buffer} where a match was found,
      *         or {@link OptionalInt#empty()} if there was no match
      * @throws IllegalArgumentException if the buffer is not direct or the signature has already been closed
      * @throws NullPointerException if any arguments are {@code null}
      */
-    public static OptionalInt findPattern(@NotNull final Signature signature, @NotNull final ByteBuffer buffer) {
-        return findPattern(signature, buffer, ScanAlignment.X1);
+    public static OptionalInt findPattern(@NotNull final Signature signature, @NotNull final ByteBuffer buffer,
+                                          @NotNull final ScanHint... hints) {
+        return findPattern(signature, buffer, ScanAlignment.X1, hints);
     }
 
     /**
@@ -100,18 +97,20 @@ public final class Hat {
      * range including {@link ByteBuffer#position()} and up to but excluding {@link ByteBuffer#limit()}. If a match is
      * found, an {@link OptionalInt} containing the absolute position into {@code buffer} is returned. The underlying
      * memory address of the returned result will be byte aligned per the specified {@link ScanAlignment}. The specified
-     * {@link ByteBuffer} must be a direct buffer.
+     * {@link ByteBuffer} must be a direct buffer. Additional hints may be specified to optimize the scan based on known
+     * properties of the buffer contents.
      *
      * @param signature The pattern to match
      * @param buffer    The buffer to search
      * @param alignment The result address alignment
+     * @param hints     The hints to use
      * @return The absolute position into {@code buffer} where a match was found,
      *         or {@link OptionalInt#empty()} if there was no match
      * @throws IllegalArgumentException if the buffer is not direct
      * @throws NullPointerException if any arguments are {@code null}
      */
     public static OptionalInt findPattern(@NotNull final Signature signature, @NotNull final ByteBuffer buffer,
-                                          @NotNull final ScanAlignment alignment) {
+                                          @NotNull final ScanAlignment alignment, @NotNull final ScanHint... hints) {
         Objects.requireNonNull(signature);
         Objects.requireNonNull(buffer);
         Objects.requireNonNull(alignment);
@@ -126,8 +125,9 @@ public final class Hat {
         final Pointer result = Libhat.INSTANCE.libhat_find_pattern(
             Objects.requireNonNull(signature.handle),
             new Pointer(start),
-            count,
-            alignment.alignment()
+            new Libhat.size_t(count),
+            alignment.alignment(),
+            ScanHint.toFlags(hints)
         );
 
         if (result == Pointer.NULL) {
@@ -139,33 +139,38 @@ public final class Hat {
     /**
      * Finds the byte pattern described by the given {@link Signature} in the specified {@code section} of the
      * specified {@code module}. If a match is found, an {@link Optional} containing a Pointer to the match is returned.
-     * The underlying memory address of the returned result will not be aligned on any particular boundary.
+     * The underlying memory address of the returned result will not be aligned on any particular boundary. Additional
+     * hints may be specified to optimize the scan based on known properties of the buffer contents.
      *
      * @param signature The pattern to match
      * @param module    The target module
      * @param section   The section to search in the module
+     * @param hints     The hints to use
      * @return A pointer to the memory where a match was identified, or {@link Optional#empty()} if none was found.
      * @throws NullPointerException if any arguments are {@code null}
      */
     public static Optional<Pointer> findPattern(@NotNull final Signature signature, @NotNull final ProcessModule module,
-                                                @NotNull final String section) {
-        return findPattern(signature, module, section, ScanAlignment.X1);
+                                                @NotNull final String section, @NotNull final ScanHint... hints) {
+        return findPattern(signature, module, section, ScanAlignment.X1, hints);
     }
 
     /**
      * Finds the byte pattern described by the given {@link Signature} in the specified {@code section} of the
      * specified {@code module}. If a match is found, an {@link Optional} containing a Pointer to the match is returned.
      * The underlying memory address of the returned result will be byte aligned per the specified {@link ScanAlignment}.
+     * Additional hints may be specified to optimize the scan based on known properties of the buffer contents.
      *
      * @param signature The pattern to match
      * @param module    The target module
      * @param section   The section to search in the module
      * @param alignment The result address alignment
+     * @param hints     The hints to use
      * @return A pointer to the memory where a match was identified, or {@link Optional#empty()} if none was found.
      * @throws NullPointerException if any arguments are {@code null}
      */
     public static Optional<Pointer> findPattern(@NotNull final Signature signature, @NotNull final ProcessModule module,
-                                                @NotNull final String section, @NotNull final ScanAlignment alignment) {
+                                                @NotNull final String section, @NotNull final ScanAlignment alignment,
+                                                @NotNull final ScanHint... hints) {
         Objects.requireNonNull(signature);
         Objects.requireNonNull(module);
         Objects.requireNonNull(section);
@@ -173,46 +178,117 @@ public final class Hat {
 
         final Pointer result = Libhat.INSTANCE.libhat_find_pattern_mod(
             Objects.requireNonNull(signature.handle),
-            module.handle,
+            Objects.requireNonNull(module.handle),
             section,
-            alignment.alignment()
+            alignment.alignment(),
+            ScanHint.toFlags(hints)
         );
 
         return Optional.ofNullable(result);
     }
 
     /**
-     * Wrapper around {@link #parseSignature(String)} and {@link #findPattern(Signature, ByteBuffer)}
+     * Wrapper around {@link #parseSignature(String)} and {@link #findPattern(Signature, ByteBuffer, ScanHint...)}.
+     * Additional hints may be specified to optimize the scan based on known properties of the buffer contents.
      *
      * @param signature A byte pattern string
-     * @param buffer The buffer to search
-     * @return The search result
-     * @throws NullPointerException if any arguments are {@code null}
-     */
-    public static OptionalInt findPattern(@NotNull final String signature, @NotNull final ByteBuffer buffer) {
-        try (final Signature sig = parseSignature(signature)) {
-            return findPattern(sig, buffer);
-        }
-    }
-
-    /**
-     * Wrapper around {@link #parseSignature(String)} and {@link #findPattern(Signature, ByteBuffer, ScanAlignment)}
-     *
-     * @param signature A byte pattern string
-     * @param buffer The buffer to search
-     * @param alignment The memory address alignment of the result
+     * @param buffer    The buffer to search
+     * @param hints     The hints to use
      * @return The search result
      * @throws NullPointerException if any arguments are {@code null}
      */
     public static OptionalInt findPattern(@NotNull final String signature, @NotNull final ByteBuffer buffer,
-                                          @NotNull final ScanAlignment alignment) {
+                                          @NotNull final ScanHint... hints) {
         try (final Signature sig = parseSignature(signature)) {
-            return findPattern(sig, buffer, alignment);
+            return findPattern(sig, buffer, hints);
         }
     }
 
     /**
-     * Returns the module for the executable used to create this process
+     * Wrapper around {@link #parseSignature(String)} and {@link #findPattern(Signature, ByteBuffer, ScanAlignment, ScanHint...)}.
+     * Additional hints may be specified to optimize the scan based on known properties of the buffer contents.
+     *
+     * @param signature A byte pattern string
+     * @param buffer    The buffer to search
+     * @param alignment The memory address alignment of the result
+     * @param hints     The hints to use
+     * @return The search result
+     * @throws NullPointerException if any arguments are {@code null}
+     */
+    public static OptionalInt findPattern(@NotNull final String signature, @NotNull final ByteBuffer buffer,
+                                          @NotNull final ScanAlignment alignment, @NotNull final ScanHint... hints) {
+        try (final Signature sig = parseSignature(signature)) {
+            return findPattern(sig, buffer, alignment, hints);
+        }
+    }
+
+    /**
+     * Returns whether the entire memory region pointed to by {@code buffer}, including {@link ByteBuffer#position()}
+     * and up to but excluding {@link ByteBuffer#limit()}, is readable. The specified {@link ByteBuffer} must be a direct
+     * buffer.
+     *
+     * @param buffer A direct buffer to an arbitrary memory region
+     * @return Whether the memory is readable
+     * @throws IllegalArgumentException if the buffer is not direct
+     * @throws NullPointerException if any arguments are {@code null}
+     */
+    public static boolean isReadable(@NotNull final ByteBuffer buffer) {
+        Objects.requireNonNull(buffer);
+        if (!buffer.isDirect()) {
+            throw new IllegalArgumentException("Provided buffer must be direct");
+        }
+
+        final long start = Pointer.nativeValue(Native.getDirectBufferPointer(buffer)) + buffer.position();
+        final int count = buffer.remaining();
+        return Libhat.INSTANCE.libhat_is_readable(new Pointer(start), new Libhat.size_t(count));
+    }
+
+    /**
+     * Returns whether the entire memory region pointed to by {@code buffer}, including {@link ByteBuffer#position()}
+     * and up to but excluding {@link ByteBuffer#limit()}, is writable. The specified {@link ByteBuffer} must be a direct
+     * buffer.
+     *
+     * @param buffer A direct buffer to an arbitrary memory region
+     * @return Whether the memory is writable
+     * @throws IllegalArgumentException if the buffer is not direct
+     * @throws NullPointerException if any arguments are {@code null}
+     */
+    public static boolean isWritable(@NotNull final ByteBuffer buffer) {
+        Objects.requireNonNull(buffer);
+        if (!buffer.isDirect()) {
+            throw new IllegalArgumentException("Provided buffer must be direct");
+        }
+
+        final long start = Pointer.nativeValue(Native.getDirectBufferPointer(buffer)) + buffer.position();
+        final int count = buffer.remaining();
+        return Libhat.INSTANCE.libhat_is_writable(new Pointer(start), new Libhat.size_t(count));
+    }
+
+    /**
+     * Returns whether the entire memory region pointed to by {@code buffer}, including {@link ByteBuffer#position()}
+     * and up to but excluding {@link ByteBuffer#limit()}, is executable. The specified {@link ByteBuffer} must be a direct
+     * buffer.
+     *
+     * @param buffer A direct buffer to an arbitrary memory region
+     * @return Whether the memory is executable
+     * @throws IllegalArgumentException if the buffer is not direct
+     * @throws NullPointerException if any arguments are {@code null}
+     */
+    public static boolean isExecutable(@NotNull final ByteBuffer buffer) {
+        Objects.requireNonNull(buffer);
+        if (!buffer.isDirect()) {
+            throw new IllegalArgumentException("Provided buffer must be direct");
+        }
+
+        final long start = Pointer.nativeValue(Native.getDirectBufferPointer(buffer)) + buffer.position();
+        final int count = buffer.remaining();
+        return Libhat.INSTANCE.libhat_is_executable(new Pointer(start), new Libhat.size_t(count));
+    }
+
+    /**
+     * Returns the module for the executable used to create this process. The returned {@link ProcessModule} is backed
+     * by a native heap allocation, and {@link ProcessModule#close()} must be called when the object is done being used,
+     * either explicitly or through a try-with-resources block.
      *
      * @return The module
      * @throws IllegalStateException If the process module could not be retrieved
@@ -225,7 +301,9 @@ public final class Hat {
     /**
      * Returns an {@link Optional} containing a handle to the module with the specified name, if such a module exists,
      * otherwise the returned optional is empty. If the provided name is {@code null}, the module for the executable
-     * used to create the current process is returned.
+     * used to create the current process is returned. The returned {@link ProcessModule} is backed by a native heap
+     * allocation, and {@link ProcessModule#close()} must be called when the object is done being used, either
+     * explicitly or through a try-with-resources block.
      *
      * @param module The module name, may be {@code null}
      * @return The module
