@@ -1,4 +1,6 @@
 #include <bit>
+#include <cstdint>
+#include <cstdio>
 #include <span>
 #include <string_view>
 
@@ -11,7 +13,7 @@ int main() {
     const auto sig = hat::string_to_signature("xyz"sv);
     const auto buf = std::as_bytes(std::span{str});
 
-    const auto result = hat::find_pattern(buf.begin(), buf.end(), sig);
+    const auto result = hat::find_pattern(buf.begin(), buf.end(), sig.value());
     if (result.has_result()) {
         const uintptr_t offset = std::bit_cast<uintptr_t>(result.get()) - std::bit_cast<uintptr_t>(buf.data());
         printf("Found at %zu\n", offset); // Prints "Found at 23"
