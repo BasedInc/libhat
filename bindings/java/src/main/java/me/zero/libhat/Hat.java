@@ -131,7 +131,7 @@ public final class Hat {
             new Pointer(start),
             new Libhat.size_t(count),
             alignment.alignment(),
-            ScanHint.mask(hints)
+            ScanHint.toFlags(hints)
         );
 
         if (result == Pointer.NULL) {
@@ -183,7 +183,7 @@ public final class Hat {
             Objects.requireNonNull(module.handle),
             section,
             alignment.alignment(),
-            ScanHint.mask(hints)
+            ScanHint.toFlags(hints)
         );
 
         return Optional.ofNullable(result);
@@ -204,7 +204,7 @@ public final class Hat {
     }
 
     /**
-     * Wrapper around {@link #parseSignature(String)} and {@link #findPattern(Signature, ByteBuffer, ScanAlignment)}
+     * Wrapper around {@link #parseSignature(String)} and {@link #findPattern(Signature, ByteBuffer, ScanAlignment, ScanHint...)}
      *
      * @param signature A byte pattern string
      * @param buffer The buffer to search
@@ -213,10 +213,73 @@ public final class Hat {
      * @throws NullPointerException if any arguments are {@code null}
      */
     public static OptionalInt findPattern(@NotNull final String signature, @NotNull final ByteBuffer buffer,
-                                          @NotNull final ScanAlignment alignment) {
+                                          @NotNull final ScanAlignment alignment, @NotNull final ScanHint... hints) {
         try (final Signature sig = parseSignature(signature)) {
-            return findPattern(sig, buffer, alignment);
+            return findPattern(sig, buffer, alignment, hints);
         }
+    }
+
+    /**
+     * Returns whether the entire memory region pointed to by {@code buffer}, including {@link ByteBuffer#position()}
+     * and up to but excluding {@link ByteBuffer#limit()}, is readable. The specified {@link ByteBuffer} must be a direct
+     * buffer.
+     *
+     * @param buffer A direct buffer to an arbitrary memory region
+     * @return Whether the memory is readable
+     * @throws IllegalArgumentException if the buffer is not direct
+     * @throws NullPointerException if any arguments are {@code null}
+     */
+    public static boolean isReadable(@NotNull final ByteBuffer buffer) {
+        Objects.requireNonNull(buffer);
+        if (!buffer.isDirect()) {
+            throw new IllegalArgumentException("Provided buffer must be direct");
+        }
+
+        final long start = Pointer.nativeValue(Native.getDirectBufferPointer(buffer)) + buffer.position();
+        final int count = buffer.remaining();
+        return Libhat.INSTANCE.libhat_is_readable(new Pointer(start), new Libhat.size_t(count));
+    }
+
+    /**
+     * Returns whether the entire memory region pointed to by {@code buffer}, including {@link ByteBuffer#position()}
+     * and up to but excluding {@link ByteBuffer#limit()}, is writable. The specified {@link ByteBuffer} must be a direct
+     * buffer.
+     *
+     * @param buffer A direct buffer to an arbitrary memory region
+     * @return Whether the memory is writable
+     * @throws IllegalArgumentException if the buffer is not direct
+     * @throws NullPointerException if any arguments are {@code null}
+     */
+    public static boolean isWritable(@NotNull final ByteBuffer buffer) {
+        Objects.requireNonNull(buffer);
+        if (!buffer.isDirect()) {
+            throw new IllegalArgumentException("Provided buffer must be direct");
+        }
+
+        final long start = Pointer.nativeValue(Native.getDirectBufferPointer(buffer)) + buffer.position();
+        final int count = buffer.remaining();
+        return Libhat.INSTANCE.libhat_is_writable(new Pointer(start), new Libhat.size_t(count));
+    }
+
+    /**
+     * Returns whether the entire memory region pointed to by {@code buffer}, including {@link ByteBuffer#position()}
+     * and up to but excluding {@link ByteBuffer#limit()}, is executable. The specified {@link ByteBuffer} must be a direct
+     * buffer.
+     *
+     * @param buffer A direct buffer to an arbitrary memory region
+     * @return Whether the memory is executable
+     * @throws IllegalArgumentException if the buffer is not direct
+     * @throws NullPointerException if any arguments are {@code null}
+     */
+    public static boolean isExecutable(@NotNull final ByteBuffer buffer) {
+        Objects.requireNonNull(buffer);
+        if (!buffer.isDirect()) {
+            throw new IllegalArgumentException("Provided buffer must be direct");
+        }
+
+        final long start = Pointer.nativeValue(Native.getDirectBufferPointer(buffer)) + buffer.position();
+        final int count = buffer.remaining();
+        return Libhat.INSTANCE.libhat_is_executable(new Pointer(start), new Libhat.size_t(count));
     }
 
     /**

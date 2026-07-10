@@ -21,10 +21,16 @@ public enum ScanHint {
      */
     AARCH64;
 
-    public static int mask(@NotNull ScanHint... hints) {
+    private final int bit;
+
+    ScanHint() {
+        this.bit = (1 << this.ordinal());
+    }
+
+    static int toFlags(@NotNull ScanHint... hints) {
         int mask = 0;
         for (final ScanHint hint : hints) {
-            mask |= (1 << hint.ordinal());
+            mask |= hint.bit;
         }
         return mask;
     }

@@ -2,6 +2,9 @@ package me.zero.libhat.jna;
 
 import com.sun.jna.*;
 import com.sun.jna.ptr.PointerByReference;
+import org.jetbrains.annotations.Nullable;
+
+import java.nio.ByteBuffer;
 
 /**
  * @author Brady
@@ -52,6 +55,14 @@ public interface Libhat extends Library {
         public Span(final Pointer p) {
             super(p);
             read();
+        }
+
+        @Nullable
+        public final ByteBuffer toBuffer() {
+            if (this.data == null || this.size.longValue() == 0) {
+                return null;
+            }
+            return this.data.getByteBuffer(0, this.size.longValue());
         }
 
         public static class ByValue extends Span implements Structure.ByValue {}
@@ -121,17 +132,17 @@ public interface Libhat extends Library {
     /*
      * libhat_span libhat_module_get_data(const libhat_module* module);
      */
-    Span libhat_module_get_data(Pointer module);
+    Span.ByValue libhat_module_get_data(Pointer module);
 
     /*
      * libhat_span libhat_module_get_executable_data(const libhat_module* module);
      */
-    Span libhat_module_get_executable_data(Pointer module);
+    Span.ByValue libhat_module_get_executable_data(Pointer module);
 
     /*
      * libhat_span libhat_module_get_section_data(const libhat_module* module, const char* name);
      */
-    Span libhat_module_get_section_data(Pointer module, String name);
+    Span.ByValue libhat_module_get_section_data(Pointer module, String name);
 
     /*
      * void libhat_module_for_each_section(
