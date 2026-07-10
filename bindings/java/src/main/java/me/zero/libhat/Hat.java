@@ -21,10 +21,12 @@ public final class Hat {
 
     public enum Status {
         SUCCESS,
-        ERR_UNKNOWN,
-        SIG_INVALID,
-        SIG_EMPTY,
-        SIG_NO_BYTE
+        ERROR_UNKNOWN,
+        ERROR_SIG_MISSING_BYTE,
+        ERROR_SIG_ELEMENT_PARSE,
+        ERROR_SIG_EMPTY,
+        ERROR_SIG_EXPECTED_WILDCARD,
+        ERROR_SIG_INVALID_TOKEN_LENGTH,
     }
 
     /**
