@@ -72,6 +72,11 @@ set(LIBHAT_SRC
 add_library(libhat STATIC ${LIBHAT_SRC})
 add_library(libhat::libhat ALIAS libhat)
 
+set_target_properties(libhat PROPERTIES
+    PREFIX ""
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN TRUE
+)
 if(UNIX)
     set_target_properties(libhat PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
@@ -117,6 +122,11 @@ if(LIBHAT_STATIC_C_LIB OR LIBHAT_SHARED_C_LIB)
             INTERFACE LIBHAT_USE_SHARED_LIB
         )
     endif()
+    set_target_properties(libhat_c PROPERTIES
+        PREFIX ""
+        CXX_VISIBILITY_PRESET hidden
+        VISIBILITY_INLINES_HIDDEN TRUE
+    )
 
     add_library(libhat::libhat_c ALIAS libhat_c)
     target_link_libraries(libhat_c PRIVATE libhat)
@@ -128,6 +138,7 @@ endif()
 
 if(LIBHAT_MODULE_TARGET)
     add_library(libhat_module)
+    set_target_properties(libhat_module PROPERTIES PREFIX "")
     target_compile_features(libhat_module PUBLIC cxx_std_20)
     target_link_libraries(libhat_module PRIVATE libhat::libhat)
     target_sources(libhat_module PUBLIC
