@@ -54,8 +54,8 @@ public final class Hat {
     }
 
     /**
-     * Creates a new {@link Signature} that describes a pattern matching the specified {@code bytes} where the
-     * corresponding {@code mask} value is non-zero. In other words, a mask value of {@code 0} indicates a wildcard.
+     * Creates a new {@link Signature} that describes a pattern matching the bits of {@code bytes} where the
+     * corresponding {@code mask} bit is 1. In other words, where {@code (buffer & mask) == (bytes & mask)}.
      * The returned {@link Signature} is backed by a native heap allocation, and {@link Signature#close()} must be
      * called when the object is done being used, either explicitly or through a try-with-resources block.
      *
@@ -285,7 +285,9 @@ public final class Hat {
     }
 
     /**
-     * Returns the module for the executable used to create this process
+     * Returns the module for the executable used to create this process. The returned {@link ProcessModule} is backed
+     * by a native heap allocation, and {@link ProcessModule#close()} must be called when the object is done being used,
+     * either explicitly or through a try-with-resources block.
      *
      * @return The module
      * @throws IllegalStateException If the process module could not be retrieved
@@ -298,7 +300,9 @@ public final class Hat {
     /**
      * Returns an {@link Optional} containing a handle to the module with the specified name, if such a module exists,
      * otherwise the returned optional is empty. If the provided name is {@code null}, the module for the executable
-     * used to create the current process is returned.
+     * used to create the current process is returned. The returned {@link ProcessModule} is backed by a native heap
+     * allocation, and {@link ProcessModule#close()} must be called when the object is done being used, either
+     * explicitly or through a try-with-resources block.
      *
      * @param module The module name, may be {@code null}
      * @return The module

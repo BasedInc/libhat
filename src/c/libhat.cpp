@@ -68,13 +68,16 @@ LIBHAT_API libhat_status libhat_create_signature(
     const libhat_signature** signatureOut
 ) {
     hat::signature signature{};
+    bool containsByte = false;
     signature.reserve(size);
     for (size_t i{}; i < size; i++) {
-        if (static_cast<bool>(mask[i])) {
-            signature.emplace_back(static_cast<std::byte>(bytes[i]));
-        } else {
-            signature.emplace_back(std::nullopt);
-        }
+        containsByte |= signature.emplace_back(
+            static_cast<std::byte>(bytes[i]),
+            static_cast<std::byte>(mask[i])
+        ).all();
+    }
+    if (!containsByte) {
+        return libhat_err_sig_missing_masked_byte;
     }
     *signatureOut = new libhat_signature{std::move(signature)};
     return libhat_success;
