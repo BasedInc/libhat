@@ -20,6 +20,7 @@ option(LIBHAT_SHARED_C_LIB "Build a shared version of the C library" OFF)
 option(LIBHAT_MODULE_TARGET "Create target for the module interface" OFF)
 option(LIBHAT_USE_STD_MODULE "Compile the module target using the std module" OFF)
 option(LIBHAT_INSTALL_TARGET "Creates install rules for the libhat target" ON)
+option(LIBHAT_EXAMPLES "Include example targets" ${PROJECT_IS_TOP_LEVEL})
 
 # Compile Options
 option(LIBHAT_WARNINGS_AS_ERRORS "Treat warnings as compiler errors" ${PROJECT_IS_TOP_LEVEL})
@@ -29,7 +30,6 @@ option(LIBHAT_TESTING "Enable tests" ${PROJECT_IS_TOP_LEVEL})
 option(LIBHAT_TESTING_SANITIZE "Enable address sanitizer when testing" ON)
 option(LIBHAT_TESTING_SDE "Run tests using Intel Software Development Emulator" ON)
 option(LIBHAT_TESTING_SAMPLE_BIN "Enables tests that require downloading a large sample binary" ON)
-option(LIBHAT_EXAMPLES "Include example targets" ${PROJECT_IS_TOP_LEVEL})
 
 # Library Feature Options
 option(LIBHAT_FEATURE_SSE "Enables SSE scanning, has no effect if the target isn't x86 or x86_64" ON)
