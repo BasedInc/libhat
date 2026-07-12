@@ -4,7 +4,7 @@ from typing import Optional, Union
 
 from ._ffi import _library, Span
 from .enums import Protection, ScanAlignment, ScanHint
-from .module import Module
+from .module import Module, Section, Segment
 from .signature import Signature
 
 __all__ = [
@@ -25,6 +25,8 @@ __all__ = [
     # types
     'Signature',
     'Module',
+    'Section',
+    'Segment',
     'Span',
     'Protection',
     'ScanAlignment',
@@ -78,8 +80,8 @@ def find_pattern(sig: Union[str, Signature], buf: Union[bytes, Span], align: Sca
         return _library.libhat_find_pattern(s.handle, data, size, align.value, hints.value)
 
 
-def find_pattern_mod(sig: Union[str, Signature], mod: Module, section: str,
-                     align: ScanAlignment = ScanAlignment.X1, hints: ScanHint = ScanHint(0)) -> Optional[int]:
+def find_pattern_mod(sig: Union[str, Signature], mod: Module, section: str, align: ScanAlignment = ScanAlignment.X1,
+                     hints: ScanHint = ScanHint(0)) -> Optional[int]:
     context = parse_signature(sig) if isinstance(sig, str) else nullcontext(sig)
     with context as s:
         return _library.libhat_find_pattern_mod(s.handle, mod.handle, section.encode('utf-8'), align.value, hints.value)
