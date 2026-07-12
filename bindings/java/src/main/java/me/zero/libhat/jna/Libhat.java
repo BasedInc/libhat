@@ -85,6 +85,16 @@ public interface Libhat extends Library {
     // ------------------------------------------------------------------------
 
     /*
+     * const char* libhat_get_version();
+     */
+    String libhat_get_version();
+
+    /*
+     * int libhat_get_version_num();
+     */
+    int libhat_get_version_num();
+
+    /*
      * const char* libhat_status_to_string(libhat_status status);
      */
     String libhat_status_to_string(int status);
