@@ -1,6 +1,6 @@
 import ctypes
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from ._ffi import _library, ForEachSectionCallback, ForEachSegmentCallback
 from .enums import Protection
