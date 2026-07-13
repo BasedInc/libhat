@@ -1,8 +1,28 @@
 import ctypes
+import ctypes.util
+import sys
 from pathlib import Path
 
-# TODO
-_library = ctypes.CDLL(Path(__file__).parent / 'bin' / 'libhat_c')
+
+def _load_library() -> ctypes.CDLL:
+    ext = '.so'
+    if sys.platform.startswith('darwin'):
+        ext = '.dylib'
+    elif sys.platform.startswith('win'):
+        ext = '.dll'
+
+    load_dir = Path(__file__).parent
+    local = load_dir / ('libhat_c' + ext)
+    if local.exists():
+        return ctypes.cdll.LoadLibrary(str(local.absolute()))
+
+    if found := ctypes.util.find_library('libhat'):
+        return ctypes.cdll.LoadLibrary(found)
+
+    raise RuntimeError('could not locate libhat_c shared library')
+
+
+_library = _load_library()
 
 # ------------------------------------------------------------------------
 # C types
