@@ -18,10 +18,9 @@ namespace {
 
     struct libhat_ffi_object {
     protected:
-        using destroy_t = void (*)(const libhat_ffi_object&);
         uint32_t magic;
         mutable std::atomic<uint32_t> type;
-        destroy_t destroy;
+        void (*destroy)(const libhat_ffi_object&);
 
         template<typename Derived>
         explicit libhat_ffi_object(std::type_identity<Derived>) :
