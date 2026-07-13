@@ -2,7 +2,9 @@ import ctypes
 from contextlib import nullcontext
 
 from ._ffi import _library, Span
+from .address import Address
 from .enums import Protection, ScanAlignment, ScanHint
+from .error import LibhatError
 from .module import Module, Section, Segment
 from .signature import Signature
 
@@ -29,18 +31,9 @@ __all__ = [
     'Span',
     'Protection',
     'ScanAlignment',
-    'ScanHint'
+    'ScanHint',
+    'Address',
 ]
-
-
-class LibhatError(Exception):
-    def __init__(self, status: int):
-        self.status = status
-        super().__init__(_library.libhat_status_to_string(status).decode('utf-8'))
-
-
-class Address(int):
-    """A virtual memory address"""
 
 
 def get_version() -> str:
@@ -83,19 +76,23 @@ def find_pattern(sig: str | Signature, buf: bytes | bytearray | Span, align: Sca
 
     context = parse_signature(sig) if isinstance(sig, str) else nullcontext(sig)
     with context as s:
-        if address := _library.libhat_find_pattern(s.handle, data, size, align.value, hints.value):
-            return address - data.value
-        return None
+        result = ctypes.c_void_p()
+        status = _library.libhat_find_pattern(s.handle, data, size, ctypes.byref(result), align.value, hints.value)
+        if status != 0:
+            raise LibhatError(status)
+        return result.value - data.value if result else None
 
 
 def find_pattern_mod(sig: str | Signature, mod: Module, section: str, align: ScanAlignment = ScanAlignment.X1,
                      hints: ScanHint = ScanHint(0)) -> Address | None:
     context = parse_signature(sig) if isinstance(sig, str) else nullcontext(sig)
     with context as s:
-        if address := _library.libhat_find_pattern_mod(s.handle, mod.handle, section.encode('utf-8'), align.value,
-                                                       hints.value):
-            return Address(address)
-        return None
+        result = ctypes.c_void_p()
+        status = _library.libhat_find_pattern_mod(s.handle, mod.handle, section.encode('utf-8'), ctypes.byref(result),
+                                                  align.value, hints.value)
+        if status != 0:
+            raise LibhatError(status)
+        return Address(result.value)
 
 
 def is_readable(span: Span) -> bool:

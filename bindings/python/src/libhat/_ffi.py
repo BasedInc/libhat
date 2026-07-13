@@ -76,73 +76,76 @@ _library.libhat_create_signature.argtypes = [ctypes.c_char_p, ctypes.c_char_p, c
 _library.libhat_create_signature.restype = ctypes.c_int
 
 #
-# const void* libhat_find_pattern(
+# libhat_status libhat_find_pattern(
 #     const libhat_signature* signature,
 #     const void*             buffer,
 #     size_t                  size,
+#     const void**            resultOut,
 #     libhat_alignment        align,
 #     libhat_hint             hints
 # );
 #
-_library.libhat_find_pattern.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int, ctypes.c_int]
-_library.libhat_find_pattern.restype = ctypes.c_void_p
+_library.libhat_find_pattern.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t,
+                                         ctypes.POINTER(ctypes.c_void_p), ctypes.c_int, ctypes.c_int]
+_library.libhat_find_pattern.restype = ctypes.c_int
 
 #
-# const void* libhat_find_pattern_mod(
+# libhat_status libhat_find_pattern_mod(
 #     const libhat_signature* signature,
 #     const libhat_module*    module,
 #     const char*             section,
+#     const void**            resultOut,
 #     libhat_alignment        align,
 #     libhat_hint             hints
 # );
 #
-_library.libhat_find_pattern_mod.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int,
-                                             ctypes.c_int]
-_library.libhat_find_pattern_mod.restype = ctypes.c_void_p
+_library.libhat_find_pattern_mod.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p,
+                                             ctypes.POINTER(ctypes.c_void_p), ctypes.c_int, ctypes.c_int]
+_library.libhat_find_pattern_mod.restype = ctypes.c_int
 
 #
-# uintptr_t libhat_module_address(const libhat_module* module);
+# libhat_status libhat_module_address(const libhat_module* module, uintptr_t* out);
 #
-_library.libhat_module_address.argtypes = [ctypes.c_void_p]
-_library.libhat_module_address.restype = c_uintptr
+_library.libhat_module_address.argtypes = [ctypes.c_void_p, ctypes.POINTER(c_uintptr)]
+_library.libhat_module_address.restype = ctypes.c_int
 
 #
-# libhat_span libhat_module_get_data(const libhat_module* module);
+# libhat_status libhat_module_get_data(const libhat_module* module, libhat_span* out);
 #
-_library.libhat_module_get_data.argtypes = [ctypes.c_void_p]
-_library.libhat_module_get_data.restype = Span
+_library.libhat_module_get_data.argtypes = [ctypes.c_void_p, ctypes.POINTER(Span)]
+_library.libhat_module_get_data.restype = ctypes.c_int
 
 #
-# libhat_span libhat_module_get_executable_data(const libhat_module* module);
+# libhat_status libhat_module_get_executable_data(const libhat_module* module, libhat_span* out);
 #
-_library.libhat_module_get_executable_data.argtypes = [ctypes.c_void_p]
-_library.libhat_module_get_executable_data.restype = Span
+_library.libhat_module_get_executable_data.argtypes = [ctypes.c_void_p, ctypes.POINTER(Span)]
+_library.libhat_module_get_executable_data.restype = ctypes.c_int
 
 #
-# libhat_span libhat_module_get_section_data(const libhat_module* module, const char* name);
+# libhat_status libhat_module_get_section_data(const libhat_module* module, const char* name, libhat_span* out);
 #
-_library.libhat_module_get_section_data.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
-_library.libhat_module_get_section_data.restype = Span
+_library.libhat_module_get_section_data.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(Span)]
+_library.libhat_module_get_section_data.restype = ctypes.c_int
 
 #
-# void libhat_module_for_each_section(
+# libhat_status libhat_module_for_each_section(
 #     const libhat_module*       module,
 #     libhat_for_each_section_cb callback,
 #     void*                      user_data
 # );
 #
 _library.libhat_module_for_each_section.argtypes = [ctypes.c_void_p, ForEachSectionCallback, ctypes.c_void_p]
-_library.libhat_module_for_each_section.restype = None
+_library.libhat_module_for_each_section.restype = ctypes.c_int
 
 #
-# void libhat_module_for_each_segment(
+# libhat_status libhat_module_for_each_segment(
 #     const libhat_module*       module,
 #     libhat_for_each_segment_cb callback,
 #     void*                      user_data
 # );
 #
 _library.libhat_module_for_each_segment.argtypes = [ctypes.c_void_p, ForEachSegmentCallback, ctypes.c_void_p]
-_library.libhat_module_for_each_segment.restype = None
+_library.libhat_module_for_each_segment.restype = ctypes.c_int
 
 #
 # bool libhat_is_readable(const void* data, size_t size);

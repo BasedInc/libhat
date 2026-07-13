@@ -2,8 +2,10 @@ import ctypes
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from ._ffi import _library, ForEachSectionCallback, ForEachSegmentCallback
+from ._ffi import _library, c_uintptr, ForEachSectionCallback, ForEachSegmentCallback
+from .address import Address
 from .enums import Protection
+from .error import LibhatError
 from .span import Span
 
 
@@ -46,25 +48,46 @@ class Module:
             raise RuntimeError('Attempted operation on a Module that has already been freed')
         return self._handle
 
-    def address(self) -> int:
-        return _library.libhat_module_address(self._check_handle())
+    def address(self) -> Address:
+        result = c_uintptr()
+        status = _library.libhat_module_address(self._check_handle(), ctypes.byref(result))
+        if status != 0:
+            raise LibhatError(status)
+        return Address(result.value)
 
     def get_module_data(self) -> Span:
-        return _library.libhat_module_get_data(self._check_handle())
+        result = Span()
+        status = _library.libhat_module_get_data(self._check_handle(), ctypes.byref(result))
+        if status != 0:
+            raise LibhatError(status)
+        return result
 
     def get_executable_data(self) -> Span:
-        return _library.libhat_module_get_executable_data(self._check_handle())
+        result = Span()
+        status = _library.libhat_module_get_executable_data(self._check_handle(), ctypes.byref(result))
+        if status != 0:
+            raise LibhatError(status)
+        return result
 
     def get_section_data(self, name: str) -> Span:
-        return _library.libhat_module_get_section_data(self._check_handle(), name.encode('utf-8'))
+        result = Span()
+        status = _library.libhat_module_get_section_data(self._check_handle(), name.encode('utf-8'),
+                                                         ctypes.byref(result))
+        if status != 0:
+            raise LibhatError(status)
+        return result
 
     def for_each_section(self, callback: Callable[[Section], bool]):
         user_data = ctypes.cast(ctypes.pointer(ctypes.py_object(callback)), ctypes.c_void_p)
-        _library.libhat_module_for_each_section(self._check_handle(), _section_trampoline, user_data)
+        status = _library.libhat_module_for_each_section(self._check_handle(), _section_trampoline, user_data)
+        if status != 0:
+            raise LibhatError(status)
 
     def for_each_segment(self, callback: Callable[[Segment], bool]):
         user_data = ctypes.cast(ctypes.pointer(ctypes.py_object(callback)), ctypes.c_void_p)
-        _library.libhat_module_for_each_segment(self._check_handle(), _segment_trampoline, user_data)
+        status = _library.libhat_module_for_each_segment(self._check_handle(), _segment_trampoline, user_data)
+        if status != 0:
+            raise LibhatError(status)
 
 
 @ForEachSectionCallback
