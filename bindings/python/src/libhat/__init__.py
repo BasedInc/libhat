@@ -33,6 +33,7 @@ __all__ = [
     'ScanAlignment',
     'ScanHint',
     'Address',
+    'LibhatError',
 ]
 
 
