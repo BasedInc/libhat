@@ -12,7 +12,7 @@ namespace {
     };
 
     template<typename T>
-    consteval uint64_t type_id() {
+    consteval uint32_t type_id() {
         return T::type_id;
     }
 
@@ -57,12 +57,12 @@ namespace {
 
 struct libhat_signature final : libhat_ffi_wrapper<libhat_signature, hat::signature> {
     using libhat_ffi_wrapper::libhat_ffi_wrapper;
-    static constexpr uint64_t type_id = 0xFD19C2B3;
+    static constexpr uint32_t type_id = 0xFD19C2B3;
 };
 
 struct libhat_module final : libhat_ffi_wrapper<libhat_module, hat::process::module> {
     using libhat_ffi_wrapper::libhat_ffi_wrapper;
-    static constexpr uint64_t type_id = 0xBAA5FEEC;
+    static constexpr uint32_t type_id = 0xBAA5FEEC;
 };
 
 static std::optional<hat::scan_alignment> to_cpp_align(const libhat_alignment align) {
