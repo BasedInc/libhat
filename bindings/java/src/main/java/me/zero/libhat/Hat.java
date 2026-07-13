@@ -136,14 +136,20 @@ public final class Hat {
         final long start = Pointer.nativeValue(Native.getDirectBufferPointer(buffer)) + buffer.position();
         final int count = buffer.remaining();
 
-        final Pointer result = Libhat.INSTANCE.libhat_find_pattern(
+        final PointerByReference out = new PointerByReference();
+        final int status = Libhat.INSTANCE.libhat_find_pattern(
             Objects.requireNonNull(signature.handle),
             new Pointer(start),
             new Libhat.size_t(count),
+            out,
             alignment.alignment(),
             ScanHint.toFlags(hints)
         );
+        if (status != 0) {
+            throw new LibhatException(status);
+        }
 
+        final Pointer result = out.getValue();
         if (result == Pointer.NULL) {
             return OptionalInt.empty();
         }
@@ -190,15 +196,20 @@ public final class Hat {
         Objects.requireNonNull(section);
         Objects.requireNonNull(alignment);
 
-        final Pointer result = Libhat.INSTANCE.libhat_find_pattern_mod(
+        final PointerByReference out = new PointerByReference();
+        final int status = Libhat.INSTANCE.libhat_find_pattern_mod(
             Objects.requireNonNull(signature.handle),
             Objects.requireNonNull(module.handle),
             section,
+            out,
             alignment.alignment(),
             ScanHint.toFlags(hints)
         );
+        if (status != 0) {
+            throw new LibhatException(status);
+        }
 
-        return Optional.ofNullable(result);
+        return Optional.ofNullable(out.getValue());
     }
 
     /**
