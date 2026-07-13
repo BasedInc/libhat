@@ -45,7 +45,7 @@ public interface Libhat extends Library {
     // Structures
     // ------------------------------------------------------------------------
 
-    @Structure.FieldOrder({ "data", "size" })
+    @Structure.FieldOrder({"data", "size"})
     class Span extends Structure {
         public Pointer data;
         public size_t size;
@@ -66,6 +66,7 @@ public interface Libhat extends Library {
         }
 
         public static class ByValue extends Span implements Structure.ByValue {}
+        public static class ByReference extends Span implements Structure.ByReference {}
     }
 
     // ------------------------------------------------------------------------
@@ -118,64 +119,66 @@ public interface Libhat extends Library {
     int libhat_create_signature(byte[] bytes, byte[] mask, size_t size, PointerByReference signatureOut);
 
     /*
-     * const void* libhat_find_pattern(
+     * libhat_status libhat_find_pattern(
      *     const libhat_signature* signature,
      *     const void*             buffer,
      *     size_t                  size,
-     *     libhat_alignment        align,
-    *      libhat_hint             hints
-     * );
-     */
-    Pointer libhat_find_pattern(Pointer signature, Pointer buffer, size_t size, int align, int hints);
-
-    /*
-     * const void* libhat_find_pattern_mod(
-     *     const libhat_signature* signature,
-     *     const libhat_module*    module,
-     *     const char*             section,
+     *     const void**            resultOut,
      *     libhat_alignment        align,
      *     libhat_hint             hints
      * );
      */
-    Pointer libhat_find_pattern_mod(Pointer signature, Pointer module, String section, int align, int hints);
+    int libhat_find_pattern(Pointer signature, Pointer buffer, size_t size, PointerByReference resultOut, int align, int hints);
 
     /*
-     * uintptr_t libhat_module_address(const libhat_module* module);
+     * libhat_status libhat_find_pattern_mod(
+     *     const libhat_signature* signature,
+     *     const libhat_module*    module,
+     *     const char*             section,
+     *     const void**            resultOut,
+     *     libhat_alignment        align,
+     *     libhat_hint             hints
+     * );
      */
-    uintptr_t libhat_module_address(Pointer module);
+    int libhat_find_pattern_mod(Pointer signature, Pointer module, String section, PointerByReference resultOut, int align, int hints);
 
     /*
-     * libhat_span libhat_module_get_data(const libhat_module* module);
+     * libhat_status libhat_module_address(const libhat_module* module, uintptr_t* out);
      */
-    Span.ByValue libhat_module_get_data(Pointer module);
+    int libhat_module_address(Pointer module, PointerByReference out);
 
     /*
-     * libhat_span libhat_module_get_executable_data(const libhat_module* module);
+     * libhat_status libhat_module_get_data(const libhat_module* module, libhat_span* out);
      */
-    Span.ByValue libhat_module_get_executable_data(Pointer module);
+    int libhat_module_get_data(Pointer module, Span.ByReference data);
 
     /*
-     * libhat_span libhat_module_get_section_data(const libhat_module* module, const char* name);
+     * libhat_status libhat_module_get_executable_data(const libhat_module* module, libhat_span* out);
      */
-    Span.ByValue libhat_module_get_section_data(Pointer module, String name);
+    int libhat_module_get_executable_data(Pointer module, Span.ByReference data);
 
     /*
-     * void libhat_module_for_each_section(
+     * libhat_status libhat_module_get_section_data(const libhat_module* module, const char* name, libhat_span* out);
+     */
+    int libhat_module_get_section_data(Pointer module, String name, Span.ByReference data);
+
+    /*
+     * libhat_status libhat_module_for_each_section(
      *     const libhat_module*       module,
      *     libhat_for_each_section_cb callback,
      *     void*                      user_data
      * );
      */
-    void libhat_module_for_each_section(Pointer module, ForEachSectionCallback callback, Pointer userData);
+    int libhat_module_for_each_section(Pointer module, ForEachSectionCallback callback, Pointer userData);
 
     /*
-     * void libhat_module_for_each_segment(
+     * libhat_status libhat_module_for_each_segment(
      *     const libhat_module*       module,
      *     libhat_for_each_segment_cb callback,
      *     void*                      user_data
      * );
      */
-    void libhat_module_for_each_segment(Pointer module, ForEachSegmentCallback callback, Pointer userData);
+    int libhat_module_for_each_segment(Pointer module, ForEachSegmentCallback callback, Pointer userData);
 
     /*
      * bool libhat_is_readable(const void* data, size_t size);

@@ -1,6 +1,7 @@
 package me.zero.libhat;
 
 import com.sun.jna.Pointer;
+import com.sun.jna.ptr.PointerByReference;
 import me.zero.libhat.jna.Libhat;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,9 +33,15 @@ public final class ProcessModule implements AutoCloseable {
 
     /**
      * @return The base address of this module, as a {@code long}.
+     * @throws LibhatException       if an internal error occurred
      */
     public long getBaseAddress() {
-        return Libhat.INSTANCE.libhat_module_address(this.checkHandle()).longValue();
+        PointerByReference out = new PointerByReference();
+        final int status = Libhat.INSTANCE.libhat_module_address(this.checkHandle(), out);
+        if (status != 0) {
+            throw new LibhatException(status);
+        }
+        return Pointer.nativeValue(out.getValue());
     }
 
     /**
@@ -42,10 +49,17 @@ public final class ProcessModule implements AutoCloseable {
      * To verify whether the region is safe to read, use {@link Hat#isReadable(ByteBuffer)}.
      *
      * @return The module data
-     * @throws IllegalStateException If the module data was empty
+     * @throws IllegalStateException if the module data was empty
+     * @throws LibhatException       if an internal error occurred
      */
     public @NotNull ByteBuffer getModuleData() {
-        final ByteBuffer data = Libhat.INSTANCE.libhat_module_get_data(this.checkHandle()).toBuffer();
+        final Libhat.Span.ByReference out = new Libhat.Span.ByReference();
+        final int status = Libhat.INSTANCE.libhat_module_get_data(this.checkHandle(), out);
+        if (status != 0) {
+            throw new LibhatException(status);
+        }
+
+        final ByteBuffer data = out.toBuffer();
         if (data == null) {
             throw new IllegalStateException("Module data was unexpectedly empty");
         }
@@ -58,9 +72,16 @@ public final class ProcessModule implements AutoCloseable {
      * by name, the first executable region defined by the module will be returned instead.
      *
      * @return The module's executable data, or {@link Optional#empty()} if it cannot be found.
+     * @throws LibhatException if an internal error occurred
      */
     public @NotNull Optional<ByteBuffer> getExecutableData() {
-        return Optional.ofNullable(Libhat.INSTANCE.libhat_module_get_executable_data(this.checkHandle()).toBuffer());
+        final Libhat.Span.ByReference out = new Libhat.Span.ByReference();
+        final int status = Libhat.INSTANCE.libhat_module_get_executable_data(this.checkHandle(), out);
+        if (status != 0) {
+            throw new LibhatException(status);
+        }
+
+        return Optional.ofNullable(out.toBuffer());
     }
 
     /**
@@ -71,10 +92,18 @@ public final class ProcessModule implements AutoCloseable {
      * @param name The section name
      * @return The data for the section, or {@link Optional#empty()} if it cannot be found.
      * @throws NullPointerException if any arguments are {@code null}
+     * @throws LibhatException      if an internal error occurred
      */
     public @NotNull Optional<ByteBuffer> getSectionData(@NotNull final String name) {
         Objects.requireNonNull(name);
-        return Optional.ofNullable(Libhat.INSTANCE.libhat_module_get_section_data(this.checkHandle(), name).toBuffer());
+
+        final Libhat.Span.ByReference out = new Libhat.Span.ByReference();
+        final int status = Libhat.INSTANCE.libhat_module_get_section_data(this.checkHandle(), name, out);
+        if (status != 0) {
+            throw new LibhatException(status);
+        }
+
+        return Optional.ofNullable(out.toBuffer());
     }
 
     /**
@@ -86,11 +115,15 @@ public final class ProcessModule implements AutoCloseable {
      *
      * @param callback The callback to accept each section
      * @throws NullPointerException if any arguments are {@code null}
+     * @throws LibhatException      if an internal error occurred
      */
     public void forEachSection(@NotNull final Predicate<@NotNull Section> callback) {
         Objects.requireNonNull(callback);
-        Libhat.INSTANCE.libhat_module_for_each_section(this.checkHandle(), (name, data, prot, ud)
+        final int status = Libhat.INSTANCE.libhat_module_for_each_section(this.checkHandle(), (name, data, prot, ud)
             -> callback.test(new Section(name, data.toBuffer(), Protection.fromFlags(prot))), null);
+        if (status != 0) {
+            throw new LibhatException(status);
+        }
     }
 
     /**
@@ -101,11 +134,15 @@ public final class ProcessModule implements AutoCloseable {
      *
      * @param callback The callback to accept each segment
      * @throws NullPointerException if any arguments are {@code null}
+     * @throws LibhatException      if an internal error occurred
      */
     public void forEachSegment(@NotNull final Predicate<@NotNull Segment> callback) {
         Objects.requireNonNull(callback);
-        Libhat.INSTANCE.libhat_module_for_each_segment(this.checkHandle(), (data, prot, ud)
+        final int status = Libhat.INSTANCE.libhat_module_for_each_segment(this.checkHandle(), (data, prot, ud)
             -> callback.test(new Segment(data.toBuffer(), Protection.fromFlags(prot))), null);
+        if (status != 0) {
+            throw new LibhatException(status);
+        }
     }
 
     @NotNull

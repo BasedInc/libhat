@@ -36,6 +36,8 @@ typedef enum libhat_status {
     libhat_err_sig_empty_signature,
     libhat_err_sig_expected_wildcard,
     libhat_err_sig_invalid_token_length,
+    libhat_err_invalid_argument_value,
+    libhat_err_invalid_argument_type,
 } libhat_status;
 
 typedef enum libhat_alignment {
@@ -89,37 +91,39 @@ LIBHAT_API libhat_status libhat_create_signature(
     const libhat_signature** signatureOut
 );
 
-LIBHAT_API const void* libhat_find_pattern(
+LIBHAT_API libhat_status libhat_find_pattern(
     const libhat_signature* signature,
     const void*             buffer,
     size_t                  size,
+    const void**            resultOut,
     libhat_alignment        align = libhat_alignment_x1,
     libhat_hint             hints = libhat_hint_none
 );
 
-LIBHAT_API const void* libhat_find_pattern_mod(
+LIBHAT_API libhat_status libhat_find_pattern_mod(
     const libhat_signature* signature,
     const libhat_module*    module,
     const char*             section,
+    const void**            resultOut,
     libhat_alignment        align = libhat_alignment_x1,
     libhat_hint             hints = libhat_hint_none
 );
 
-LIBHAT_API uintptr_t libhat_module_address(const libhat_module* module);
+LIBHAT_API libhat_status libhat_module_address(const libhat_module* module, uintptr_t* out);
 
-LIBHAT_API libhat_span libhat_module_get_data(const libhat_module* module);
+LIBHAT_API libhat_status libhat_module_get_data(const libhat_module* module, libhat_span* out);
 
-LIBHAT_API libhat_span libhat_module_get_executable_data(const libhat_module* module);
+LIBHAT_API libhat_status libhat_module_get_executable_data(const libhat_module* module, libhat_span* out);
 
-LIBHAT_API libhat_span libhat_module_get_section_data(const libhat_module* module, const char* name);
+LIBHAT_API libhat_status libhat_module_get_section_data(const libhat_module* module, const char* name, libhat_span* out);
 
-LIBHAT_API void libhat_module_for_each_section(
+LIBHAT_API libhat_status libhat_module_for_each_section(
     const libhat_module*       module,
     libhat_for_each_section_cb callback,
     void*                      user_data
 );
 
-LIBHAT_API void libhat_module_for_each_segment(
+LIBHAT_API libhat_status libhat_module_for_each_segment(
     const libhat_module*       module,
     libhat_for_each_segment_cb callback,
     void*                      user_data

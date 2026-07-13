@@ -5,15 +5,39 @@
 
 namespace {
 
+    constexpr uint32_t object_magic = 0x2C360B8A;
+
+    struct tombstone_type {
+        static constexpr uint32_t type_id = 0xF27EC9D1;
+    };
+
+    template<typename T>
+    consteval uint64_t type_id() {
+        return T::type_id;
+    }
+
     struct libhat_ffi_object {
     protected:
         using destroy_t = void (*)(const libhat_ffi_object&);
+        uint32_t magic;
+        mutable std::atomic<uint32_t> type;
         destroy_t destroy;
 
-        explicit libhat_ffi_object(const destroy_t destroy)
-            : destroy(destroy) {}
+        template<typename Derived>
+        explicit libhat_ffi_object(std::type_identity<Derived>) :
+            magic(object_magic),
+            type(type_id<Derived>()),
+            destroy([](const libhat_ffi_object& object) {
+                delete static_cast<const Derived*>(&object);
+            }) {}
 
         friend void ::libhat_free(const void* object);
+
+    public:
+        template<typename T>
+        [[nodiscard]] bool is_type() const {
+            return this->magic == object_magic && this->type == type_id<T>();
+        }
     };
 
     template<typename Derived, typename T>
@@ -21,22 +45,27 @@ namespace {
 
         template<typename... Args>
         explicit libhat_ffi_wrapper(Args&&... args) :
-            libhat_ffi_object([](const libhat_ffi_object& object) {
-                delete static_cast<const Derived*>(&object);
-            }),
+            libhat_ffi_object(std::type_identity<Derived>{}),
             T(std::forward<Args>(args)...) {}
     };
+
+    template<typename T>
+    [[nodiscard]] bool check_type(const T* t) {
+        return static_cast<const libhat_ffi_object*>(t)->is_type<T>();
+    }
 }
 
 struct libhat_signature final : libhat_ffi_wrapper<libhat_signature, hat::signature> {
     using libhat_ffi_wrapper::libhat_ffi_wrapper;
+    static constexpr uint64_t type_id = 0xFD19C2B3;
 };
 
 struct libhat_module final : libhat_ffi_wrapper<libhat_module, hat::process::module> {
     using libhat_ffi_wrapper::libhat_ffi_wrapper;
+    static constexpr uint64_t type_id = 0xBAA5FEEC;
 };
 
-static hat::scan_alignment to_cpp_align(const libhat_alignment align) {
+static std::optional<hat::scan_alignment> to_cpp_align(const libhat_alignment align) {
     switch (align) {
         case libhat_alignment_x1:
             return hat::scan_alignment::X1;
@@ -45,7 +74,7 @@ static hat::scan_alignment to_cpp_align(const libhat_alignment align) {
         case libhat_alignment_x16:
             return hat::scan_alignment::X16;
     }
-    exit(EXIT_FAILURE);
+    return std::nullopt;
 }
 
 static hat::scan_hint to_cpp_hints(const libhat_hint hints) {
@@ -72,6 +101,8 @@ LIBHAT_API const char* libhat_status_to_string(const libhat_status status) {
         STATUS_CASE(libhat_err_sig_empty_signature);
         STATUS_CASE(libhat_err_sig_expected_wildcard);
         STATUS_CASE(libhat_err_sig_invalid_token_length);
+        STATUS_CASE(libhat_err_invalid_argument_value);
+        STATUS_CASE(libhat_err_invalid_argument_type);
     }
 #undef STATUS_CASE
     return "invalid value for libhat_status";
@@ -101,6 +132,13 @@ LIBHAT_API libhat_status libhat_create_signature(
     const size_t             size,
     const libhat_signature** signatureOut
 ) {
+    if (!signatureOut) {
+        return libhat_err_invalid_argument_value;
+    }
+    if (size && (!bytes || !mask)) {
+        return libhat_err_invalid_argument_value;
+    }
+
     hat::signature signature{};
     bool containsByte = false;
     signature.reserve(size);
@@ -117,61 +155,145 @@ LIBHAT_API libhat_status libhat_create_signature(
     return libhat_success;
 }
 
-LIBHAT_API const void* libhat_find_pattern(
+LIBHAT_API libhat_status libhat_find_pattern(
     const libhat_signature* signature,
     const void*             buffer,
     const size_t            size,
+    const void**            resultOut,
     const libhat_alignment  align,
     const libhat_hint       hints
 ) {
+    if (!signature || (!buffer && size) || !resultOut) {
+        return libhat_err_invalid_argument_value;
+    }
+
+    if (!check_type(signature)) {
+        return libhat_err_invalid_argument_type;
+    }
+
+    const auto cpp_align = to_cpp_align(align);
+    if (!cpp_align) {
+        return libhat_err_invalid_argument_value;
+    }
+
     const auto begin = static_cast<const std::byte*>(buffer);
     const auto end = static_cast<const std::byte*>(buffer) + size;
-    const auto result = hat::find_pattern(begin, end, *signature, to_cpp_align(align), to_cpp_hints(hints));
-    return result.has_result() ? result.get() : nullptr;
+    const auto result = hat::find_pattern(begin, end, *signature, *cpp_align, to_cpp_hints(hints));
+    *resultOut = result.has_result() ? result.get() : nullptr;
+    return libhat_success;
 }
 
-LIBHAT_API const void* libhat_find_pattern_mod(
+LIBHAT_API libhat_status libhat_find_pattern_mod(
     const libhat_signature* signature,
     const libhat_module*    module,
     const char*             section,
+    const void**            resultOut,
     const libhat_alignment  align,
     const libhat_hint       hints
 ) {
-    const auto result = hat::find_pattern(*signature, section, *module, to_cpp_align(align), to_cpp_hints(hints));
-    return result.has_result() ? result.get() : nullptr;
+    if (!signature || !module || !section || !resultOut) {
+        return libhat_err_invalid_argument_value;
+    }
+
+    if (!check_type(signature) || !check_type(module)) {
+        return libhat_err_invalid_argument_type;
+    }
+
+    const auto cpp_align = to_cpp_align(align);
+    if (!cpp_align) {
+        return libhat_err_invalid_argument_value;
+    }
+
+    const auto result = hat::find_pattern(*signature, section, *module, *cpp_align, to_cpp_hints(hints));
+    *resultOut = result.has_result() ? result.get() : nullptr;
+    return libhat_success;
 }
 
-LIBHAT_API uintptr_t libhat_module_address(const libhat_module* module) {
-    return module->address();
+LIBHAT_API libhat_status libhat_module_address(const libhat_module* module, uintptr_t* out) {
+    if (!module || !out) {
+        return libhat_err_invalid_argument_value;
+    }
+
+    if (!check_type(module)) {
+        return libhat_err_invalid_argument_type;
+    }
+
+    *out = module->address();
+    return libhat_success;
 }
 
-LIBHAT_API libhat_span libhat_module_get_data(const libhat_module* module) {
+LIBHAT_API libhat_status libhat_module_get_data(const libhat_module* module, libhat_span* out) {
+    if (!module || !out) {
+        return libhat_err_invalid_argument_value;
+    }
+
+    if (!check_type(module)) {
+        return libhat_err_invalid_argument_type;
+    }
+
     const auto data = module->get_module_data();
-    return {data.data(), data.size()};
+    *out = {data.data(), data.size()};
+    return libhat_success;
 }
 
-LIBHAT_API libhat_span libhat_module_get_executable_data(const libhat_module* module) {
+LIBHAT_API libhat_status libhat_module_get_executable_data(const libhat_module* module, libhat_span* out) {
+    if (!module || !out) {
+        return libhat_err_invalid_argument_value;
+    }
+
+    if (!check_type(module)) {
+        return libhat_err_invalid_argument_type;
+    }
+
     const auto data = module->get_executable_data();
-    return {data.data(), data.size()};
+    *out = {data.data(), data.size()};
+    return libhat_success;
 }
 
-LIBHAT_API libhat_span libhat_module_get_section_data(const libhat_module* module, const char* name) {
+LIBHAT_API libhat_status libhat_module_get_section_data(const libhat_module* module, const char* name, libhat_span* out) {
+    if (!module || !name || !out) {
+        return libhat_err_invalid_argument_value;
+    }
+
+    if (!check_type(module)) {
+        return libhat_err_invalid_argument_type;
+    }
+
     const auto data = module->get_section_data(name);
-    return {data.data(), data.size()};
+    *out = {data.data(), data.size()};
+    return libhat_success;
 }
 
-LIBHAT_API void libhat_module_for_each_section(const libhat_module* module, const libhat_for_each_section_cb callback, void* user_data) {
+LIBHAT_API libhat_status libhat_module_for_each_section(const libhat_module* module, const libhat_for_each_section_cb callback, void* user_data) {
+    if (!module || !callback) {
+        return libhat_err_invalid_argument_value;
+    }
+
+    if (!check_type(module)) {
+        return libhat_err_invalid_argument_type;
+    }
+
     std::string buffer;
     module->for_each_section([=, &buffer](auto name, auto data, auto prot) {
         buffer.assign(name);
         return callback(buffer.c_str(), {data.data(), data.size()}, static_cast<libhat_protection>(prot), user_data);
     });
+    return libhat_success;
 }
 
-LIBHAT_API void libhat_module_for_each_segment(const libhat_module* module, const libhat_for_each_segment_cb callback, void* user_data) {
+LIBHAT_API libhat_status libhat_module_for_each_segment(const libhat_module* module, const libhat_for_each_segment_cb callback, void* user_data) {
+    if (!module || !callback) {
+        return libhat_err_invalid_argument_value;
+    }
+
+    if (!check_type(module)) {
+        return libhat_err_invalid_argument_type;
+    }
+
     module->for_each_segment([=](auto data, auto prot) {
         return callback({data.data(), data.size()}, static_cast<libhat_protection>(prot), user_data);
     });
+    return libhat_success;
 }
 
 LIBHAT_API bool libhat_is_readable(const void* data, size_t size) {
@@ -208,10 +330,24 @@ LIBHAT_API const libhat_module* libhat_module_at(const void* address) {
 }
 
 LIBHAT_API void libhat_free(const void* object) {
-    if (object) {
-        const auto p = static_cast<const libhat_ffi_object*>(object);
-        p->destroy(*p);
+    if (!object) {
+        return;
     }
+
+    const auto& p = *static_cast<const libhat_ffi_object*>(object);
+    if (p.magic != object_magic) {
+        std::terminate();
+    }
+
+    constexpr auto tombstone = type_id<tombstone_type>();
+    if (p.type.exchange(tombstone, std::memory_order_relaxed) == tombstone) {
+        // Object not within its lifetime, already deleted. This could be indicative of a larger
+        // issue in user code, so it's best to not just ignore it. Not going to make this return
+        // a status code, just terminate for now.
+        std::terminate();
+    }
+
+    p.destroy(p);
 }
 
 } // extern "C"
