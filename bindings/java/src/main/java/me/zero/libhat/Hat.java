@@ -20,6 +20,20 @@ public final class Hat {
     private Hat() {}
 
     /**
+     * @return The {@code libhat_c} version as a string, in the form {@code "major.minor.patch"}
+     */
+    public static String getVersion() {
+        return Libhat.INSTANCE.libhat_get_version();
+    }
+
+    /**
+     * @return The {@code libhat_c} version as a number, in the form {@code (major << 16) | (minor << 8) | (patch)}
+     */
+    public static int getVersionNum() {
+        return Libhat.INSTANCE.libhat_get_version_num();
+    }
+
+    /**
      * Creates a new {@link Signature} from the specified string representation of a byte pattern. For example:
      * <ul>
      *     <li><code>48 8B 8D ? ? ? ? 48</code></li>
@@ -122,14 +136,20 @@ public final class Hat {
         final long start = Pointer.nativeValue(Native.getDirectBufferPointer(buffer)) + buffer.position();
         final int count = buffer.remaining();
 
-        final Pointer result = Libhat.INSTANCE.libhat_find_pattern(
+        final PointerByReference out = new PointerByReference();
+        final int status = Libhat.INSTANCE.libhat_find_pattern(
             Objects.requireNonNull(signature.handle),
             new Pointer(start),
             new Libhat.size_t(count),
+            out,
             alignment.alignment(),
             ScanHint.toFlags(hints)
         );
+        if (status != 0) {
+            throw new LibhatException(status);
+        }
 
+        final Pointer result = out.getValue();
         if (result == Pointer.NULL) {
             return OptionalInt.empty();
         }
@@ -176,15 +196,20 @@ public final class Hat {
         Objects.requireNonNull(section);
         Objects.requireNonNull(alignment);
 
-        final Pointer result = Libhat.INSTANCE.libhat_find_pattern_mod(
+        final PointerByReference out = new PointerByReference();
+        final int status = Libhat.INSTANCE.libhat_find_pattern_mod(
             Objects.requireNonNull(signature.handle),
             Objects.requireNonNull(module.handle),
             section,
+            out,
             alignment.alignment(),
             ScanHint.toFlags(hints)
         );
+        if (status != 0) {
+            throw new LibhatException(status);
+        }
 
-        return Optional.ofNullable(result);
+        return Optional.ofNullable(out.getValue());
     }
 
     /**
@@ -295,12 +320,12 @@ public final class Hat {
      * @throws NullPointerException if any arguments are {@code null}
      */
     public static @NotNull ProcessModule getProcessModule() {
-        return getModule(null).orElseThrow(() -> new IllegalStateException("Process module was nullptr"));
+        return new ProcessModule(Libhat.INSTANCE.libhat_get_process_module());
     }
 
     /**
-     * Returns an {@link Optional} containing a handle to the module with the specified name, if such a module exists,
-     * otherwise the returned optional is empty. If the provided name is {@code null}, the module for the executable
+     * Returns an {@link Optional} containing the {@link ProcessModule} with the specified name, if such a module exists.
+     * Otherwise, the returned optional is empty. If the provided name is {@code null}, the module for the executable
      * used to create the current process is returned. The returned {@link ProcessModule} is backed by a native heap
      * allocation, and {@link ProcessModule#close()} must be called when the object is done being used, either
      * explicitly or through a try-with-resources block.
@@ -309,10 +334,24 @@ public final class Hat {
      * @return The module
      */
     public static Optional<ProcessModule> getModule(@Nullable final String module) {
-        final Pointer addr = Libhat.INSTANCE.libhat_get_module(module);
-        if (addr == Pointer.NULL) {
+        final Pointer handle = Libhat.INSTANCE.libhat_get_module(module);
+        if (handle == Pointer.NULL) {
             return Optional.empty();
         }
-        return Optional.of(new ProcessModule(addr));
+        return Optional.of(new ProcessModule(handle));
+    }
+
+    /**
+     * Returns an {@link Optional} containing the {@link ProcessModule} whose address space contains the specified
+     * address. If the given address is not located within a loaded module, the returned optional is empty. The
+     * returned {@link ProcessModule} is backed by a native heap allocation, and {@link ProcessModule#close()} must
+     * be called when the object is done being used, either explicitly or through a try-with-resources block.
+     */
+    public static Optional<ProcessModule> getModuleAt(@NotNull final Pointer address) {
+        final Pointer handle = Libhat.INSTANCE.libhat_module_at(address);
+        if (handle == Pointer.NULL) {
+            return Optional.empty();
+        }
+        return Optional.of(new ProcessModule(handle));
     }
 }
