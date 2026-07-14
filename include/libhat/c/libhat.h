@@ -54,10 +54,10 @@ typedef enum libhat_hint {
 } libhat_hint;
 
 typedef enum libhat_protection {
-    libhat_protection_none    = 0b000,
-    libhat_protection_read    = 0b001,
-    libhat_protection_write   = 0b010,
-    libhat_protection_execute = 0b100,
+    libhat_protection_none    = 0,
+    libhat_protection_read    = 1 << 0,
+    libhat_protection_write   = 1 << 1,
+    libhat_protection_execute = 1 << 2,
 } libhat_protection;
 
 typedef struct libhat_signature libhat_signature;
