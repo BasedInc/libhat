@@ -137,6 +137,9 @@ LIBHAT_API libhat_status libhat_create_signature(
     if (size && (!bytes || !mask)) {
         return libhat_err_invalid_argument_value;
     }
+    if (!size) {
+        return libhat_err_sig_empty_signature;
+    }
 
     hat::signature signature{};
     bool containsByte = false;
