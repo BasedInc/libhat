@@ -96,8 +96,8 @@ LIBHAT_API libhat_status libhat_find_pattern(
     const void*             buffer,
     size_t                  size,
     const void**            resultOut,
-    libhat_alignment        align = libhat_alignment_x1,
-    libhat_hint             hints = libhat_hint_none
+    libhat_alignment        align,
+    libhat_hint             hints
 );
 
 LIBHAT_API libhat_status libhat_find_pattern_mod(
@@ -105,8 +105,8 @@ LIBHAT_API libhat_status libhat_find_pattern_mod(
     const libhat_module*    module,
     const char*             section,
     const void**            resultOut,
-    libhat_alignment        align = libhat_alignment_x1,
-    libhat_hint             hints = libhat_hint_none
+    libhat_alignment        align,
+    libhat_hint             hints
 );
 
 LIBHAT_API libhat_status libhat_module_address(const libhat_module* module, uintptr_t* out);
