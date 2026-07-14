@@ -1,8 +1,6 @@
 #pragma once
 
-#include "../platform.h"
-
-#if defined(LIBHAT_WINDOWS)
+#if defined(_WIN32)
     #if defined(LIBHAT_BUILD_SHARED_LIB)
         #define LIBHAT_API __declspec(dllexport)
     #elif defined(LIBHAT_USE_SHARED_LIB)
@@ -10,14 +8,12 @@
     #else
         #define LIBHAT_API
     #endif
-#elif defined(LIBHAT_UNIX)
+#else
     #if defined(LIBHAT_BUILD_SHARED_LIB)
         #define LIBHAT_API __attribute__((visibility("default")))
     #else
         #define LIBHAT_API
     #endif
-#else
-    #define LIBHAT_API
 #endif
 
 #if __STDC_VERSION__ < 202311L
