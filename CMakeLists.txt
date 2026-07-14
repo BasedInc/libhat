@@ -46,36 +46,10 @@ if(LIBHAT_TESTING AND LIBHAT_TESTING_SANITIZE)
     endif()
 endif()
 
-file(GLOB_RECURSE LIBHAT_HEADERS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS "include/*.hpp")
-list(APPEND LIBHAT_HEADERS include/libhat/platform.h)
+file(GLOB_RECURSE LIBHAT_HEADERS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS "include/*.hpp" "include/*.h")
+file(GLOB_RECURSE LIBHAT_SOURCES RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS "src/*.cpp")
 
-set(LIBHAT_SRC
-    src/Scanner.cpp
-    src/System.cpp
-
-    src/os/mac/MemoryProtector.cpp
-    src/os/mac/Process.cpp
-
-    src/os/linux/MemoryProtector.cpp
-    src/os/linux/Process.cpp
-
-    src/os/unix/System.cpp
-
-    src/os/win32/MemoryProtector.cpp
-    src/os/win32/Process.cpp
-    src/os/win32/Scanner.cpp
-    src/os/win32/System.cpp
-
-    src/arch/x86/SSE.cpp
-    src/arch/x86/AVX2.cpp
-    src/arch/x86/AVX512.cpp
-    src/arch/x86/System.cpp
-
-    src/arch/arm/Neon.cpp
-    src/arch/arm/System.cpp
-)
-
-add_library(libhat STATIC ${LIBHAT_SRC})
+add_library(libhat STATIC ${LIBHAT_SOURCES})
 add_library(libhat::libhat ALIAS libhat)
 
 target_compile_features(libhat PUBLIC cxx_std_20)
@@ -121,44 +95,7 @@ target_compile_definitions(libhat PUBLIC
 )
 
 if(LIBHAT_STATIC_C_LIB OR LIBHAT_SHARED_C_LIB)
-    set(LIBHAT_C_SOURCES
-        src/c/libhat.cpp
-    )
-
-    if(LIBHAT_STATIC_C_LIB)
-        add_library(libhat_c STATIC ${LIBHAT_C_SOURCES})
-        if(UNIX)
-            set_target_properties(libhat_c PROPERTIES POSITION_INDEPENDENT_CODE ON)
-        endif()
-    else()
-        add_library(libhat_c SHARED ${LIBHAT_C_SOURCES})
-        target_compile_definitions(libhat_c
-            PRIVATE LIBHAT_BUILD_SHARED_LIB
-            INTERFACE LIBHAT_USE_SHARED_LIB
-        )
-    endif()
-    target_sources(libhat_c PUBLIC
-        FILE_SET headers
-        TYPE HEADERS
-        BASE_DIRS include
-        FILES include/libhat/c/libhat.h
-    )
-
-    set_target_properties(libhat_c PROPERTIES
-        PREFIX ""
-        CXX_VISIBILITY_PRESET hidden
-        VISIBILITY_INLINES_HIDDEN TRUE
-    )
-    target_compile_definitions(libhat_c PRIVATE
-        LIBHAT_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
-        LIBHAT_VERSION_MINOR=${PROJECT_VERSION_MINOR}
-        LIBHAT_VERSION_PATCH=${PROJECT_VERSION_PATCH}
-        LIBHAT_VERSION="${PROJECT_VERSION}"
-    )
-
-    add_library(libhat::libhat_c ALIAS libhat_c)
-    target_link_libraries(libhat_c PRIVATE libhat)
-    list(APPEND LIBHAT_INSTALL_TARGETS libhat_c)
+    add_subdirectory(bindings/c)
 endif()
 
 if(LIBHAT_MODULE_TARGET)
