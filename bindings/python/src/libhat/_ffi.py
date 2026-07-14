@@ -32,7 +32,15 @@ c_uintptr = ctypes.c_uint64 if ctypes.sizeof(ctypes.c_void_p) == 8 else ctypes.c
 # ------------------------------------------------------------------------
 # Structures
 # ------------------------------------------------------------------------
-from .span import Span
+class Span(ctypes.Structure):
+    _fields_ = [
+        ('data', ctypes.c_void_p),
+        ('size', ctypes.c_size_t),
+    ]
+
+    def view(self) -> memoryview:
+        return memoryview((ctypes.c_ubyte * self.size).from_address(self.data))
+
 
 # ------------------------------------------------------------------------
 # Callback types

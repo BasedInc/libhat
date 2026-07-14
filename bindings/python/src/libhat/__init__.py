@@ -1,7 +1,7 @@
 import ctypes
 from contextlib import nullcontext
 
-from ._ffi import _library, Span
+from ._ffi import _library
 from .address import Address
 from .enums import Protection, ScanAlignment, ScanHint
 from .error import LibhatError
@@ -28,13 +28,15 @@ __all__ = [
     'Module',
     'Section',
     'Segment',
-    'Span',
     'Protection',
     'ScanAlignment',
     'ScanHint',
     'Address',
     'LibhatError',
+    'MemoryBuffer',
 ]
+
+MemoryBuffer = bytes | bytearray | memoryview | ctypes.Array
 
 
 def get_version() -> str:
@@ -63,17 +65,9 @@ def create_signature(sig_bytes: bytes, sig_mask: bytes) -> Signature:
     return Signature(handle)
 
 
-def find_pattern(sig: str | Signature, buf: bytes | bytearray | Span, align: ScanAlignment = ScanAlignment.X1,
+def find_pattern(sig: str | Signature, buf: MemoryBuffer, align: ScanAlignment = ScanAlignment.X1,
                  hints: ScanHint = ScanHint(0)) -> int | None:
-    if isinstance(buf, bytes):
-        data, size = ctypes.cast(buf, ctypes.c_void_p), len(buf)
-    elif isinstance(buf, bytearray):
-        data = ctypes.cast((ctypes.c_ubyte * len(buf)).from_buffer(buf), ctypes.c_void_p)
-        size = len(buf)
-    elif isinstance(buf, Span):
-        data, size = ctypes.c_void_p(buf.data), buf.size
-    else:
-        raise ValueError('unexpected type for buf')
+    data, size = _underlying_buffer(buf)
 
     context = parse_signature(sig) if isinstance(sig, str) else nullcontext(sig)
     with context as s:
@@ -96,16 +90,19 @@ def find_pattern_mod(sig: str | Signature, mod: Module, section: str, align: Sca
         return Address(result.value)
 
 
-def is_readable(span: Span) -> bool:
-    return _library.libhat_is_readable(span.data, span.size)
+def is_readable(buf: MemoryBuffer) -> bool:
+    data, size = _underlying_buffer(buf)
+    return _library.libhat_is_readable(data, size)
 
 
-def is_writable(span: Span) -> bool:
-    return _library.libhat_is_writable(span.data, span.size)
+def is_writable(buf: MemoryBuffer) -> bool:
+    data, size = _underlying_buffer(buf)
+    return _library.libhat_is_writable(data, size)
 
 
-def is_executable(span: Span) -> bool:
-    return _library.libhat_is_executable(span.data, span.size)
+def is_executable(buf: MemoryBuffer) -> bool:
+    data, size = _underlying_buffer(buf)
+    return _library.libhat_is_executable(data, size)
 
 
 def get_process_module() -> Module:
@@ -117,6 +114,23 @@ def get_module(name: str) -> Module | None:
     return Module(handle) if handle else None
 
 
-def module_at(address: int) -> Module | None:
-    handle = ctypes.cast(_library.libhat_module_at(address), ctypes.c_void_p)
+def module_at(addr: Address) -> Module | None:
+    handle = ctypes.cast(_library.libhat_module_at(addr), ctypes.c_void_p)
     return Module(handle) if handle else None
+
+
+def _underlying_buffer(buf: MemoryBuffer) -> tuple[ctypes.c_void_p, int]:
+    if isinstance(buf, bytes):
+        return ctypes.cast(buf, ctypes.c_void_p), len(buf)
+    elif isinstance(buf, bytearray):
+        return ctypes.cast((ctypes.c_ubyte * len(buf)).from_buffer(buf), ctypes.c_void_p), len(buf)
+    elif isinstance(buf, memoryview):
+        if buf.readonly:
+            raise ValueError('memoryview must be writable')
+        buf = buf.cast('B')
+        return ctypes.cast((ctypes.c_ubyte * len(buf)).from_buffer(buf), ctypes.c_void_p), len(buf)
+    elif isinstance(buf, ctypes.Array):
+        size = ctypes.sizeof(buf)
+        return ctypes.cast((ctypes.c_ubyte * size).from_buffer(buf), ctypes.c_void_p), size
+    else:
+        raise ValueError(f'unexpected type for buf: {type(buf)}')
