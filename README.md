@@ -17,7 +17,7 @@ modifying virtual memory protections, and more.
   - Neon on ARM/ARM64
 - RAII memory protector
 - Convenience wrappers over OS APIs
-- Language bindings (C, C#, Java)
+- Language bindings (C, Java, Python, C#)
 - Supports Windows, Linux, macOS, and Android
 - General-purpose library features
   - `hat::cow`
