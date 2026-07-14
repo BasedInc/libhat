@@ -7,9 +7,6 @@ set(LIBHAT_C_SOURCES src/libhat.cpp)
 
 if(LIBHAT_STATIC_C_LIB)
     add_library(libhat_c STATIC ${LIBHAT_C_SOURCES})
-    if(UNIX)
-        set_target_properties(libhat_c PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    endif()
 elseif(LIBHAT_SHARED_C_LIB)
     add_library(libhat_c SHARED ${LIBHAT_C_SOURCES})
     target_compile_definitions(libhat_c

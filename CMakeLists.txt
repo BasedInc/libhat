@@ -24,6 +24,7 @@ option(LIBHAT_EXAMPLES "Include example targets" ${PROJECT_IS_TOP_LEVEL})
 
 # Compile Options
 option(LIBHAT_WARNINGS_AS_ERRORS "Treat warnings as compiler errors" ${PROJECT_IS_TOP_LEVEL})
+option(LIBHAT_BUILD_PIC "Enables POSITION_INDEPENDENT_CODE for libhat targets" OFF)
 
 # Testing Options
 option(LIBHAT_TESTING "Enable tests" ${PROJECT_IS_TOP_LEVEL})
@@ -36,6 +37,10 @@ option(LIBHAT_FEATURE_SSE "Enables SSE scanning, has no effect if the target isn
 option(LIBHAT_FEATURE_AVX512 "Enables AVX512 scanning, has no effect if the target isn't x86_64" ON)
 option(LIBHAT_HINT_X86_64 "Enables support for the x86_64 scan hint, requires a small (2KB) data table" ON)
 option(LIBHAT_HINT_AARCH64 "Enables support for the aarch64 scan hint, requires a small (2KB) data table" ON)
+
+if(LIBHAT_BUILD_PIC)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 
 if(LIBHAT_TESTING AND LIBHAT_TESTING_SANITIZE)
     if(MSVC)
@@ -64,9 +69,6 @@ set_target_properties(libhat PROPERTIES
     CXX_VISIBILITY_PRESET hidden
     VISIBILITY_INLINES_HIDDEN TRUE
 )
-if(UNIX)
-    set_target_properties(libhat PROPERTIES POSITION_INDEPENDENT_CODE ON)
-endif()
 
 set(LIBHAT_INSTALL_TARGETS libhat)
 set(LIBHAT_INSTALL_FILE_SET FILE_SET headers)
