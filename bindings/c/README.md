@@ -40,7 +40,7 @@ const void* find_abc(const void* buf, size_t n) {
 The libhat_c implementation is hardened, and will attempt to detect API misuse at runtime and prevent errors that could
 result in memory corruption, undefined behavior, or segmentation faults. *Ideally*, bindings for other languages that
 wrap the C API should provide abstractions that exclude the possibility of triggering such measures, and catch errors
-before the C implementation is invoked whenever applicable. The following usage errors and their effects are as follows:
+before the C implementation is invoked whenever applicable. The detected usage errors and their effects are as follows:
 
 | Error                                                    | Effect                              |
 |----------------------------------------------------------|-------------------------------------|
