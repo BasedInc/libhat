@@ -71,6 +71,40 @@ If you are using [MSBuild](https://learn.microsoft.com/en-us/visualstudio/msbuil
 }
 ```
 
+## Configuration
+
+Currently, libhat only supports static linking (dynamic linking can be achieved using the [C bindings](bindings/c)). As
+a result, features are configured through CMake options. By default, all features are enabled:
+
+### `LIBHAT_FEATURE_SSE`
+
+Enables support for the SSE vectorized find_pattern implementation, allowing CPUs that don't support newer instruction
+sets (AVX families) to get higher throughput than the base standard library implementation. If compile-time support is
+not present (`-march` or `/ARCH`), runtime support is validated through `cpuid`. If the target architecture is not `x86`
+or `x86_64`, enabling this option has no effect.
+
+CPU features: `sse4.1`
+
+### `LIBHAT_FEATURE_AVX512`
+
+Enables support for the AVX512 (BW+F) vectorized find_pattern implementation. If compile-time support is not present
+(`-march` or `/ARCH`), runtime support is validated through `cpuid`. If the target architecture is not `x86_64`,
+enabling this option has no effect.
+
+CPU features: `avx512bw` `avx512f` `bmi`
+
+### `LIBHAT_HINT_X86_64`
+
+Enables support for `hat::scan_hint::x86_64`, which allows informed anchor selection when searching for patterns in
+`x86_64` machine code, greatly reducing search time at the cost of a small data table (see [Benchmarks](#Benchmarks)).
+This option is always supported regardless of the target architecture.
+
+### `LIBHAT_HINT_AARCH64`
+
+Enables support for `hat::scan_hint::aarch64`, which allows informed anchor selection when searching for patterns in
+`aarch64` machine code, greatly reducing search time at the cost of a small data table. This option is always supported
+regardless of the target architecture.
+
 ## Benchmarks
 The table below compares the single threaded throughput in bytes/s (real time) between
 libhat and [two other](test/benchmark/vendor) commonly used implementations for pattern
