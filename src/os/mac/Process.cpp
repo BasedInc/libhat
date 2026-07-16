@@ -39,12 +39,16 @@ namespace {
 
     struct module_implementation {
         module_implementation(Handle handle, const mach_header_t* header, std::ptrdiff_t slide) :
-            handle(std::move(handle)),
+            handle_(std::move(handle)),
             header(header),
             vmaddr_slide(slide) {}
 
         [[nodiscard]] std::uintptr_t address() const {
             return std::bit_cast<std::uintptr_t>(this->header);
+        }
+
+        [[nodiscard]] void* handle() const {
+            return this->handle_.get();
         }
 
         [[nodiscard]] std::ptrdiff_t slide() const {
@@ -86,7 +90,7 @@ namespace {
         }
 
     private:
-        Handle               handle;
+        Handle               handle_;
         const mach_header_t* header;
         std::ptrdiff_t       vmaddr_slide;
     };
@@ -170,6 +174,13 @@ namespace hat::process {
     std::uintptr_t module::address() const {
         const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
         return mimpl->address();
+    }
+
+    std::uintptr_t module::get_symbol(const std::string_view name) const {
+        const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
+
+        const std::string buffer{name};
+        return std::bit_cast<uintptr_t>(dlsym(mimpl->handle(), buffer.c_str()));
     }
 
     std::span<std::byte> module::get_module_data() const {

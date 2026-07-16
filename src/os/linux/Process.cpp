@@ -36,7 +36,7 @@ namespace {
 
     struct module_implementation {
         module_implementation(Handle handle, const dl_phdr_info& info) :
-            handle(std::move(handle)),
+            handle_(std::move(handle)),
             base_address(static_cast<std::uintptr_t>(info.dlpi_addr)),
             path(info.dlpi_name && *info.dlpi_name != '\0' ? info.dlpi_name : "/proc/self/exe"),
             program_headers(info.dlpi_phdr),
@@ -44,6 +44,10 @@ namespace {
 
         [[nodiscard]] std::uintptr_t address() const {
             return this->base_address;
+        }
+
+        [[nodiscard]] void* handle() const {
+            return this->handle_.get();
         }
 
         [[nodiscard]] std::span<const elf_phdr_t> headers() const {
@@ -133,7 +137,7 @@ namespace {
 
         using sections_t = std::map<std::string, std::pair<std::span<std::byte>, hat::protection>, std::less<>>;
 
-        Handle                 handle;
+        Handle                 handle_;
         std::uintptr_t         base_address;
         const char*            path;
         const elf_phdr_t*      program_headers;
@@ -156,6 +160,14 @@ namespace hat::process {
     std::uintptr_t module::address() const {
         const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
         return mimpl->address();
+    }
+
+    std::uintptr_t module::get_symbol(const std::string_view name) const {
+        const auto mimpl = static_cast<const module_implementation*>(this->impl.get());
+
+        // Yes, I will be ignoring the non-error nullptr edge case
+        const std::string buffer{name};
+        return std::bit_cast<uintptr_t>(dlsym(mimpl->handle(), buffer.c_str()));
     }
 
     std::span<std::byte> module::get_module_data() const {

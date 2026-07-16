@@ -22,6 +22,9 @@ LIBHAT_EXPORT namespace hat::process {
         /// Returns the base address of the module in memory, as a uintptr_t
         [[nodiscard]] std::uintptr_t address() const;
 
+        /// Returns the absolute address of a named public symbol
+        [[nodiscard]] std::uintptr_t get_symbol(std::string_view name) const;
+
         /// Returns the complete memory region for the given module. This may include portions which are uncommitted.
         /// To verify whether the region is safe to read, use @code hat::process::is_readable@endcode.
         [[nodiscard]] std::span<std::byte> get_module_data() const;

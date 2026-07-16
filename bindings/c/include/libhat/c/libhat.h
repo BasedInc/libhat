@@ -110,6 +110,8 @@ LIBHAT_API libhat_status libhat_find_pattern_mod(
 
 LIBHAT_API libhat_status libhat_module_address(const libhat_module* module, uintptr_t* out);
 
+LIBHAT_API libhat_status libhat_module_get_symbol(const libhat_module* module, const char* name, uintptr_t* out);
+
 LIBHAT_API libhat_status libhat_module_get_data(const libhat_module* module, libhat_span* out);
 
 LIBHAT_API libhat_status libhat_module_get_executable_data(const libhat_module* module, libhat_span* out);

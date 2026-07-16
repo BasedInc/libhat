@@ -224,6 +224,19 @@ LIBHAT_API libhat_status libhat_module_address(const libhat_module* module, uint
     return libhat_success;
 }
 
+LIBHAT_API libhat_status libhat_module_get_symbol(const libhat_module* module, const char* name, uintptr_t* out) {
+    if (!module || !name || !out) {
+        return libhat_err_invalid_argument_value;
+    }
+
+    if (!check_type(module)) {
+        return libhat_err_invalid_argument_type;
+    }
+
+    *out = module->get_symbol(name);
+    return libhat_success;
+}
+
 LIBHAT_API libhat_status libhat_module_get_data(const libhat_module* module, libhat_span* out) {
     if (!module || !out) {
         return libhat_err_invalid_argument_value;

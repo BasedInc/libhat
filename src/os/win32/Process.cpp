@@ -125,6 +125,11 @@ namespace hat::process {
         return std::bit_cast<std::uintptr_t>(this->impl.get());
     }
 
+    std::uintptr_t module::get_symbol(const std::string_view name) const {
+        const std::string buffer{name};
+        return std::bit_cast<uintptr_t>(GetProcAddress(static_cast<HMODULE>(this->impl.get()), buffer.c_str()));
+    }
+
     std::span<std::byte> hat::process::module::get_module_data() const {
         auto* const scanBytes = reinterpret_cast<std::byte*>(this->address());
         const std::size_t sizeOfImage = getNTHeaders(*this).OptionalHeader.SizeOfImage;

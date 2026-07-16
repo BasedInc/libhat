@@ -246,3 +246,22 @@ TEST(ProcessTest, ModuleSectionsMatchLookup) {
         return true;
     });
 }
+
+#if defined(LIBHAT_LINUX)
+    #include <gnu/lib-names.h>
+    #define SYM_LOOKUP_MOD LIBC_SO
+    #define SYM_LOOKUP_NAME "malloc"
+#elif defined(LIBHAT_MAC)
+    #define SYM_LOOKUP_MOD "libSystem.dylib"
+    #define SYM_LOOKUP_NAME "malloc"
+#elif defined(LIBHAT_WINDOWS)
+    #define SYM_LOOKUP_MOD "kernel32.dll"
+    #define SYM_LOOKUP_NAME "HeapAlloc"
+#endif
+
+TEST(ProcessTest, SystemAllocSymbolExists) {
+    const auto mod = hat::process::get_module(SYM_LOOKUP_MOD);
+    ASSERT_TRUE(mod.has_value());
+    const auto proc = mod->get_symbol(SYM_LOOKUP_NAME);
+    EXPECT_NE(proc, 0);
+}
