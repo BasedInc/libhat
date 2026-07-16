@@ -54,6 +54,13 @@ class Module:
             raise LibhatError(status)
         return Address(result.value)
 
+    def get_symbol(self, name: str) -> Address | None:
+        result = c_uintptr()
+        status = _library.libhat_module_get_symbol(self._check_handle(), name.encode('utf-8'), ctypes.byref(result))
+        if status != 0:
+            raise LibhatError(status)
+        return Address(result.value) if result.value else None
+
     def get_module_data(self) -> memoryview:
         result = Span()
         status = _library.libhat_module_get_data(self._check_handle(), ctypes.byref(result))

@@ -148,6 +148,11 @@ public interface Libhat extends Library {
     int libhat_module_address(Pointer module, PointerByReference out);
 
     /*
+     * libhat_status libhat_module_get_symbol(const libhat_module* module, const char* name, uintptr_t* out);
+     */
+    int libhat_module_get_symbol(Pointer module, String name, PointerByReference out);
+
+    /*
      * libhat_status libhat_module_get_data(const libhat_module* module, libhat_span* out);
      */
     int libhat_module_get_data(Pointer module, Span.ByReference data);

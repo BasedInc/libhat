@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.Predicate;
 
 /**
@@ -33,7 +34,7 @@ public final class ProcessModule implements AutoCloseable {
 
     /**
      * @return The base address of this module, as a {@code long}.
-     * @throws LibhatException       if an internal error occurred
+     * @throws LibhatException if an internal error occurred
      */
     public long getBaseAddress() {
         PointerByReference out = new PointerByReference();
@@ -42,6 +43,25 @@ public final class ProcessModule implements AutoCloseable {
             throw new LibhatException(status);
         }
         return Pointer.nativeValue(out.getValue());
+    }
+
+    /**
+     * @param name The name of the symbol
+     * @return The address of a named public symbol, or {@link OptionalLong#empty()} if none is found.
+     * @throws NullPointerException if any arguments are {@code null}
+     * @throws LibhatException      if an internal error occurred
+     */
+    public @NotNull OptionalLong getSymbol(@NotNull final String name) {
+        Objects.requireNonNull(name);
+
+        PointerByReference out = new PointerByReference();
+        final int status = Libhat.INSTANCE.libhat_module_get_symbol(this.checkHandle(), name, out);
+        if (status != 0) {
+            throw new LibhatException(status);
+        }
+
+        final long address = Pointer.nativeValue(out.getValue());
+        return address != 0 ? OptionalLong.of(address) : OptionalLong.empty();
     }
 
     /**

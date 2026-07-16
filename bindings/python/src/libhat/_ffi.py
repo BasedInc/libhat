@@ -138,6 +138,12 @@ _library.libhat_module_address.argtypes = [ctypes.c_void_p, ctypes.POINTER(c_uin
 _library.libhat_module_address.restype = ctypes.c_int
 
 #
+# libhat_status libhat_module_get_symbol(const libhat_module* module, const char* name, uintptr_t* out);
+#
+_library.libhat_module_get_symbol.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(c_uintptr)]
+_library.libhat_module_get_symbol.restype = ctypes.c_int
+
+#
 # libhat_status libhat_module_get_data(const libhat_module* module, libhat_span* out);
 #
 _library.libhat_module_get_data.argtypes = [ctypes.c_void_p, ctypes.POINTER(Span)]
