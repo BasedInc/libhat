@@ -179,6 +179,7 @@ Below is a summary of the current support for libhat's platform-dependent APIs:
 | `hp::is_readable`                 |    ✅    |   ✅   |   ✅   |    ✅    |
 | `hp::is_writable`                 |    ✅    |   ✅   |   ✅   |    ✅    |
 | `hp::is_executable`               |    ✅    |   ✅   |   ✅   |    ✅    |
+| `hp::module::get_symbol`          |    ✅    |   ✅   |   ✅   |    ✅    |
 | `hp::module::get_module_data`     |    ✅    |   ✅   |   ✅   |    ✅    |
 | `hp::module::get_executable_data` |    ✅    |   ✅   |   ✅   |    ✅    |
 | `hp::module::get_section_data`    |    ✅    |   ✅   |   ✅   |    ✅    |
@@ -320,5 +321,4 @@ vftable[target_func_index] = (uintptr_t) my_callback;
 
 // On scope exit, original protections will be restored
 prot.~memory_protector(); // compiler generated
-
 ```
