@@ -115,10 +115,6 @@ if(LIBHAT_MODULE_TARGET)
     )
     add_library(libhat::libhat_module ALIAS libhat_module)
 
-    if(LIBHAT_EXAMPLES)
-        add_subdirectory(example/modules)
-    endif()
-
     list(APPEND LIBHAT_INSTALL_TARGETS libhat_module)
     list(APPEND LIBHAT_INSTALL_FILE_SET
         FILE_SET modules
@@ -130,6 +126,10 @@ if(LIBHAT_TESTING)
     include(CTest)
     enable_testing()
     add_subdirectory(test)
+endif()
+
+if(LIBHAT_EXAMPLES)
+    add_subdirectory(examples)
 endif()
 
 if(LIBHAT_INSTALL_TARGET)
