@@ -18,14 +18,14 @@ const void* find_abc(const void* buf, size_t n) {
     const libhat_signature* sig;
     if (libhat_success != libhat_parse_signature("61 62 63", &sig)) {
         puts("libhat_parse_signature failed");
-        return;
+        return NULL;
     }
 
     const void* result;
     if (libhat_success != libhat_find_pattern(sig, buf, n, &result, /* ... */)) {
         puts("libhat_find_pattern failed");
         libhat_free(sig);
-        return;
+        return NULL;
     }
 
     libhat_free(sig);
