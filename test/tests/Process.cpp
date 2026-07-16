@@ -247,12 +247,15 @@ TEST(ProcessTest, ModuleSectionsMatchLookup) {
     });
 }
 
-#if defined(LIBHAT_LINUX)
+#if defined(LIBHAT_ANDROID)
+    #define SYM_LOOKUP_MOD "libc.so"
+    #define SYM_LOOKUP_NAME "malloc"
+#elif defined(LIBHAT_LINUX)
     #include <gnu/lib-names.h>
     #define SYM_LOOKUP_MOD LIBC_SO
     #define SYM_LOOKUP_NAME "malloc"
 #elif defined(LIBHAT_MAC)
-    #define SYM_LOOKUP_MOD "libSystem.dylib"
+    #define SYM_LOOKUP_MOD "libSystem.B.dylib"
     #define SYM_LOOKUP_NAME "malloc"
 #elif defined(LIBHAT_WINDOWS)
     #define SYM_LOOKUP_MOD "kernel32.dll"
