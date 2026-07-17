@@ -71,6 +71,35 @@ If you are using [MSBuild](https://learn.microsoft.com/en-us/visualstudio/msbuil
 }
 ```
 
+## Building
+
+If you are exclusively building libhat from source, and do not need tests or examples, set the following options
+when generating the buildsystem:
+
+`-DLIBHAT_TESTING=OFF -DLIBHAT_EXAMPLES=OFF`
+
+If you want to include the [C bindings](bindings/c) in your build, this must be done via the root CMake project. Specify
+either `-DLIBHAT_STATIC_C_LIB=ON` or `-DLIBHAT_SHARED_C_LIB=ON` to build `libhat_c` as a static or shared library,
+respectively. (Note that only one version of the library can be built per build configuration).
+
+If you are using a multi-config generator, such as [Visual Studio](https://visualstudio.microsoft.com/):
+
+```bash
+cmake -B build
+cmake --build build --config Release
+cmake --install build --prefix install
+```
+
+If you are using a single-config generator, such as [Ninja](https://ninja-build.org/):
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja
+cmake --build build
+cmake --install build --prefix install
+```
+
+Both options will output the headers, libraries, and binaries into a local `install` directory.
+
 ## Configuration
 
 Currently, libhat only supports static linking (dynamic linking can be achieved using the [C bindings](bindings/c)). As
