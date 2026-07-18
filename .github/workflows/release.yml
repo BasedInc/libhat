@@ -30,7 +30,7 @@ jobs:
         run: cpack -G TXZ
 
       - name: Publish Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v0.11.0
           files: ${{github.workspace}}/build/*.tar.xz
@@ -63,7 +63,7 @@ jobs:
         run: cpack -C Release -G TXZ
 
       - name: Publish Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v0.11.0
           files: ${{github.workspace}}/build/*.tar.xz
