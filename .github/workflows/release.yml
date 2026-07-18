@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  release:
+    types: [ published ]
+
+jobs:
+  linux:
+    strategy:
+      matrix:
+        cxx_standard: [ 20 ]
+        compiler:
+          - { pkg: clang, exe: clang++, version: 22 }
+        os: [ ubuntu-26.04, ubuntu-26.04-arm ]
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure
+        env:
+          CXX: ${{matrix.compiler.exe}}-${{matrix.compiler.version}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=Release -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=OFF -DLIBHAT_EXAMPLES=OFF
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build -j 4
+
+      - name: CPack
+        working-directory: ${{github.workspace}}/build
+        run: cpack -G TXZ
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v0.11.0
+          files: ${{github.workspace}}/build/*.tar.xz
+
+  windows:
+    strategy:
+      matrix:
+        target: [ Win32, x64, ARM64 ]
+        toolset: [ ClangCL ]
+        cxx_standard: [ 20 ]
+        include:
+          - target: Win32
+            os: windows-2025-vs2026
+          - target: x64
+            os: windows-2025-vs2026
+          - target: ARM64
+            os: windows-11-vs2026-arm
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING=OFF -DLIBHAT_EXAMPLES=OFF -A ${{matrix.target}} -T ${{matrix.toolset}}
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config Release -j 4
+
+      - name: CPack
+        working-directory: ${{github.workspace}}/build
+        run: cpack -C Release -G TXZ
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v0.11.0
+          files: ${{github.workspace}}/build/*.tar.xz
