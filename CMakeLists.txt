@@ -179,10 +179,13 @@ if(LIBHAT_INSTALL_TARGET)
             "${version_config}"
         DESTINATION "${export_dest_dir}"
     )
+
+    # CPack
+    configure_file(
+        "${CMAKE_CURRENT_LIST_DIR}/cmake/CPackProjectConfig.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/CPackProjectConfig.cmake"
+        @ONLY
+    )
+    set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_CURRENT_BINARY_DIR}/CPackProjectConfig.cmake")
+    include(CPack)
 endif()
-
-set(CPACK_PACKAGE_FILE_NAME
-    "${CMAKE_PROJECT_NAME}-${CMAKE_PROJECT_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_BUILD_TYPE}-${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}"
-)
-
-include(CPack)
