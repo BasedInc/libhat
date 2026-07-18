@@ -131,6 +131,8 @@ if(LIBHAT_EXAMPLES)
 endif()
 
 if(LIBHAT_INSTALL_TARGET)
+    include(GNUInstallDirs)
+
     set(namespace "libhat::")
     set(targets_export_name "libhat-targets")
     set(version_config "${PROJECT_BINARY_DIR}/libhat-config-version.cmake")
