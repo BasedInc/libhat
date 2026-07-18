@@ -71,6 +71,9 @@ If you are using [MSBuild](https://learn.microsoft.com/en-us/visualstudio/msbuil
 }
 ```
 
+Pre-built binaries are also available with [releases](https://github.com/BasedInc/libhat/releases), which include
+archives with the full set of install files for `libhat` and `libhat_c` (shared).
+
 ## Building
 
 If you are exclusively building libhat from source, and do not need tests or examples, set the following options
