@@ -22,7 +22,7 @@ option(LIBHAT_EXAMPLES "Include example targets" ${PROJECT_IS_TOP_LEVEL})
 
 # Compile Options
 option(LIBHAT_WARNINGS_AS_ERRORS "Treat warnings as compiler errors" ${PROJECT_IS_TOP_LEVEL})
-option(LIBHAT_BUILD_PIC "Enables POSITION_INDEPENDENT_CODE for libhat targets" OFF)
+option(LIBHAT_BUILD_PIC "Enables POSITION_INDEPENDENT_CODE for libhat targets" ON)
 
 # Testing Options
 option(LIBHAT_TESTING "Enable tests" ${PROJECT_IS_TOP_LEVEL})
