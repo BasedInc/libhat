@@ -12,8 +12,6 @@ project(libhat
     LANGUAGES C CXX
 )
 
-include(CheckCXXCompilerFlag)
-
 # Compile Target Options
 option(LIBHAT_STATIC_C_LIB "Build a static version of the C library" OFF)
 option(LIBHAT_SHARED_C_LIB "Build a shared version of the C library" OFF)
@@ -180,3 +178,9 @@ if(LIBHAT_INSTALL_TARGET)
         DESTINATION "${export_dest_dir}"
     )
 endif()
+
+set(CPACK_PACKAGE_FILE_NAME
+    "${CMAKE_PROJECT_NAME}-${CMAKE_PROJECT_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_BUILD_TYPE}-${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}"
+)
+
+include(CPack)
