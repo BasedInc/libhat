@@ -24,18 +24,18 @@ LIBHAT_EXPORT namespace hat {
 LIBHAT_EXPORT namespace hat {
 
     struct cpu_extensions {
-        bool sse;
-        bool sse2;
-        bool sse3;
-        bool ssse3;
-        bool sse41;
-        bool sse42;
-        bool avx;
-        bool avx2;
-        bool avx512f;
-        bool avx512bw;
-        bool popcnt;
-        bool bmi;
+        bool sse : 1;
+        bool sse2 : 1;
+        bool sse3 : 1;
+        bool ssse3 : 1;
+        bool sse41 : 1;
+        bool sse42 : 1;
+        bool avx : 1;
+        bool avx2 : 1;
+        bool avx512f : 1;
+        bool avx512bw : 1;
+        bool popcnt : 1;
+        bool bmi : 1;
     };
 
     struct system_info_x86 : hat::system_info {
