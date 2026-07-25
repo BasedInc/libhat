@@ -4,19 +4,58 @@
 #include <libhat/system.hpp>
 
 #include <array>
-#include <cstdint>
+#include <bit>
 #include <bitset>
+#include <cstdint>
 #include <vector>
-#include <immintrin.h>
 #include <cstring>
+
+#include <immintrin.h>
+
+namespace {
+    struct info_t {
+        int eax;
+        int ebx;
+        int ecx;
+        int edx;
+    };
+}
 
 #ifdef LIBHAT_WINDOWS
     #include <intrin.h>
+
+    static info_t cpuid_impl(const int id) {
+        std::array<int, 4> info{};
+        __cpuid(info.data(), id);
+        return std::bit_cast<info_t>(info);
+    }
+    static info_t cpuidex_impl(const int id, const int subId) {
+        std::array<int, 4> info{};
+        __cpuidex(info.data(), id, subId);
+        return std::bit_cast<info_t>(info);
+    }
 #endif
 
 #ifdef LIBHAT_UNIX
     #include <cpuid.h>
+
+    static info_t cpuid_impl(const int id) {
+        info_t info{};
+        __cpuid(id, info.eax, info.ebx, info.ecx, info.edx);
+        return info;
+    }
+    static info_t cpuidex_impl(const int id, const int subId) {
+        info_t info{};
+        __cpuid_count(id, subId, info.eax, info.ebx, info.ecx, info.edx);
+        return info;
+    }
 #endif
+
+LIBHAT_TARGET("xsave")
+static auto xgetbv_impl(const unsigned int a) {
+    auto value = _xgetbv(a);
+    return static_cast<std::make_unsigned_t<decltype(value)>>(value);
+}
 
 #ifndef _XCR_XFEATURE_ENABLED_MASK
     #define _XCR_XFEATURE_ENABLED_MASK 0
@@ -28,80 +67,46 @@ namespace hat {
     static constexpr int CPU_EXTENDED_INFO = static_cast<int>(0x80000000);
     static constexpr int CPU_BRAND_STRING = static_cast<int>(0x80000004);
 
-    // don't re-use the __cpuid name here because linux macro'd it
-    #ifdef LIBHAT_WINDOWS
-    static void cpuid_impl(int* info, int id) {
-        __cpuid(info, id);
-    }
-    static void cpuidex_impl(int* info, int id, int subId) {
-        __cpuidex(info, id, subId);
-    }
-    #endif
-    #ifdef LIBHAT_UNIX
-    static void cpuid_impl(int* info, int id) {
-        __cpuid(id, info[0], info[1], info[2], info[3]);
-    }
-    static void cpuidex_impl(int* info, int id, int subId) {
-        __cpuid_count(id, subId, info[0], info[1], info[2], info[3]);
-    }
-    #endif
-
-    LIBHAT_TARGET("xsave")
-    static auto xgetbv_impl(unsigned int a) {
-        return _xgetbv(a);
-    }
-
     system_info_x86::system_info_x86() {
-        std::array<int, 4> info{};
-        std::vector<std::array<int, 4>> data{};
-        std::vector<std::array<int, 4>> extData{};
-
-        // Gather info
-        hat::cpuid_impl(info.data(), CPU_BASIC_INFO);
-        auto nIds = info[0];
+        // Gather basic info
+        std::array<info_t, 8> data{};
+        const auto info = ::cpuid_impl(CPU_BASIC_INFO);
+        const int nIds = std::min(info.eax, static_cast<int>(data.size()) - 1);
+        for (int i = CPU_BASIC_INFO; i <= nIds; i++) {
+            data[static_cast<size_t>(i)] = ::cpuidex_impl(i, 0);
+        }
 
         char vendor[0xC + 1]{};
-        memcpy(vendor, &info[1], sizeof(int));
-        memcpy(vendor + 4, &info[3], sizeof(int));
-        memcpy(vendor + 8, &info[2], sizeof(int));
-
-        for (int i = CPU_BASIC_INFO; i <= nIds; i++) {
-            hat::cpuidex_impl(info.data(), i, 0);
-            data.push_back(info);
-        }
-        // Gather extended info
-        hat::cpuid_impl(info.data(), CPU_EXTENDED_INFO);
-        int nExtIds = info[0];
-        for (int i = CPU_EXTENDED_INFO; i <= nExtIds; i++) {
-            hat::cpuidex_impl(info.data(), i, 0);
-            extData.push_back(info);
-        }
+        std::memcpy(vendor + sizeof(int) * 0, &info.ebx, sizeof(int));
+        std::memcpy(vendor + sizeof(int) * 1, &info.edx, sizeof(int));
+        std::memcpy(vendor + sizeof(int) * 2, &info.ecx, sizeof(int));
 
         // Read relevant info
-        std::bitset<32> f_1_ECX_{};
-        std::bitset<32> f_1_EDX_{};
-        std::bitset<32> f_7_EBX_{};
-        if (nIds >= 1) {
-            f_1_ECX_ = static_cast<std::uint32_t>(data[1][2]);
-            f_1_EDX_ = static_cast<std::uint32_t>(data[1][3]);
-        }
-        if (nIds >= 7) {
-            f_7_EBX_ = static_cast<std::uint32_t>(data[7][1]);
+        const std::bitset<32> f_1_ECX_{static_cast<std::uint32_t>(data[1].ecx)};
+        const std::bitset<32> f_1_EDX_{static_cast<std::uint32_t>(data[1].edx)};
+        const std::bitset<32> f_7_EBX_{static_cast<std::uint32_t>(data[7].ebx)};
+
+        // Gather extended info
+        std::array<info_t, 5> extData{};
+        const auto extInfo = ::cpuid_impl(CPU_EXTENDED_INFO);
+        const int nExtIds = std::min(extInfo.eax, static_cast<int>(extData.size()) + CPU_EXTENDED_INFO - 1);
+        for (int i = CPU_EXTENDED_INFO; i <= nExtIds; i++) {
+            extData[static_cast<size_t>(i - CPU_EXTENDED_INFO)] = ::cpuidex_impl(i, 0);
         }
 
         // Read extended info
         char brand[0x40 + 1]{};
         if (nExtIds >= CPU_BRAND_STRING) {
-            memcpy(brand, extData[2].data(), sizeof(info));
-            memcpy(brand + 16, extData[3].data(), sizeof(info));
-            memcpy(brand + 32, extData[4].data(), sizeof(info));
+            std::memcpy(brand + sizeof(info_t) * 0, &extData[2], sizeof(info_t));
+            std::memcpy(brand + sizeof(info_t) * 1, &extData[3], sizeof(info_t));
+            std::memcpy(brand + sizeof(info_t) * 2, &extData[4], sizeof(info_t));
         }
 
         // Check OS capabilities
         bool avxsupport = false;
         bool avx512support = false;
-        bool xsave = f_1_ECX_[26];
-        bool osxsave = f_1_ECX_[27];
+        const bool xsave = f_1_ECX_[26];
+        const bool osxsave = f_1_ECX_[27];
         if (xsave && osxsave) {
             // https://cdrdv2-public.intel.com/671190/253668-sdm-vol-3a.pdf (Page 2-20)
             const std::bitset<64> xcr = xgetbv_impl(_XCR_XFEATURE_ENABLED_MASK);
