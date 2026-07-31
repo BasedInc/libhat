@@ -3,15 +3,12 @@
 #include <libhat/defines.hpp>
 #include <libhat/system.hpp>
 
-#ifdef LIBHAT_HINT_X86_64
-#include "arch/x86/Frequency.hpp"
-#endif
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <utility>
 
-#ifdef LIBHAT_HINT_AARCH64
-#include "arch/arm/Frequency.hpp"
-#endif
-
-#include "Utils.hpp"
+#include "utils.hpp"
 
 namespace {
 
@@ -108,17 +105,22 @@ namespace hat::detail {
         const std::array<std::uint16_t, NUM_PAIRS>&
     >;
 
-    static constexpr auto get_pair_hint(const scan_hint hints) -> std::optional<pair_hint_t> {
-#ifdef LIBHAT_HINT_X86_64
+    static auto get_pair_hint(const scan_hint hints) -> std::optional<pair_hint_t> {
+        [[maybe_unused]] constexpr auto p = [](const std::uint8_t a, const std::uint8_t b) {
+            return std::pair{std::byte{a}, std::byte{b}};
+        };
         if (static_cast<bool>(hints & scan_hint::x86_64)) {
-            return std::tie(hat::detail::x86_64::pairs_x1, hat::detail::x86_64::scores_x1);
-        }
+#ifdef LIBHAT_HINT_X86_64
+#include "scanner/frequency/x86_64.inl"
+            return std::tie(pairs_x1, scores_x1);
 #endif
-#ifdef LIBHAT_HINT_AARCH64
+        }
         if (static_cast<bool>(hints & scan_hint::aarch64)) {
-            return std::tie(hat::detail::aarch64::pairs_x1, hat::detail::aarch64::scores_x1);
-        }
+#ifdef LIBHAT_HINT_AARCH64
+#include "scanner/frequency/aarch64.inl"
+            return std::tie(pairs_x1, scores_x1);
 #endif
+        }
         return std::nullopt;
     }
 

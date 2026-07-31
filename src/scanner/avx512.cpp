@@ -4,7 +4,7 @@
 
 #include <libhat/scanner.hpp>
 
-#include "../../Utils.hpp"
+#include "simd.hpp"
 
 #include <immintrin.h>
 
