@@ -11,6 +11,94 @@
 #include "arch/arm/Frequency.hpp"
 #endif
 
+#include "Utils.hpp"
+
+namespace {
+
+    struct anchor_matcher {
+
+        anchor_matcher(const hat::signature_view& signature, const std::span<std::size_t>& anchors, const std::size_t literals) :
+            signature_(signature),
+            anchors_(anchors),
+            literals_(literals) {}
+
+        [[nodiscard]] std::pair<hat::signature_element, std::size_t> top() const {
+            return anchor(0);
+        }
+
+        [[nodiscard]] bool matches(const std::byte* buffer) const {
+            for (size_t i = 1; i < literals_; i++) {
+                const auto [element, offset] = anchor(i);
+                if (buffer[offset] != element) {
+                    std::swap(anchors_[i], anchors_[i - 1]);
+                    return false;
+                }
+            }
+
+            for (size_t i = literals_; i < anchors_.size(); i++) {
+                const auto [element, offset] = anchor(i);
+                if (buffer[offset] != element) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        [[nodiscard]] std::size_t literals() const {
+            return literals_;
+        }
+
+    private:
+        [[nodiscard]] std::pair<hat::signature_element, std::size_t> anchor(const size_t index) const {
+            const auto offset = anchors_[index];
+            return {signature_[offset], offset};
+        }
+
+        hat::signature_view    signature_;
+        std::span<std::size_t> anchors_;
+        std::size_t            literals_;
+    };
+
+    struct signature_info {
+        std::optional<std::size_t> optimalByteIndex{}; // The index of the least common fully masked element
+        std::size_t                anyMaskCount{};     // The number of elements with a non-zero mask
+    };
+
+    struct std_context {
+        mutable std::vector<std::size_t> anchors{};
+        std::size_t literals{};
+
+        explicit std_context(const hat::detail::scan_parameters& params) {
+            this->anchors.resize(static_cast<size_t>(
+                std::ranges::count_if(params.signature, &hat::signature_element::any)));
+            auto it = this->anchors.begin();
+
+            // Add fully masked bytes
+            for (size_t i{}; auto e : params.signature) {
+                if (e.all()) {
+                    *it++ = i;
+                }
+                i++;
+            }
+            this->literals = static_cast<std::size_t>(std::distance(this->anchors.begin(), it));
+
+            // Add partially masked bytes
+            for (size_t i{}; auto e : params.signature) {
+                if (!e.all() && !e.none()) {
+                    *it++ = i;
+                }
+                i++;
+            }
+        }
+    };
+
+    anchor_matcher create_anchor_matcher(const hat::detail::scan_context& context) {
+        const auto& std = context.get<std_context>();
+        return {context.signature(), std.anchors, std.literals};
+    }
+}
+
 namespace hat::detail {
 
     static constexpr std::uint16_t NUM_PAIRS = 512;
@@ -34,11 +122,11 @@ namespace hat::detail {
         return std::nullopt;
     }
 
-    void scan_context::apply_hints(const scanner_context& scanner) {
-        const bool pair0 = static_cast<bool>(this->hints & scan_hint::pair0);
+    std::optional<std::size_t> get_optimal_pair(const scan_parameters& params) {
+        const bool pair0 = static_cast<bool>(params.hints & scan_hint::pair0);
 
-        const auto pair_hint = get_pair_hint(this->hints);
-        if (pair_hint && !pair0 && scanner.vectorSize) {
+        const auto pair_hint = get_pair_hint(params.hints);
+        if (pair_hint && !pair0) {
             const auto getScore = [&](const std::byte a, const std::byte b) -> std::uint16_t {
                 const auto& [pairs, scores] = *pair_hint;
                 const std::pair pair{a, b};
@@ -47,71 +135,168 @@ namespace hat::detail {
                 return it != pairs.end() && *it == pair ? scores[index] : NUM_PAIRS;
             };
 
-            std::optional<std::pair<std::size_t, std::uint16_t>> bestPair{};
-            for (auto it = this->signature.begin(); it != std::prev(this->signature.end()); it++) {
-                const auto i = static_cast<std::size_t>(it - this->signature.begin());
+            std::optional<std::pair<std::size_t, std::uint16_t>> best{};
+            for (auto it = params.signature.begin(); it != std::prev(params.signature.end()); it++) {
+                const auto i = static_cast<std::size_t>(it - params.signature.begin());
                 auto& a = *it;
                 auto& b = *std::next(it);
 
                 if (a.all() && b.all()) {
                     const auto score = getScore(a.value(), b.value());
-                    if (!bestPair || score > bestPair->second) {
-                        bestPair.emplace(i, score);
+                    if (!best || score > best->second) {
+                        best.emplace(i, score);
                     }
                 }
             }
 
-            if (bestPair) {
-                this->pairIndex = bestPair->first;
+            if (best) {
+                return best->first;
             }
         }
 
         // If no "optimal" pair was found, find the first byte pair in the signature
-        if (!this->pairIndex.has_value()) {
-            for (auto it = this->signature.begin(); it != std::prev(this->signature.end()); it++) {
-                const auto i = static_cast<std::size_t>(it - this->signature.begin());
-                auto& a = *it;
-                auto& b = *std::next(it);
+        for (auto it = params.signature.begin(); it != std::prev(params.signature.end()); it++) {
+            const auto i = static_cast<std::size_t>(it - params.signature.begin());
+            auto& a = *it;
+            auto& b = *std::next(it);
 
-                if (a.all() && b.all()) {
-                    this->pairIndex = i;
-                    break;
-                }
-                if (i == 0 && pair0) {
-                    break;
-                }
+            if (a.all() && b.all()) {
+                return i;
+            }
+            if (i == 0 && pair0) {
+                break;
             }
         }
+
+        return {};
+    }
+
+    std::optional<std::size_t> get_optimal_byte(const scan_parameters& params) {
+        const auto signature = params.signature;
+
+        std::array<uint8_t, 256> counts{};
+        for (const auto element : signature) {
+            const auto value = std::to_integer<uint8_t>(element.value());
+            auto& count = counts[value];
+            if (element.all() && count < 0xFF) {
+                count++;
+            }
+        }
+
+        std::optional<size_t> min{};
+        uint8_t minCount = 0xFF;
+        for (std::size_t i = 0; i < signature.size(); i++) {
+            auto& element = signature[i];
+            const auto count = std::to_integer<uint8_t>(element.value());
+            if (!min || count < minCount) {
+                min = i;
+                minCount = count;
+            }
+        }
+
+        return min;
+    }
+
+    template<scan_alignment alignment>
+    static const_scan_result find_pattern_single(const std::byte* begin, const std::byte* end, const scan_context& context) {
+        static constexpr auto stride = alignment_stride<alignment>;
+
+        const auto scanBegin = align_up<stride>(begin);
+        const auto scanEnd = align_up<stride>(end - context.signature().size() + 1);
+        if (scanBegin >= scanEnd) {
+            return nullptr;
+        }
+
+        const auto matcher = create_anchor_matcher(context);
+        for (auto i = scanBegin; i != scanEnd; i += stride) {
+            if (matcher.literals() > 0) {
+                const auto [anchor, offset] = matcher.top();
+                while (i != scanEnd) {
+                    if (i[offset] == anchor) {
+                        break;
+                    }
+                    i += stride;
+                }
+                if (i == scanEnd) LIBHAT_UNLIKELY break;
+            }
+            if (matcher.matches(i)) {
+                return i;
+            }
+        }
+
+        return nullptr;
     }
 
     template<>
-    scan_function_t resolve_scanner<scan_mode::Auto>(scan_context& context) {
-        const auto& ext = get_system().extensions;
-#if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
-        if (compiled_extensions.bmi || ext.bmi) {
-#if defined(LIBHAT_X86_64) && defined(LIBHAT_FEATURE_AVX512)
-            if ((compiled_extensions.avx512f || ext.avx512f)
-                && (compiled_extensions.avx512bw || ext.avx512bw)) {
-                return resolve_scanner<scan_mode::AVX512>(context);
+    const_scan_result find_pattern_single<scan_alignment::X1>(const std::byte* begin, const std::byte* end, const scan_context& context) {
+        const auto signature = context.signature();
+        const auto scanEnd = end - signature.size() + 1;
+
+        const auto matcher = create_anchor_matcher(context);
+        for (auto i = begin; i != scanEnd; i++) {
+            // This check should get hoisted out by the optimizer
+            if (matcher.literals() > 0) {
+                const auto [anchor, offset] = matcher.top();
+
+                // Use std::find to efficiently find the first byte
+                #ifndef _MSC_VER
+                    i = static_cast<const std::byte*>(
+                        std::memchr(i + offset, static_cast<unsigned char>(anchor.value()), static_cast<std::size_t>(scanEnd - i)));
+                    if (!i) LIBHAT_UNLIKELY break;
+                    i -= offset;
+                #elif __cpp_lib_execution >= 201902L
+                    i = std::find(std::execution::unseq, i + offset, scanEnd + offset, anchor.value()) - offset;
+                    if (i == scanEnd) LIBHAT_UNLIKELY break;
+                #else
+                    i = std::find(i + offset, scanEnd + offset, anchor.value()) - offset;
+                    if (i == scanEnd) LIBHAT_UNLIKELY break;
+                #endif
             }
-#endif
-            if (compiled_extensions.avx2 || ext.avx2) {
-                return resolve_scanner<scan_mode::AVX2>(context);
+            if (matcher.matches(i)) {
+                return i;
             }
         }
-#if defined(LIBHAT_FEATURE_SSE)
-        if (compiled_extensions.sse41 || ext.sse41) {
-            return resolve_scanner<scan_mode::SSE>(context);
+        return nullptr;
+    }
+
+    template<>
+    scan_context create_context<scan_mode::Single>(const scan_parameters& params) {
+        switch (params.alignment) {
+            case scan_alignment::X1: return {params.signature, &find_pattern_single<scan_alignment::X1>, std::type_identity<std_context>{}, params};
+            case scan_alignment::X4: return {params.signature, &find_pattern_single<scan_alignment::X4>, std::type_identity<std_context>{}, params};
+            case scan_alignment::X16: return {params.signature, &find_pattern_single<scan_alignment::X16>, std::type_identity<std_context>{}, params};
         }
-#endif
-#endif
+        LIBHAT_UNREACHABLE();
+    }
+
+    template<>
+    scan_context create_context<scan_mode::Auto>(const scan_parameters& params) {
+//         const auto& ext = get_system().extensions;
+// #if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
+//         if (compiled_extensions.bmi || ext.bmi) {
+// #if defined(LIBHAT_X86_64) && defined(LIBHAT_FEATURE_AVX512)
+//             if ((compiled_extensions.avx512f || ext.avx512f)
+//                 && (compiled_extensions.avx512bw || ext.avx512bw)) {
+//                 return create_context<scan_mode::AVX512>(params);
+//             }
+// #endif
+//             if (compiled_extensions.avx2 || ext.avx2) {
+//                 return create_context<scan_mode::AVX2>(params);
+//             }
+//         }
+// #if defined(LIBHAT_FEATURE_SSE)
+//         if (compiled_extensions.sse41 || ext.sse41) {
+//             return create_context<scan_mode::SSE>(params);
+//         }
+// #endif
+// #endif
 #if defined(LIBHAT_ARM) || defined(LIBHAT_AARCH64)
         if (compiled_extensions.neon || ext.neon) {
-            return resolve_scanner<scan_mode::Neon>(context);
+            return create_context<scan_mode::Neon>(params);
         }
 #endif
         // If none of the vectorized implementations are available/supported, then fallback to scanning per-byte
-        return resolve_scanner<scan_mode::Single>(context);
+        return create_context<scan_mode::Single>(params);
     }
 }
 

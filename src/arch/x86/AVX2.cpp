@@ -25,8 +25,8 @@ namespace hat::detail {
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
     LIBHAT_TARGET("avx,avx2,bmi")
     static const_scan_result find_pattern_avx2(const std::byte* begin, const std::byte* end, const scan_context& context) {
-        const auto signature = context.signature;
-        const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
+        const auto signature = context.signature();
+        const auto cmpIndex = context.get<simd_context>().cmpIndex;
 
         // 256 bit vector containing first signature byte repeated
         const auto firstByte = _mm256_set1_epi8(static_cast<std::int8_t>(*signature[cmpIndex]));
@@ -44,7 +44,7 @@ namespace hat::detail {
         auto [pre, vec, post] = segment_scan<__m256i, 32, veccmp>(begin, end, signature.size(), cmpIndex);
 
         if (!pre.empty()) {
-            const auto result = find_pattern_single<alignment>(pre.data(), pre.data() + pre.size(), context);
+            const auto result = find_pattern_search<alignment>(pre.data(), pre.data() + pre.size(), context);
             if (result.has_result()) {
                 return result;
             }
@@ -90,23 +90,16 @@ namespace hat::detail {
         }
 
         if (!post.empty()) {
-            return find_pattern_single<alignment>(post.data(), post.data() + post.size(), context);
+            return find_pattern_search<alignment>(post.data(), post.data() + post.size(), context);
         }
         return {};
     }
 
     template<>
-    scan_function_t resolve_scanner<scan_mode::AVX2>(scan_context& context) {
-        context.apply_hints({.vectorSize = 32});
-
-        const auto alignment = context.alignment;
-        const auto signature = context.signature;
-        const bool cmpeq2 = context.pairIndex.has_value();
-        const bool veccmp = signature.size() <= 32;
-
-        return find_specialization_switch<[]<auto... p>() consteval {
+    scan_context create_context<scan_mode::AVX2>(const scan_parameters& params) {
+        return create_simd_scanner<[]<auto... p>() consteval {
             return &find_pattern_avx2<p...>;
-        }>(alignment, cmpeq2, veccmp);
+        }>(params, 32);
     }
 }
 #endif
