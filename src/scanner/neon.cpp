@@ -52,7 +52,7 @@ namespace hat::detail {
 
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
     static const_scan_result find_pattern_neon(const std::byte* begin, const std::byte* end, const scan_context& context) {
-        const auto signature = context.signature;
+        const auto signature = context.signature();
         const auto cmpIndex = context.get<simd_context>().cmpIndex;
 
         // 128 bit vector containing first signature byte repeated
