@@ -35,9 +35,9 @@ namespace hat::detail {
     }
 
     static auto count_bytes(const signature_view signature) {
-        std::array<uint8_t, 256> counts{};
+        std::array<std::uint8_t, 256> counts{};
         for (const auto element : signature) {
-            const auto value = std::to_integer<uint8_t>(element.value());
+            const auto value = std::to_integer<std::uint8_t>(element.value());
             auto& count = counts[value];
             if (element.all() && count < 0xFF) {
                 count++;
@@ -47,10 +47,17 @@ namespace hat::detail {
     }
 
     std::optional<std::size_t> get_optimal_pair(const scan_parameters& params) {
-        const bool pair0 = static_cast<bool>(params.hints & scan_hint::pair0);
+        const auto sig = params.signature;
 
-        const auto pair_hint = get_pair_hint(params.hints);
-        if (pair_hint && !pair0) {
+        // Only utilize byte pair based scanning if the signature starts with a byte pair
+        if (static_cast<bool>(params.hints & scan_hint::pair0)) {
+            if (sig.size() >= 2 && sig[0].all() && sig[1].all()) {
+                return 0;
+            }
+            return {};
+        }
+
+        if (const auto pair_hint = get_pair_hint(params.hints)) {
             const auto getScore = [&](const std::byte a, const std::byte b) -> std::uint16_t {
                 const auto& [pairs, scores] = *pair_hint;
                 const std::pair pair{a, b};
@@ -60,8 +67,8 @@ namespace hat::detail {
             };
 
             std::optional<std::pair<std::size_t, std::uint16_t>> best{};
-            for (auto it = params.signature.begin(); it != std::prev(params.signature.end()); it++) {
-                const auto i = static_cast<std::size_t>(it - params.signature.begin());
+            for (auto it = sig.begin(); it != std::prev(sig.end()); it++) {
+                const auto i = static_cast<std::size_t>(it - sig.begin());
                 auto& a = *it;
                 auto& b = *std::next(it);
 
@@ -78,21 +85,29 @@ namespace hat::detail {
             }
         }
 
-        // If no "optimal" pair was found, find the first byte pair in the signature
-        for (auto it = params.signature.begin(); it != std::prev(params.signature.end()); it++) {
-            const auto i = static_cast<std::size_t>(it - params.signature.begin());
+        // If no "optimal" pair was found based on hints, find the best one based on individual byte occurrences
+        const auto counts = count_bytes(sig);
+        std::uint16_t minScore{0xFFFF};
+        std::optional<std::size_t> minIndex{};
+        for (auto it = sig.begin(); it != std::prev(sig.end()); it++) {
             auto& a = *it;
             auto& b = *std::next(it);
-
-            if (a.all() && b.all()) {
-                return i;
+            if (!a.all() || !b.all()) {
+                continue;
             }
-            if (i == 0 && pair0) {
-                break;
+
+            const auto score = static_cast<std::uint16_t>(counts[std::to_integer<std::uint8_t>(*a)]
+                + counts[std::to_integer<std::uint8_t>(*b)]);
+            if (!minIndex || (score < minScore)) {
+                minScore = score;
+                minIndex = std::distance(sig.begin(), it);
+                if (score == 2) {
+                    break; // minimum value
+                }
             }
         }
 
-        return {};
+        return minIndex;
     }
 
     std::optional<std::size_t> get_optimal_byte(const scan_parameters& params) {
@@ -101,7 +116,7 @@ namespace hat::detail {
 
         auto bytes = signature | std::views::filter(&signature_element::all);
         const auto min = std::ranges::min_element(bytes, std::less{},
-            [&](const auto element) { return counts[std::to_integer<uint8_t>(*element)]; }).base();
+            [&](const auto element) { return counts[std::to_integer<std::uint8_t>(*element)]; }).base();
 
         if (min != signature.end()) {
             return std::distance(signature.begin(), min);
