@@ -34,6 +34,18 @@ namespace hat::detail {
         return std::nullopt;
     }
 
+    static auto count_bytes(const signature_view signature) {
+        std::array<uint8_t, 256> counts{};
+        for (const auto element : signature) {
+            const auto value = std::to_integer<uint8_t>(element.value());
+            auto& count = counts[value];
+            if (element.all() && count < 0xFF) {
+                count++;
+            }
+        }
+        return counts;
+    }
+
     std::optional<std::size_t> get_optimal_pair(const scan_parameters& params) {
         const bool pair0 = static_cast<bool>(params.hints & scan_hint::pair0);
 
@@ -85,27 +97,15 @@ namespace hat::detail {
 
     std::optional<std::size_t> get_optimal_byte(const scan_parameters& params) {
         const auto signature = params.signature;
+        const auto counts = count_bytes(signature);
 
-        std::array<uint8_t, 256> counts{};
-        for (const auto element : signature) {
-            const auto value = std::to_integer<uint8_t>(element.value());
-            auto& count = counts[value];
-            if (element.all() && count < 0xFF) {
-                count++;
-            }
+        auto bytes = signature | std::views::filter(&signature_element::all);
+        const auto min = std::ranges::min_element(bytes, std::less{},
+            [&](const auto element) { return counts[std::to_integer<uint8_t>(*element)]; }).base();
+
+        if (min != signature.end()) {
+            return std::distance(signature.begin(), min);
         }
-
-        std::optional<size_t> min{};
-        uint8_t minCount = 0xFF;
-        for (std::size_t i = 0; i < signature.size(); i++) {
-            auto& element = signature[i];
-            const auto count = std::to_integer<uint8_t>(element.value());
-            if (!min || count < minCount) {
-                min = i;
-                minCount = count;
-            }
-        }
-
-        return min;
+        return {};
     }
 }
