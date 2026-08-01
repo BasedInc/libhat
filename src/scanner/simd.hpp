@@ -1,5 +1,6 @@
 #pragma once
 
+#include "scan_context.hpp"
 #include "../utils.hpp"
 
 namespace hat::detail {
