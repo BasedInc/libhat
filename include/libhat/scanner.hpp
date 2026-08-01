@@ -152,7 +152,7 @@ namespace hat::detail {
     };
 
     class scan_context {
-        static constexpr size_t impl_buffer_size = 32;
+        static constexpr size_t impl_buffer_size = 48;
         static constexpr size_t impl_buffer_align = alignof(std::max_align_t);
     public:
         scan_context(const scan_context&) = delete;
