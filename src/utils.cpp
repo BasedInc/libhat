@@ -68,15 +68,15 @@ namespace hat::detail {
 
             std::optional<std::pair<std::size_t, std::uint16_t>> best{};
             for (auto it = sig.begin(); it != std::prev(sig.end()); it++) {
-                const auto i = static_cast<std::size_t>(it - sig.begin());
-                auto& a = *it;
-                auto& b = *std::next(it);
+                auto a = *it;
+                auto b = *std::next(it);
+                if (!a.all() || !b.all()) {
+                    continue;
+                }
 
-                if (a.all() && b.all()) {
-                    const auto score = getScore(a.value(), b.value());
-                    if (!best || score > best->second) {
-                        best.emplace(i, score);
-                    }
+                const auto score = getScore(a.value(), b.value());
+                if (!best || score > best->second) {
+                    best.emplace(std::distance(sig.begin(), it), score);
                 }
             }
 
@@ -87,27 +87,28 @@ namespace hat::detail {
 
         // If no "optimal" pair was found based on hints, find the best one based on individual byte occurrences
         const auto counts = count_bytes(sig);
-        std::uint16_t minScore{0xFFFF};
-        std::optional<std::size_t> minIndex{};
+        std::optional<std::pair<std::size_t, std::uint16_t>> best{};
         for (auto it = sig.begin(); it != std::prev(sig.end()); it++) {
-            auto& a = *it;
-            auto& b = *std::next(it);
+            auto a = *it;
+            auto b = *std::next(it);
             if (!a.all() || !b.all()) {
                 continue;
             }
 
             const auto score = static_cast<std::uint16_t>(counts[std::to_integer<std::uint8_t>(*a)]
                 + counts[std::to_integer<std::uint8_t>(*b)]);
-            if (!minIndex || (score < minScore)) {
-                minScore = score;
-                minIndex = std::distance(sig.begin(), it);
+            if (!best || score < best->second) {
+                best.emplace(std::distance(sig.begin(), it), score);
                 if (score == 2) {
                     break; // minimum value
                 }
             }
         }
 
-        return minIndex;
+        if (best) {
+            return best->first;
+        }
+        return {};
     }
 
     std::optional<std::size_t> get_optimal_byte(const scan_parameters& params) {
