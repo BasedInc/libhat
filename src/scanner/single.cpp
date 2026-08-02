@@ -16,7 +16,7 @@ namespace {
         }
 
         [[nodiscard]] bool matches(const std::byte* buffer) const {
-            for (size_t i = 1; i < literals_; i++) {
+            for (std::size_t i = 1; i < literals_; i++) {
                 const auto [element, offset] = anchor(i);
                 if (buffer[offset] != element) {
                     std::swap(anchors_[i], anchors_[i - 1]);
@@ -49,23 +49,20 @@ namespace {
         std::size_t            literals_;
     };
 
-    struct std_context {
-        mutable std::vector<std::size_t> anchors{};
-        std::size_t literals{};
-
-        explicit std_context(const hat::detail::scan_parameters& params) {
-            this->anchors.resize(static_cast<size_t>(
-                std::ranges::count_if(params.signature, &hat::signature_element::any)));
-            auto it = this->anchors.begin();
+    struct single_context {
+        explicit single_context(const hat::detail::scan_parameters& params) :
+            anchors_(static_cast<std::size_t>(std::ranges::count_if(params.signature, &hat::signature_element::any)))
+        {
+            auto it = anchors_.begin();
 
             // Add fully masked bytes
-            for (size_t i{}; auto e : params.signature) {
+            for (std::size_t i{}; auto e : params.signature) {
                 if (e.all()) {
                     *it++ = i;
                 }
                 i++;
             }
-            this->literals = static_cast<std::size_t>(std::distance(this->anchors.begin(), it));
+            literals_ = static_cast<std::size_t>(std::distance(anchors_.begin(), it));
 
             // Add partially masked bytes
             for (size_t i{}; auto e : params.signature) {
@@ -75,12 +72,16 @@ namespace {
                 i++;
             }
         }
-    };
 
-    anchor_matcher create_anchor_matcher(const hat::detail::scan_context& context) {
-        const auto& std = context.get<std_context>();
-        return {context.signature(), std.anchors, std.literals};
-    }
+        static anchor_matcher create_matcher(const hat::detail::scan_context& context) {
+            const auto& std = context.get<single_context>();
+            return {context.signature(), std.anchors_, std.literals_};
+        }
+
+    private:
+        mutable std::vector<std::size_t> anchors_{};
+        std::size_t literals_{};
+    };
 }
 
 namespace hat::detail {
@@ -95,7 +96,7 @@ namespace hat::detail {
             return nullptr;
         }
 
-        const auto matcher = create_anchor_matcher(context);
+        const auto matcher = single_context::create_matcher(context);
         for (auto i = scanBegin; i != scanEnd; i += stride) {
             if (matcher.literals() > 0) {
                 const auto [anchor, offset] = matcher.top();
@@ -120,7 +121,7 @@ namespace hat::detail {
         const auto signature = context.signature();
         const auto scanEnd = end - signature.size() + 1;
 
-        const auto matcher = create_anchor_matcher(context);
+        const auto matcher = single_context::create_matcher(context);
         for (auto i = begin; i != scanEnd; i++) {
             // This check should get hoisted out by the optimizer
             if (matcher.literals() > 0) {
@@ -149,10 +150,14 @@ namespace hat::detail {
 
     template<>
     scan_context create_context<scan_mode::Single>(const scan_parameters& params) {
+        const auto create = [&]<scan_alignment A>(std::integral_constant<scan_alignment, A>) {
+            return scan_context{params.signature, &find_pattern_single<A>, std::type_identity<single_context>{}, params};
+        };
         switch (params.alignment) {
-            case scan_alignment::X1: return {params.signature, &find_pattern_single<scan_alignment::X1>, std::type_identity<std_context>{}, params};
-            case scan_alignment::X4: return {params.signature, &find_pattern_single<scan_alignment::X4>, std::type_identity<std_context>{}, params};
-            case scan_alignment::X16: return {params.signature, &find_pattern_single<scan_alignment::X16>, std::type_identity<std_context>{}, params};
+            using enum scan_alignment;
+            case X1: return create(std::integral_constant<scan_alignment, X1>{});
+            case X4: return create(std::integral_constant<scan_alignment, X4>{});
+            case X16: return create(std::integral_constant<scan_alignment, X16>{});
         }
         LIBHAT_UNREACHABLE();
     }
