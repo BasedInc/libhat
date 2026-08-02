@@ -50,10 +50,11 @@ namespace {
     };
 
     struct single_context {
-        explicit single_context(const hat::detail::scan_parameters& params) :
-            anchors_(static_cast<std::size_t>(std::ranges::count_if(params.signature, &hat::signature_element::any)))
-        {
-            auto it = anchors_.begin();
+
+        explicit single_context(const hat::detail::scan_parameters& params) {
+            total_ = static_cast<std::size_t>(std::ranges::count_if(params.signature, &hat::signature_element::any));
+            anchors_ = std::make_unique<std::size_t[]>(total_);
+            auto it = anchors_.get();
 
             // Add fully masked bytes
             for (std::size_t i{}; auto e : params.signature) {
@@ -62,7 +63,7 @@ namespace {
                 }
                 i++;
             }
-            literals_ = static_cast<std::size_t>(std::distance(anchors_.begin(), it));
+            literals_ = static_cast<std::size_t>(std::distance(anchors_.get(), it));
 
             // Add partially masked bytes
             for (size_t i{}; auto e : params.signature) {
@@ -75,11 +76,12 @@ namespace {
 
         static anchor_matcher create_matcher(const hat::detail::scan_context& context) {
             const auto& std = context.get<single_context>();
-            return {context.signature(), std.anchors_, std.literals_};
+            return {context.signature(), {std.anchors_.get(), std.total_}, std.literals_};
         }
 
     private:
-        mutable std::vector<std::size_t> anchors_{};
+        std::unique_ptr<std::size_t[]> anchors_;
+        std::size_t total_{};
         std::size_t literals_{};
     };
 }
