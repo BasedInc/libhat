@@ -16,6 +16,11 @@ namespace hat::detail {
         const bool cmpeq2 = cmpIndex.has_value();
         if (!cmpIndex) cmpIndex = get_optimal_byte(params);
 
+        if (!cmpIndex) LIBHAT_UNLIKELY {
+            // Highly unlikely case (no elements with a 0xFF mask), but it is supported by the 'Single' implementation.
+            return create_context<hat::detail::scan_mode::Single>(params);
+        }
+
         const auto resolve = [&]<scan_alignment A>(std::integral_constant<scan_alignment, A>) {
             if (cmpeq2 && veccmp) return impl.template operator()<A, true, true>();
             if (cmpeq2) return impl.template operator()<A, true, false>();
