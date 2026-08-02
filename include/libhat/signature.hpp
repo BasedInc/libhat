@@ -89,7 +89,6 @@ LIBHAT_EXPORT namespace hat {
     using fixed_signature = std::array<signature_element, N>;
 
     enum class signature_error {
-        missing_masked_byte,
         element_parse_error,
         empty_signature,
         expected_wildcard,
@@ -171,7 +170,6 @@ LIBHAT_EXPORT namespace hat {
 
     [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<std::size_t, signature_error> parse_signature_to(std::output_iterator<signature_element> auto out, const std::string_view str) {
         std::size_t written = 0;
-        bool containsByte = false;
 
         for (auto&& sub : str | std::views::split(' ')) {
             const std::string_view word{sub.begin(), sub.end()};
@@ -194,7 +192,6 @@ LIBHAT_EXPORT namespace hat {
                     if (element) {
                         *out++ = *element;
                         written++;
-                        containsByte |= element->all();
                     } else {
                         return result_error{signature_error::element_parse_error};
                     }
@@ -207,9 +204,6 @@ LIBHAT_EXPORT namespace hat {
         }
         if (written == 0) {
             return result_error{signature_error::empty_signature};
-        }
-        if (!containsByte) {
-            return result_error{signature_error::missing_masked_byte};
         }
         return written;
     }
