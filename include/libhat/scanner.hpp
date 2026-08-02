@@ -178,6 +178,9 @@ namespace hat::detail {
         [[nodiscard]] const T& get() const;
 
         [[nodiscard]] constexpr const_scan_result scan(const std::byte* begin, const std::byte* end) const {
+            if (signature_.empty()) LIBHAT_UNLIKELY {
+                return begin;
+            }
             if (signature_.size() > static_cast<std::size_t>(std::distance(begin, end))) LIBHAT_UNLIKELY {
                 return {};
             }

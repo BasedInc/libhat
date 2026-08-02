@@ -96,7 +96,6 @@ LIBHAT_API const char* libhat_status_to_string(const libhat_status status) {
         STATUS_CASE(libhat_success);
         STATUS_CASE(libhat_err_unknown);
         STATUS_CASE(libhat_err_sig_element_parse_error);
-        STATUS_CASE(libhat_err_sig_empty_signature);
         STATUS_CASE(libhat_err_sig_expected_wildcard);
         STATUS_CASE(libhat_err_sig_invalid_token_length);
         STATUS_CASE(libhat_err_invalid_argument_value);
@@ -113,7 +112,6 @@ LIBHAT_API libhat_status libhat_parse_signature(const char* signatureStr, const 
         switch (result.error()) {
             using enum hat::signature_error;
             case element_parse_error:  return libhat_err_sig_element_parse_error;
-            case empty_signature:      return libhat_err_sig_empty_signature;
             case expected_wildcard:    return libhat_err_sig_expected_wildcard;
             case invalid_token_length: return libhat_err_sig_invalid_token_length;
         }
@@ -134,9 +132,6 @@ LIBHAT_API libhat_status libhat_create_signature(
     }
     if (size && (!bytes || !mask)) {
         return libhat_err_invalid_argument_value;
-    }
-    if (!size) {
-        return libhat_err_sig_empty_signature;
     }
 
     hat::signature signature{};

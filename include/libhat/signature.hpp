@@ -90,7 +90,6 @@ LIBHAT_EXPORT namespace hat {
 
     enum class signature_error {
         element_parse_error,
-        empty_signature,
         expected_wildcard,
         invalid_token_length,
     };
@@ -104,11 +103,8 @@ LIBHAT_EXPORT namespace hat {
     }
 
     /// Convert raw byte storage into a signature
-    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_error> bytes_to_signature(std::span<const std::byte> bytes) {
-        if (bytes.empty()) {
-            return result_error{signature_error::empty_signature};
-        }
-        return signature{bytes.begin(), bytes.end()};
+    [[nodiscard]] constexpr signature bytes_to_signature(std::span<const std::byte> bytes) {
+        return {bytes.begin(), bytes.end()};
     }
 
     template<typename T>
@@ -123,11 +119,7 @@ LIBHAT_EXPORT namespace hat {
     }
 
     template<typename Char>
-    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_error> string_to_signature(std::basic_string_view<Char> str) {
-        if (str.empty()) {
-            return result_error{signature_error::empty_signature};
-        }
-
+    [[nodiscard]] constexpr signature string_to_signature(std::basic_string_view<Char> str) {
         signature result;
         result.resize(str.size() * sizeof(Char));
 
@@ -142,7 +134,7 @@ LIBHAT_EXPORT namespace hat {
     }
 
     template<typename Char>
-    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_error> string_to_signature(std::basic_string<Char> str) {
+    [[nodiscard]] constexpr signature string_to_signature(std::basic_string<Char> str) {
         return string_to_signature(std::basic_string_view<Char>{str});
     }
 
@@ -201,9 +193,6 @@ LIBHAT_EXPORT namespace hat {
                     return result_error{signature_error::invalid_token_length};
                 }
             }
-        }
-        if (written == 0) {
-            return result_error{signature_error::empty_signature};
         }
         return written;
     }
