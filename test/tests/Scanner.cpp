@@ -97,7 +97,14 @@ using FindPatternTestTypes = ::testing::Types<
     FindPatternParameters<hat::detail::scan_mode::Single, 8, 256>,
     FindPatternParameters<hat::detail::scan_mode::Single, 16, 256>,
     FindPatternParameters<hat::detail::scan_mode::Single, 32, 256>,
-    FindPatternParameters<hat::detail::scan_mode::Single, 64, 256>
+    FindPatternParameters<hat::detail::scan_mode::Single, 64, 256>,
+
+    FindPatternParameters<hat::detail::scan_mode::Search, 1, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Search, 3, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Search, 8, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Search, 16, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Search, 32, 256>,
+    FindPatternParameters<hat::detail::scan_mode::Search, 64, 256>
 >;
 
 class FindPatternTestNameGenerator {
@@ -111,6 +118,7 @@ private:
     template<hat::detail::scan_mode Mode>
     static consteval std::string_view getModeName() {
         if constexpr (Mode == hat::detail::scan_mode::Single) return "Single";
+        else if constexpr (Mode == hat::detail::scan_mode::Search) return "Search";
         else if constexpr (Mode == hat::detail::scan_mode::SSE) return "SSE";
         else if constexpr (Mode == hat::detail::scan_mode::AVX2) return "AVX2";
         else if constexpr (Mode == hat::detail::scan_mode::AVX512) return "AVX512";
