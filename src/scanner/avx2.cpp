@@ -1,8 +1,7 @@
 #include <libhat/defines.hpp>
+#include <libhat/scanner.hpp>
 
 #if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
-
-#include <libhat/scanner.hpp>
 
 #include "simd.hpp"
 
@@ -100,6 +99,14 @@ namespace hat::detail {
         return create_simd_scanner<[]<auto... p>() consteval {
             return &find_pattern_avx2<p...>;
         }>(params, 32);
+    }
+}
+#else
+namespace hat::detail {
+
+    template<>
+    scan_context create_context<scan_mode::AVX2>(const scan_parameters&) {
+        LIBHAT_UNREACHABLE();
     }
 }
 #endif

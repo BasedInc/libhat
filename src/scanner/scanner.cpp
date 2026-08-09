@@ -3,34 +3,92 @@
 #include <libhat/defines.hpp>
 #include <libhat/system.hpp>
 
+#define TEST_EXT(f)                          \
+    [](const auto& ext) -> bool {            \
+        if constexpr (requires { ext.f; }) { \
+            return ext.f;                    \
+        }                                    \
+        return false;                        \
+    }
+
+#define TRY_SCAN_MODE(mode)                                     \
+    do {                                                        \
+        if constexpr (::is_defined<scan_mode::mode>::value)     \
+            if (is_supported(scan_mode::mode))                  \
+                return create_context<scan_mode::mode>(params); \
+    } while (false)
+
+namespace {
+
+    template<hat::detail::scan_mode>
+    struct is_defined : std::false_type {};
+
+    template<>
+    struct is_defined<hat::detail::scan_mode::Auto> : std::true_type {};
+
+    template<>
+    struct is_defined<hat::detail::scan_mode::Search> : std::true_type {};
+
+    template<>
+    struct is_defined<hat::detail::scan_mode::Single> : std::true_type {};
+
+#if (defined(LIBHAT_X86) || defined(LIBHAT_X86_64)) && defined(LIBHAT_FEATURE_SSE)
+    template<>
+    struct is_defined<hat::detail::scan_mode::SSE> : std::true_type {};
+#endif
+
+#if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
+    template<>
+    struct is_defined<hat::detail::scan_mode::AVX2> : std::true_type {};
+#endif
+
+#if defined(LIBHAT_X86_64) && defined(LIBHAT_FEATURE_AVX512)
+    template<>
+    struct is_defined<hat::detail::scan_mode::AVX512> : std::true_type {};
+#endif
+
+#if defined(LIBHAT_ARM) || defined(LIBHAT_AARCH64)
+    template<>
+    struct is_defined<hat::detail::scan_mode::Neon> : std::true_type {};
+#endif
+
+    template<hat::detail::scan_mode Mode>
+    bool all_of(std::predicate<const hat::cpu_extensions&> auto&&... tests) {
+        if constexpr (is_defined<Mode>::value) {
+            const auto& ext = hat::get_system().extensions;
+            return ((tests(hat::compiled_extensions) || tests(ext)) && ...);
+        }
+        return false;
+    }
+}
+
 namespace hat::detail {
+
+    bool is_supported(const scan_mode mode) {
+        switch (mode) {
+            case scan_mode::Auto:
+            case scan_mode::Search:
+            case scan_mode::Single:
+                return true;
+            case scan_mode::SSE:
+                return all_of<scan_mode::SSE>(TEST_EXT(sse41));
+            case scan_mode::AVX2:
+                return all_of<scan_mode::AVX2>(TEST_EXT(bmi), TEST_EXT(avx2));
+            case scan_mode::AVX512:
+                return all_of<scan_mode::AVX512>(TEST_EXT(bmi), TEST_EXT(avx512f), TEST_EXT(avx512bw));
+            case scan_mode::Neon:
+                return all_of<scan_mode::Neon>(TEST_EXT(neon));
+        }
+        LIBHAT_UNREACHABLE();
+    }
 
     template<>
     scan_context create_context<scan_mode::Auto>(const scan_parameters& params) {
-       const auto& ext = get_system().extensions;
-#if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
-       if (compiled_extensions.bmi || ext.bmi) {
-#if defined(LIBHAT_X86_64) && defined(LIBHAT_FEATURE_AVX512)
-           if ((compiled_extensions.avx512f || ext.avx512f)
-               && (compiled_extensions.avx512bw || ext.avx512bw)) {
-               return create_context<scan_mode::AVX512>(params);
-           }
-#endif
-           if (compiled_extensions.avx2 || ext.avx2) {
-               return create_context<scan_mode::AVX2>(params);
-           }
-       }
-#if defined(LIBHAT_FEATURE_SSE)
-       if (compiled_extensions.sse41 || ext.sse41) {
-           return create_context<scan_mode::SSE>(params);
-       }
-#endif
-#endif
-#if defined(LIBHAT_ARM) || defined(LIBHAT_AARCH64)
-        if (compiled_extensions.neon || ext.neon) {
-            return create_context<scan_mode::Neon>(params);
-        }
-#endif
+        TRY_SCAN_MODE(AVX512);
+        TRY_SCAN_MODE(AVX2);
+        TRY_SCAN_MODE(SSE);
+        TRY_SCAN_MODE(Neon);
+
         // If none of the vectorized implementations are available/supported, then fallback to scanning per-byte
         return create_context<scan_mode::Single>(params);
     }

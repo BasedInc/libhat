@@ -24,6 +24,12 @@ concept FindPatternTestCallback = std::invocable<T,
 template<hat::detail::scan_mode Mode, size_t SignatureSize, size_t MaxBufferSize>
 class FindPatternTest<FindPatternParameters<Mode, SignatureSize, MaxBufferSize>> : public ::testing::Test {
 protected:
+    void SetUp() override {
+        if (!hat::detail::is_supported(Mode)) {
+            GTEST_SKIP() << "Mode is not natively supported by hardware or OS";
+        }
+    }
+
     void run_cases(
         const hat::scan_alignment alignment,
         FindPatternTestCallback auto&& callback
@@ -61,7 +67,6 @@ protected:
 };
 
 using FindPatternTestTypes = ::testing::Types<
-#if defined(LIBHAT_X86_64) || defined(LIBHAT_X86)
     FindPatternParameters<hat::detail::scan_mode::SSE, 1, 256>,
     FindPatternParameters<hat::detail::scan_mode::SSE, 3, 256>,
     FindPatternParameters<hat::detail::scan_mode::SSE, 8, 256>,
@@ -75,23 +80,21 @@ using FindPatternTestTypes = ::testing::Types<
     FindPatternParameters<hat::detail::scan_mode::AVX2, 16, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX2, 32, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX2, 64, 256>,
-#endif
-#ifdef LIBHAT_X86_64
+
     FindPatternParameters<hat::detail::scan_mode::AVX512, 1, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 3, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 8, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 16, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 32, 256>,
     FindPatternParameters<hat::detail::scan_mode::AVX512, 64, 256>,
-#endif
-#if defined(LIBHAT_ARM) || defined(LIBHAT_AARCH64)
+
     FindPatternParameters<hat::detail::scan_mode::Neon, 1, 256>,
     FindPatternParameters<hat::detail::scan_mode::Neon, 3, 256>,
     FindPatternParameters<hat::detail::scan_mode::Neon, 8, 256>,
     FindPatternParameters<hat::detail::scan_mode::Neon, 16, 256>,
     FindPatternParameters<hat::detail::scan_mode::Neon, 32, 256>,
     FindPatternParameters<hat::detail::scan_mode::Neon, 64, 256>,
-#endif
+
     FindPatternParameters<hat::detail::scan_mode::Single, 1, 256>,
     FindPatternParameters<hat::detail::scan_mode::Single, 3, 256>,
     FindPatternParameters<hat::detail::scan_mode::Single, 8, 256>,

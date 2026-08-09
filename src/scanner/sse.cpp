@@ -1,8 +1,7 @@
 #include <libhat/defines.hpp>
+#include <libhat/scanner.hpp>
 
 #if (defined(LIBHAT_X86) || defined(LIBHAT_X86_64)) && defined(LIBHAT_FEATURE_SSE)
-
-#include <libhat/scanner.hpp>
 
 #include "simd.hpp"
 
@@ -110,6 +109,14 @@ namespace hat::detail {
         return create_simd_scanner<[]<auto... p>() consteval {
             return &find_pattern_sse<p...>;
         }>(params, 16);
+    }
+}
+#else
+namespace hat::detail {
+
+    template<>
+    scan_context create_context<scan_mode::SSE>(const scan_parameters&) {
+        LIBHAT_UNREACHABLE();
     }
 }
 #endif

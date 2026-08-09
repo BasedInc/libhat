@@ -1,8 +1,7 @@
 #include <libhat/defines.hpp>
+#include <libhat/scanner.hpp>
 
 #if defined(LIBHAT_ARM) || defined(LIBHAT_AARCH64)
-
-#include <libhat/scanner.hpp>
 
 #include "simd.hpp"
 
@@ -125,6 +124,14 @@ namespace hat::detail {
         return create_simd_scanner<[]<auto... p>() consteval {
             return &find_pattern_neon<p...>;
         }>(params, 16);
+    }
+}
+#else
+namespace hat::detail {
+
+    template<>
+    scan_context create_context<scan_mode::Neon>(const scan_parameters&) {
+        LIBHAT_UNREACHABLE();
     }
 }
 #endif

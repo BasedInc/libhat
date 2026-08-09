@@ -151,6 +151,8 @@ namespace hat::detail {
         Neon,   // ARMv7+ Neon
     };
 
+    bool is_supported(scan_mode mode);
+
     class scan_context {
         static constexpr size_t impl_buffer_size = 48;
         static constexpr size_t impl_buffer_align = alignof(std::max_align_t);
