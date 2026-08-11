@@ -13,7 +13,7 @@
 
 #define TRY_SCAN_MODE(mode)                                     \
     do {                                                        \
-        if constexpr (::is_defined<scan_mode::mode>::value)     \
+        if constexpr (::has_impl<scan_mode::mode>::value)     \
             if (is_supported(scan_mode::mode))                  \
                 return create_context<scan_mode::mode>(params); \
     } while (false)
@@ -21,40 +21,40 @@
 namespace {
 
     template<hat::detail::scan_mode>
-    struct is_defined : std::false_type {};
+    struct has_impl : std::false_type {};
 
     template<>
-    struct is_defined<hat::detail::scan_mode::Auto> : std::true_type {};
+    struct has_impl<hat::detail::scan_mode::Auto> : std::true_type {};
 
     template<>
-    struct is_defined<hat::detail::scan_mode::Search> : std::true_type {};
+    struct has_impl<hat::detail::scan_mode::Search> : std::true_type {};
 
     template<>
-    struct is_defined<hat::detail::scan_mode::Single> : std::true_type {};
+    struct has_impl<hat::detail::scan_mode::Single> : std::true_type {};
 
 #if (defined(LIBHAT_X86) || defined(LIBHAT_X86_64)) && defined(LIBHAT_FEATURE_SSE)
     template<>
-    struct is_defined<hat::detail::scan_mode::SSE> : std::true_type {};
+    struct has_impl<hat::detail::scan_mode::SSE> : std::true_type {};
 #endif
 
 #if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
     template<>
-    struct is_defined<hat::detail::scan_mode::AVX2> : std::true_type {};
+    struct has_impl<hat::detail::scan_mode::AVX2> : std::true_type {};
 #endif
 
 #if defined(LIBHAT_X86_64) && defined(LIBHAT_FEATURE_AVX512)
     template<>
-    struct is_defined<hat::detail::scan_mode::AVX512> : std::true_type {};
+    struct has_impl<hat::detail::scan_mode::AVX512> : std::true_type {};
 #endif
 
 #if defined(LIBHAT_ARM) || defined(LIBHAT_AARCH64)
     template<>
-    struct is_defined<hat::detail::scan_mode::Neon> : std::true_type {};
+    struct has_impl<hat::detail::scan_mode::Neon> : std::true_type {};
 #endif
 
     template<hat::detail::scan_mode Mode>
     bool all_of(std::predicate<const hat::cpu_extensions&> auto&&... tests) {
-        if constexpr (is_defined<Mode>::value) {
+        if constexpr (has_impl<Mode>::value) {
             const auto& ext = hat::get_system().extensions;
             return ((tests(hat::compiled_extensions) || tests(ext)) && ...);
         }
