@@ -9,3 +9,7 @@ function(add_example name)
 endfunction()
 
 add_example(vfthook)
+add_example(libfmt)
+
+CPMAddPackage("gh:fmtlib/fmt#12.2.0")
+target_link_libraries(libhat_example_libfmt PRIVATE fmt::fmt)
