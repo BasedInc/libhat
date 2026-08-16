@@ -12,8 +12,9 @@
 
 #include "defines.hpp"
 #include "export.hpp"
-#include "strconv.hpp"
 #include "fixed_string.hpp"
+#include "formatter.hpp"
+#include "strconv.hpp"
 
 LIBHAT_EXPORT namespace hat {
 
@@ -286,6 +287,47 @@ LIBHAT_EXPORT namespace hat {
         ret.pop_back();
         return ret;
     }
+
+    template<template<typename...> class Formatter>
+    struct formatter<signature_element, char, Formatter> : Formatter<std::string, char> {
+        template<typename FormatContext>
+        constexpr auto format(const signature_element& value, FormatContext& ctx) const {
+            return Formatter<std::string, char>::format(to_string(signature_view{&value, 1}), ctx);
+        }
+    };
+
+    template<template<typename...> class Formatter>
+    struct formatter<signature, char, Formatter> : Formatter<std::string, char> {
+        template<typename FormatContext>
+        constexpr auto format(const signature& value, FormatContext& ctx) const {
+            return Formatter<std::string, char>::format(to_string(value), ctx);
+        }
+    };
+
+    template<>
+    constexpr bool disable_range_formatter<signature> = true;
+
+    template<template<typename...> class Formatter>
+    struct formatter<signature_view, char, Formatter> : Formatter<std::string, char> {
+        template<typename FormatContext>
+        constexpr auto format(const signature_view& value, FormatContext& ctx) const {
+            return Formatter<std::string, char>::format(to_string(value), ctx);
+        }
+    };
+
+    template<>
+    constexpr bool disable_range_formatter<signature_view> = true;
+
+    template<std::size_t N, template<typename...> class Formatter>
+    struct formatter<fixed_signature<N>, char, Formatter> : Formatter<std::string, char> {
+        template<typename FormatContext>
+        constexpr auto format(const fixed_signature<N>& value, FormatContext& ctx) const {
+            return Formatter<std::string, char>::format(to_string(value), ctx);
+        }
+    };
+
+    template<std::size_t N>
+    constexpr bool disable_range_formatter<fixed_signature<N>> = true;
 }
 
 LIBHAT_EXPORT namespace hat::inline literals::inline signature_literals {

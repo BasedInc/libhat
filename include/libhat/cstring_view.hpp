@@ -7,6 +7,7 @@
 #endif
 
 #include "export.hpp"
+#include "formatter.hpp"
 
 LIBHAT_EXPORT namespace hat {
 
@@ -308,6 +309,17 @@ LIBHAT_EXPORT namespace hat {
 #endif
     using u16cstring_view = basic_cstring_view<char16_t>;
     using u32cstring_view = basic_cstring_view<char32_t>;
+
+    template<typename CharT, typename Traits, template<typename...> class Formatter>
+    struct formatter<basic_cstring_view<CharT, Traits>, CharT, Formatter> : Formatter<std::basic_string_view<CharT, Traits>, CharT> {
+        template<typename FormatContext>
+        constexpr auto format(const basic_cstring_view<CharT, Traits>& value, FormatContext& ctx) const {
+            return Formatter<std::basic_string_view<CharT, Traits>, CharT>::format(value, ctx);
+        }
+    };
+
+    template<typename CharT, typename Traits>
+    constexpr bool disable_range_formatter<basic_cstring_view<CharT, Traits>> = true;
 }
 
 namespace hat::detail {
