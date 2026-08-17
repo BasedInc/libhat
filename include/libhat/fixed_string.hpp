@@ -9,6 +9,7 @@
 
 #include "cstring_view.hpp"
 #include "export.hpp"
+#include "formatter.hpp"
 
 LIBHAT_EXPORT namespace hat {
 
@@ -174,16 +175,25 @@ LIBHAT_EXPORT namespace hat {
     };
 
     #define LIBHAT_DEFINE_FIXED_STRING(name, type)                                                          \
-    template<std::size_t N>                                                                                      \
+    template<std::size_t N>                                                                                 \
     struct name : public basic_fixed_string<type, N, name> {                                                \
         using basic_fixed_string<type, N, name>::basic_fixed_string;                                        \
     };                                                                                                      \
-    template<std::size_t N>                                                                                      \
+    template<std::size_t N>                                                                                 \
     name(const type(&str)[N]) -> name<N - 1>;                                                               \
-    template<std::size_t N, std::size_t M>                                                                            \
+    template<std::size_t N, std::size_t M>                                                                  \
     constexpr inline auto operator+(const type (&cstr)[N], const basic_fixed_string<type, M, name>& lstr) { \
         return name{cstr} + lstr;                                                                           \
-    }
+    }                                                                                                       \
+    template<std::size_t N, template<typename...> class Formatter>                                          \
+    struct formatter<name<N>, type, Formatter> : Formatter<std::basic_string_view<type>, type> {            \
+        template<typename FormatContext>                                                                    \
+        constexpr auto format(const name<N>& value, FormatContext& ctx) const {                             \
+            return Formatter<std::basic_string_view<type>, type>::format(value.to_view(), ctx);             \
+        }                                                                                                   \
+    };                                                                                                      \
+    template<std::size_t N>                                                                                 \
+    constexpr bool disable_range_formatter<name<N>> = true;
 
     LIBHAT_DEFINE_FIXED_STRING(fixed_string,    char)
     LIBHAT_DEFINE_FIXED_STRING(wfixed_string,   wchar_t)

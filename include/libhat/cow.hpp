@@ -15,6 +15,7 @@
 #include "detail/compressed_pair.hpp"
 #include "cstring_view.hpp"
 #include "export.hpp"
+#include "formatter.hpp"
 
 LIBHAT_EXPORT namespace hat {
 
@@ -450,4 +451,12 @@ LIBHAT_EXPORT namespace hat {
         template<detail::non_const T>
         using cow_writable_span = cow_writable_span<T, std::pmr::polymorphic_allocator<T>>;
     }
+
+    template<typename T, typename Traits, typename Allocator, typename CharT, template<typename...> class Formatter>
+    struct formatter<cow<T, Traits, Allocator>, CharT, Formatter> : Formatter<T, CharT> {
+        template<typename FormatContext>
+        constexpr auto format(const cow<T, Traits, Allocator>& value, FormatContext& ctx) const {
+            return Formatter<T, CharT>::format(value.viewed(), ctx);
+        }
+    };
 }
