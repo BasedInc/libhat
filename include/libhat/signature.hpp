@@ -255,76 +255,87 @@ LIBHAT_EXPORT namespace hat {
     }
 #endif
 
-    [[nodiscard]] constexpr std::string to_string(const signature_view signature) {
+    constexpr auto format_signature_to(std::output_iterator<char> auto out, const signature_element element) {
         constexpr std::string_view hex{"0123456789ABCDEF"};
-        std::string ret;
-        ret.reserve(signature.size() * 3);
+        const bool a = (element.mask() & std::byte{0xF0}) == std::byte{0xF0};
+        const bool b = (element.mask() & std::byte{0x0F}) == std::byte{0x0F};
+        if (a || b) {
+            *out++ = a ? hex[static_cast<std::size_t>(element.value() >> 4) & 0xFu] : '?';
+            *out++ = b ? hex[static_cast<std::size_t>(element.value() >> 0) & 0xFu] : '?';
+        } else if (element.none()) {
+            *out++ = '?';
+        } else {
+            *out++ = element.has(7) ? (element.at(7) ? '1' : '0') : '?';
+            *out++ = element.has(6) ? (element.at(6) ? '1' : '0') : '?';
+            *out++ = element.has(5) ? (element.at(5) ? '1' : '0') : '?';
+            *out++ = element.has(4) ? (element.at(4) ? '1' : '0') : '?';
+            *out++ = element.has(3) ? (element.at(3) ? '1' : '0') : '?';
+            *out++ = element.has(2) ? (element.at(2) ? '1' : '0') : '?';
+            *out++ = element.has(1) ? (element.at(1) ? '1' : '0') : '?';
+            *out++ = element.has(0) ? (element.at(0) ? '1' : '0') : '?';
+        }
+        return out;
+    }
+
+    constexpr auto format_signature_to(std::output_iterator<char> auto out, const signature_view signature) {
         for (auto& element : signature) {
-            const bool a = (element.mask() & std::byte{0xF0}) == std::byte{0xF0};
-            const bool b = (element.mask() & std::byte{0x0F}) == std::byte{0x0F};
-            if (a || b) {
-                ret += {
-                    a ? hex[static_cast<std::size_t>(element.value() >> 4) & 0xFu] : '?',
-                    b ? hex[static_cast<std::size_t>(element.value() >> 0) & 0xFu] : '?',
-                    ' '
-                };
-            } else if (element.none()) {
-                ret += "? ";
-            } else {
-                ret += {
-                    element.has(7) ? (element.at(7) ? '1' : '0') : '?',
-                    element.has(6) ? (element.at(6) ? '1' : '0') : '?',
-                    element.has(5) ? (element.at(5) ? '1' : '0') : '?',
-                    element.has(4) ? (element.at(4) ? '1' : '0') : '?',
-                    element.has(3) ? (element.at(3) ? '1' : '0') : '?',
-                    element.has(2) ? (element.at(2) ? '1' : '0') : '?',
-                    element.has(1) ? (element.at(1) ? '1' : '0') : '?',
-                    element.has(0) ? (element.at(0) ? '1' : '0') : '?',
-                    ' '
-                };
+            out = format_signature_to(out, element);
+            if (&element != &signature.back()) {
+                *out++ = ' ';
             }
         }
-        ret.pop_back();
+        return out;
+    }
+
+    [[nodiscard]] constexpr std::string to_string(const signature_element element) {
+        std::string ret;
+        format_signature_to(std::back_inserter(ret), element);
         return ret;
     }
 
-    template<template<typename...> class Formatter>
-    struct formatter<signature_element, char, Formatter> : Formatter<std::string, char> {
+    [[nodiscard]] constexpr std::string to_string(const signature_view signature) {
+        std::string ret;
+        ret.reserve(signature.size() * 3);
+        format_signature_to(std::back_inserter(ret), signature);
+        return ret;
+    }
+}
+
+namespace hat::detail {
+
+    template<typename T>
+    struct signature_formatter {
+        template<typename ParseContext>
+        constexpr auto parse(ParseContext& ctx) {
+            return ctx.begin();
+        }
+
         template<typename FormatContext>
-        constexpr auto format(const signature_element& value, FormatContext& ctx) const {
-            return Formatter<std::string, char>::format(to_string(signature_view{&value, 1}), ctx);
+        constexpr auto format(const T& value, FormatContext& ctx) const {
+            return format_signature_to(ctx.out(), value);
         }
     };
+}
+
+LIBHAT_EXPORT namespace hat {
 
     template<template<typename...> class Formatter>
-    struct formatter<signature, char, Formatter> : Formatter<std::string, char> {
-        template<typename FormatContext>
-        constexpr auto format(const signature& value, FormatContext& ctx) const {
-            return Formatter<std::string, char>::format(to_string(value), ctx);
-        }
-    };
+    struct formatter<signature_element, char, Formatter> : detail::signature_formatter<signature_element> {};
+
+    template<template<typename...> class Formatter>
+    struct formatter<signature, char, Formatter> : detail::signature_formatter<signature> {};
 
     template<>
     constexpr bool disable_range_formatter<signature> = true;
 
     template<template<typename...> class Formatter>
-    struct formatter<signature_view, char, Formatter> : Formatter<std::string, char> {
-        template<typename FormatContext>
-        constexpr auto format(const signature_view& value, FormatContext& ctx) const {
-            return Formatter<std::string, char>::format(to_string(value), ctx);
-        }
-    };
+    struct formatter<signature_view, char, Formatter> : detail::signature_formatter<signature_view> {};
 
     template<>
     constexpr bool disable_range_formatter<signature_view> = true;
 
     template<std::size_t N, template<typename...> class Formatter>
-    struct formatter<fixed_signature<N>, char, Formatter> : Formatter<std::string, char> {
-        template<typename FormatContext>
-        constexpr auto format(const fixed_signature<N>& value, FormatContext& ctx) const {
-            return Formatter<std::string, char>::format(to_string(value), ctx);
-        }
-    };
+    struct formatter<fixed_signature<N>, char, Formatter> : detail::signature_formatter<fixed_signature<N>> {};
 
     template<std::size_t N>
     constexpr bool disable_range_formatter<fixed_signature<N>> = true;
