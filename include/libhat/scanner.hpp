@@ -205,7 +205,7 @@ namespace hat::detail {
     private:
         signature_view signature_{};
         scan_function_t scanner_{};
-        void(*impl_deleter_)(const void*){};
+        void(*impl_deleter_)(void*){};
         alignas(impl_buffer_align) std::array<std::byte, impl_buffer_size> impl_buffer_;
     };
 

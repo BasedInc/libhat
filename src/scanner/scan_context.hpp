@@ -17,8 +17,8 @@ namespace hat::detail {
         std::construct_at(reinterpret_cast<T*>(impl_buffer_.data()), std::forward<Args>(args)...);
 
         if constexpr (not std::is_trivially_destructible_v<T>) {
-            impl_deleter_ = [](const void* buffer) {
-                std::destroy_at(static_cast<const T*>(buffer));
+            impl_deleter_ = [](void* buffer) {
+                std::destroy_at(static_cast<T*>(buffer));
             };
         }
     }
