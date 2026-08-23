@@ -31,11 +31,11 @@ jobs:
         run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=23 -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING_SDE=OFF -A ARM64 -T ${{matrix.toolset}}
 
       - name: Build
-        run: cmake --build ${{github.workspace}}/build -j 4 --config Release --target libhat_benchmark_compare_impl libhat_benchmark_chromium
+        run: cmake --build ${{github.workspace}}/build -j 4 --config Release --target libhat_benchmark_compare libhat_benchmark_chromium
 
       - name: Test
         working-directory: ${{github.workspace}}/build
         shell: cmd
         run: |
           call "${{env.VS_INSTALL_DIR}}\VC\Auxiliary\Build\vcvarsarm64.bat"
-          ctest --verbose -C Release -R "(libhat_benchmark_compare_impl|libhat_benchmark_chromium)"
+          ctest --verbose -C Release -R "(libhat_benchmark_compare|libhat_benchmark_chromium)"
