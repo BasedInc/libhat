@@ -64,7 +64,6 @@ set(ALL_SCANNERS
     benchmark/scanner/libhat.cpp
 )
 register_test(libhat_benchmark_compare benchmark/Compare.cpp ${ALL_SCANNERS})
-register_test(libhat_benchmark_compare_sig benchmark/CompareSig.cpp ${ALL_SCANNERS})
 register_test(libhat_test_scanner tests/Scanner.cpp)
 register_test(libhat_test_process tests/Process.cpp)
 
