@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstddef>
+#include <tuple>
 #include <utility>
 
 #include "utils.hpp"
