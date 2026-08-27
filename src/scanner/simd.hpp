@@ -9,8 +9,8 @@ namespace hat::detail {
         std::size_t cmpIndex{};
     };
 
-    template<auto impl>
-    scan_context create_simd_scanner(const scan_parameters& params, const size_t width) {
+    template<size_t width, auto impl>
+    scan_context create_simd_scanner(const scan_parameters& params) {
         const bool veccmp = params.signature.size() <= width;
         auto cmpIndex = get_optimal_pair(params);
         const bool cmpeq2 = cmpIndex.has_value();
@@ -29,7 +29,11 @@ namespace hat::detail {
         };
 
         const auto create = [&]<scan_alignment A>(std::integral_constant<scan_alignment, A> a) {
-            return scan_context{params.signature, resolve(a), std::type_identity<simd_context>{}, *cmpIndex};
+            if constexpr (to_stride(A) >= width) {
+                return create_context<scan_mode::Single>(params);
+            } else {
+                return scan_context{params.signature, resolve(a), std::type_identity<simd_context>{}, *cmpIndex};
+            }
         };
 
         switch (params.alignment) {

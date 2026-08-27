@@ -121,9 +121,9 @@ namespace hat::detail {
 
     template<>
     scan_context create_context<scan_mode::Neon>(const scan_parameters& params) {
-        return create_simd_scanner<[]<auto... p>() consteval {
+        return create_simd_scanner<16, []<auto... p>() consteval {
             return &find_pattern_neon<p...>;
-        }>(params, 16);
+        }>(params);
     }
 }
 #else

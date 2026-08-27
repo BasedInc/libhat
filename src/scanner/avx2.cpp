@@ -96,9 +96,9 @@ namespace hat::detail {
 
     template<>
     scan_context create_context<scan_mode::AVX2>(const scan_parameters& params) {
-        return create_simd_scanner<[]<auto... p>() consteval {
+        return create_simd_scanner<32, []<auto... p>() consteval {
             return &find_pattern_avx2<p...>;
-        }>(params, 32);
+        }>(params);
     }
 }
 #else
