@@ -120,8 +120,8 @@ CPU features: `sse4.1`
 ### `LIBHAT_FEATURE_AVX2`
 
 Enables support for the AVX2 vectorized find_pattern implementation. If compile-time support is not present
-(`-march` or `/ARCH`), runtime support is validated through `cpuid`. If the target architecture is not `x86_64`,
-enabling this option has no effect.
+(`-march` or `/ARCH`), runtime support is validated through `cpuid`. If the target architecture is not `x86`
+or `x86_64`, enabling this option has no effect.
 
 CPU features: `avx` `avx2` `bmi`
 
