@@ -3,8 +3,18 @@ name: CMake
 on:
   push:
     branches: [ "master" ]
+    paths:
+      - 'bindings/c/**'
+      - 'include/**'
+      - 'src/**'
+      - 'test/**'
   pull_request:
     branches: [ "master" ]
+    paths:
+      - 'bindings/c/**'
+      - 'include/**'
+      - 'src/**'
+      - 'test/**'
 
 env:
   BUILD_TYPE: Debug

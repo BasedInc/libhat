@@ -1,10 +1,9 @@
 #include <libhat/defines.hpp>
+#include <libhat/scanner.hpp>
 
 #if defined(LIBHAT_ARM) || defined(LIBHAT_AARCH64)
 
-#include <libhat/scanner.hpp>
-
-#include "../../Utils.hpp"
+#include "simd.hpp"
 
 #include <arm_neon.h>
 
@@ -52,8 +51,8 @@ namespace hat::detail {
 
     template<scan_alignment alignment, bool cmpeq2, bool veccmp>
     static const_scan_result find_pattern_neon(const std::byte* begin, const std::byte* end, const scan_context& context) {
-        const auto signature = context.signature;
-        const auto cmpIndex = cmpeq2 ? *context.pairIndex : context.cmpIndex;
+        const auto signature = context.signature();
+        const auto cmpIndex = context.get<simd_context>().cmpIndex;
 
         // 128 bit vector containing first signature byte repeated
         const auto firstByte = vdupq_n_u8(static_cast<std::uint8_t>(*signature[cmpIndex]));
@@ -71,7 +70,7 @@ namespace hat::detail {
         auto [pre, vec, post] = segment_scan<uint8x16_t, 16, veccmp>(begin, end, signature.size(), cmpIndex);
 
         if (!pre.empty()) {
-            const auto result = find_pattern_single<alignment>(pre.data(), pre.data() + pre.size(), context);
+            const auto result = find_pattern_search<alignment>(pre.data(), pre.data() + pre.size(), context);
             if (result.has_result()) {
                 return result;
             }
@@ -115,23 +114,24 @@ namespace hat::detail {
         }
 
         if (!post.empty()) {
-            return find_pattern_single<alignment>(post.data(), post.data() + post.size(), context);
+            return find_pattern_search<alignment>(post.data(), post.data() + post.size(), context);
         }
         return {};
     }
 
     template<>
-    scan_function_t resolve_scanner<scan_mode::Neon>(scan_context& context) {
-        context.apply_hints({.vectorSize = 16});
-
-        const auto alignment = context.alignment;
-        const auto signature = context.signature;
-        const bool cmpeq2 = context.pairIndex.has_value();
-        const bool veccmp = signature.size() <= 16;
-
-        return find_specialization_switch<[]<auto... p>() consteval {
+    scan_context create_context<scan_mode::Neon>(const scan_parameters& params) {
+        return create_simd_scanner<16, []<auto... p>() consteval {
             return &find_pattern_neon<p...>;
-        }>(alignment, cmpeq2, veccmp);
+        }>(params);
+    }
+}
+#else
+namespace hat::detail {
+
+    template<>
+    scan_context create_context<scan_mode::Neon>(const scan_parameters&) {
+        LIBHAT_UNREACHABLE();
     }
 }
 #endif

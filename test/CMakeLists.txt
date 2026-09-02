@@ -52,14 +52,18 @@ if(LIBHAT_TESTING_SDE)
     endif()
 endif()
 
-function(register_test NAME SOURCE)
-    add_executable(${NAME} ${SOURCE})
+function(register_test NAME)
+    add_executable(${NAME} ${ARGN})
     target_link_libraries(${NAME} PRIVATE gtest gtest_main benchmark libhat)
     add_test(NAME ${NAME} COMMAND ${LIBHAT_TEST_COMMAND_PREFIX} $<TARGET_FILE:${NAME}> --benchmark_counters_tabular=true)
 endfunction()
 
-register_test(libhat_benchmark_compare benchmark/Compare.cpp)
-register_test(libhat_benchmark_compare_impl benchmark/CompareImpl.cpp)
+set(ALL_SCANNERS
+    benchmark/scanner/csgosimple.cpp
+    benchmark/scanner/learn_more.cpp
+    benchmark/scanner/libhat.cpp
+)
+register_test(libhat_benchmark_compare benchmark/Compare.cpp ${ALL_SCANNERS})
 register_test(libhat_test_scanner tests/Scanner.cpp)
 register_test(libhat_test_process tests/Process.cpp)
 
@@ -70,7 +74,7 @@ if(LIBHAT_TESTING_SAMPLE_BIN)
         URL_HASH        SHA256=C53AC5F55C8EC6CD61E90D3D50DB7AF05D17708EBCD3141E0008CBE2F82DF5BF
         DOWNLOAD_ONLY   TRUE
     )
-    register_test(libhat_benchmark_chromium benchmark/Chromium.cpp)
+    register_test(libhat_benchmark_chromium benchmark/Chromium.cpp ${ALL_SCANNERS})
     set(CHROME_DLL_PATH "${chromium_win_x64_SOURCE_DIR}/chrome.dll")
     target_compile_definitions(libhat_benchmark_chromium PRIVATE CHROME_DLL_PATH=${CHROME_DLL_PATH})
 endif()

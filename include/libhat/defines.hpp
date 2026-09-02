@@ -82,6 +82,14 @@
     #define LIBHAT_TARGET(arch)
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+    #define LIBHAT_PURE __attribute__((pure))
+    #define LIBHAT_CONST __attribute__((const))
+#else
+    #define LIBHAT_PURE
+    #define LIBHAT_CONST
+#endif
+
 #if __has_cpp_attribute(no_unique_address)
     #define LIBHAT_NO_UNIQUE_ADDRESS [[no_unique_address]]
 #elif __has_cpp_attribute(msvc::no_unique_address)

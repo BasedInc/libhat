@@ -89,9 +89,7 @@ LIBHAT_EXPORT namespace hat {
     using fixed_signature = std::array<signature_element, N>;
 
     enum class signature_error {
-        missing_masked_byte,
         element_parse_error,
-        empty_signature,
         expected_wildcard,
         invalid_token_length,
     };
@@ -105,11 +103,8 @@ LIBHAT_EXPORT namespace hat {
     }
 
     /// Convert raw byte storage into a signature
-    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_error> bytes_to_signature(std::span<const std::byte> bytes) {
-        if (bytes.empty()) {
-            return result_error{signature_error::empty_signature};
-        }
-        return signature{bytes.begin(), bytes.end()};
+    [[nodiscard]] constexpr signature bytes_to_signature(std::span<const std::byte> bytes) {
+        return {bytes.begin(), bytes.end()};
     }
 
     template<typename T>
@@ -124,11 +119,7 @@ LIBHAT_EXPORT namespace hat {
     }
 
     template<typename Char>
-    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_error> string_to_signature(std::basic_string_view<Char> str) {
-        if (str.empty()) {
-            return result_error{signature_error::empty_signature};
-        }
-
+    [[nodiscard]] constexpr signature string_to_signature(std::basic_string_view<Char> str) {
         signature result;
         result.resize(str.size() * sizeof(Char));
 
@@ -143,7 +134,7 @@ LIBHAT_EXPORT namespace hat {
     }
 
     template<typename Char>
-    [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<signature, signature_error> string_to_signature(std::basic_string<Char> str) {
+    [[nodiscard]] constexpr signature string_to_signature(std::basic_string<Char> str) {
         return string_to_signature(std::basic_string_view<Char>{str});
     }
 
@@ -171,7 +162,6 @@ LIBHAT_EXPORT namespace hat {
 
     [[nodiscard]] LIBHAT_CONSTEXPR_RESULT result<std::size_t, signature_error> parse_signature_to(std::output_iterator<signature_element> auto out, const std::string_view str) {
         std::size_t written = 0;
-        bool containsByte = false;
 
         for (auto&& sub : str | std::views::split(' ')) {
             const std::string_view word{sub.begin(), sub.end()};
@@ -194,7 +184,6 @@ LIBHAT_EXPORT namespace hat {
                     if (element) {
                         *out++ = *element;
                         written++;
-                        containsByte |= element->all();
                     } else {
                         return result_error{signature_error::element_parse_error};
                     }
@@ -204,12 +193,6 @@ LIBHAT_EXPORT namespace hat {
                     return result_error{signature_error::invalid_token_length};
                 }
             }
-        }
-        if (written == 0) {
-            return result_error{signature_error::empty_signature};
-        }
-        if (!containsByte) {
-            return result_error{signature_error::missing_masked_byte};
         }
         return written;
     }

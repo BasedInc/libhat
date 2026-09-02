@@ -3,11 +3,19 @@ name: Benchmark
 on: workflow_dispatch
 
 jobs:
-  windows:
+  linux:
     strategy:
       matrix:
-        toolset: [ v145, ClangCL ]
-    runs-on: windows-11-vs2026-arm
+        target: [ x64, ARM64 ]
+        cxx_standard: [ 23 ]
+        compiler:
+          - { pkg: clang, exe: clang++, version: 22 }
+        include:
+          - target: x64
+            os: ubuntu-26.04
+          - target: ARM64
+            os: ubuntu-26.04-arm
+    runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v6
 
@@ -15,27 +23,21 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ${{github.workspace}}/.cpmcache
-          key: cpm-${{runner.os}}-ARM64-${{hashFiles('test/CMakeLists.txt')}}
+          key: cpm-${{runner.os}}-${{hashFiles('test/CMakeLists.txt')}}
           restore-keys: |
-            cpm-${{runner.os}}-ARM64-
+            cpm-${{runner.os}}-
 
       - name: Check Hardware
-        run: (Get-CimInstance Win32_Processor).Name
-
-      - name: Locate Visual Studio
-        run: |
-          $vsInstall = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
-          echo "VS_INSTALL_DIR=$vsInstall" >> $env:GITHUB_ENV
+        run: lscpu | grep "Model name"
 
       - name: Configure
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=23 -DLIBHAT_SHARED_C_LIB=ON -DLIBHAT_TESTING_SDE=OFF -A ARM64 -T ${{matrix.toolset}}
+        env:
+          CXX: ${{matrix.compiler.exe}}-${{matrix.compiler.version}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_CXX_STANDARD=${{matrix.cxx_standard}} -DCMAKE_BUILD_TYPE=Release -DLIBHAT_TESTING_SDE=OFF
 
       - name: Build
-        run: cmake --build ${{github.workspace}}/build -j 4 --config Release --target libhat_benchmark_compare_impl libhat_benchmark_chromium
+        run: cmake --build ${{github.workspace}}/build -j 4 --target libhat_benchmark_compare libhat_benchmark_chromium
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        shell: cmd
-        run: |
-          call "${{env.VS_INSTALL_DIR}}\VC\Auxiliary\Build\vcvarsarm64.bat"
-          ctest --verbose -C Release -R "(libhat_benchmark_compare_impl|libhat_benchmark_chromium)"
+        run: ctest --verbose -C Release -R "(libhat_benchmark_compare|libhat_benchmark_chromium)"
