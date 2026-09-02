@@ -37,7 +37,7 @@ namespace {
     struct has_impl<hat::detail::scan_mode::SSE> : std::true_type {};
 #endif
 
-#if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
+#if (defined(LIBHAT_X86) || defined(LIBHAT_X86_64)) && defined(LIBHAT_FEATURE_AVX2)
     template<>
     struct has_impl<hat::detail::scan_mode::AVX2> : std::true_type {};
 #endif
@@ -73,7 +73,7 @@ namespace hat::detail {
             case scan_mode::SSE:
                 return all_of<scan_mode::SSE>(TEST_EXT(sse41));
             case scan_mode::AVX2:
-                return all_of<scan_mode::AVX2>(TEST_EXT(bmi), TEST_EXT(avx2));
+                return all_of<scan_mode::AVX2>(TEST_EXT(bmi), TEST_EXT(avx), TEST_EXT(avx2));
             case scan_mode::AVX512:
                 return all_of<scan_mode::AVX512>(TEST_EXT(bmi), TEST_EXT(avx512f), TEST_EXT(avx512bw));
             case scan_mode::Neon:

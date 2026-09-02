@@ -1,7 +1,7 @@
 #include <libhat/defines.hpp>
 #include <libhat/scanner.hpp>
 
-#if defined(LIBHAT_X86) || defined(LIBHAT_X86_64)
+#if (defined(LIBHAT_X86) || defined(LIBHAT_X86_64)) && defined(LIBHAT_FEATURE_AVX2)
 
 #include "simd.hpp"
 
