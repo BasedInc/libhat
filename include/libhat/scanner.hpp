@@ -317,8 +317,8 @@ LIBHAT_EXPORT namespace hat {
         const scan_hint       hints = scan_hint::none
     ) noexcept -> detail::result_type_for<Iter> {
         const auto context = detail::scan_context::create(signature, alignment, hints);
-        const auto begin = std::to_address(beginIt);
-        const auto end = std::to_address(endIt);
+        const auto* begin = std::to_address(beginIt);
+        const auto* end = std::to_address(endIt);
 
         const auto result = context.scan(begin, end);
         return result.has_result()
@@ -364,8 +364,8 @@ LIBHAT_EXPORT namespace hat {
         const scan_hint       hints = scan_hint::none
     ) noexcept -> std::pair<In, Out> {
         const auto context = detail::scan_context::create(signature, alignment, hints);
-        const auto begin = std::to_address(beginIn);
-        const auto end = std::to_address(endIn);
+        const auto* begin = std::to_address(beginIn);
+        const auto* end = std::to_address(endIn);
 
         auto i = begin;
         auto out = beginOut;
@@ -413,8 +413,8 @@ LIBHAT_EXPORT namespace hat {
         const scan_hint       hints = scan_hint::none
     ) noexcept {
         const auto context = detail::scan_context::create(signature, alignment, hints);
-        const auto begin = std::to_address(beginIn);
-        const auto end = std::to_address(endIn);
+        const auto* begin = std::to_address(beginIn);
+        const auto* end = std::to_address(endIn);
 
         auto i = begin;
         auto out = beginOut;
