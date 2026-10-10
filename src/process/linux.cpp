@@ -6,15 +6,18 @@
 #include <dlfcn.h>
 #include <link.h>
 
-#include <string.h>
+#include <string.h> // strnlen
 
+#include <cstring>
 #include <fstream>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <ranges>
+#include <utility>
 
-#include "Common.hpp"
-#include "../../Utils.hpp"
+#include "../utils.hpp"
+#include "../utils_linux.hpp"
 
 namespace {
 

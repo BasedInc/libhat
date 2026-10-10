@@ -1,106 +1,78 @@
+#include <format>
 #include <mutex>
 #include <random>
-#include <unordered_map>
 
 #include <benchmark/benchmark.h>
 #include <libhat/scanner.hpp>
 
-#include "vendor/UC1.hpp"
-#include "vendor/UC2.hpp"
+#include "scanner/scanner.hpp"
 
-static constexpr std::string_view test_pattern = "01 02 03 04 05 06 07 08 09";
+static constexpr hat::cstring_view TEST_PATTERN = "01 02 03 04 05 06 07 08 09";
 
-static auto gen_random_buffer(const size_t size) {
+static auto GenRandomBuffer(const size_t size) {
     std::vector<std::byte> buffer(size);
-    std::default_random_engine generator(123);
-    std::uniform_int_distribution<uint64_t> distribution(0, 0xFFFFFFFFFFFFFFFF);
+    std::mt19937_64 generator(123);
     for (size_t i = 0; i < buffer.size(); i += 8) {
-        uint64_t value = distribution(generator);
+        uint64_t value = generator();
         std::memcpy(&buffer[i], &value, sizeof(value));
     }
     return buffer;
 }
 
-static void BM_Throughput_libhat(benchmark::State& state) {
-    const size_t size = state.range(0);
-    const auto buf = gen_random_buffer(size);
-    const auto begin = std::to_address(buf.begin());
-    const auto end = std::to_address(buf.end());
+static void BenchmarkScanner(Scanner& scanner, benchmark::State& state) {
+    if (!scanner.Supported()) {
+        state.SkipWithMessage("Skipping (not natively supported by hardware or OS)");
+        return;
+    }
 
-    const auto sig = hat::parse_signature(test_pattern).value();
+    const size_t size = state.range(0);
+    const auto buf = GenRandomBuffer(size);
+
+    const std::byte* expected = nullptr;
+    const std::byte* result = nullptr;
+    scanner.Setup(TEST_PATTERN);
     for (auto _ : state) {
-        benchmark::DoNotOptimize(hat::find_pattern(begin, end, sig));
+        benchmark::DoNotOptimize(result = scanner.Find(buf));
+    }
+    if (expected != result) {
+        state.SkipWithError("result did not match expected value");
     }
     state.SetBytesProcessed(static_cast<int64_t>(state.iterations() * size));
 }
 
-static void BM_Throughput_std_search(benchmark::State& state) {
-    const size_t size = state.range(0);
-    const auto buf = gen_random_buffer(size);
-    const auto begin = std::to_address(buf.begin());
-    const auto end = std::to_address(buf.end());
-
-    const auto sig = hat::parse_signature(test_pattern).value();
-    for (auto _ : state) {
-        benchmark::DoNotOptimize(std::search(begin, end, sig.begin(), sig.end()));
-    }
-    state.SetBytesProcessed(static_cast<int64_t>(state.iterations() * size));
+static consteval int64_t operator""_MiB(const unsigned long long int value) {
+    return static_cast<int64_t>(value) * int64_t{1024} * int64_t{1024};
 }
 
-static void BM_Throughput_std_find_std_equal(benchmark::State& state) {
-    const size_t size = state.range(0);
-    const auto buf = gen_random_buffer(size);
-    const auto begin = std::to_address(buf.begin());
-    const auto end = std::to_address(buf.end());
+int main(int argc, char** argv) {
+    for (auto& scanner : Scanner::All()) {
+        // Exclude any libhat scanner that is non-X1 or has scan hints applied
+        if (scanner.Name().starts_with("libhat")) {
+            auto split = std::views::split(scanner.Name(), '+');
+            const bool x1 = std::ranges::any_of(split, [](auto&& range) {
+                return std::ranges::equal(range, std::string_view{"X1"});
+            });
+            const bool hinted = std::ranges::any_of(split, [](auto&& range) {
+                return std::ranges::equal(range, std::string_view{"hint"});
+            });
+            if (!x1 || hinted) continue;
+        }
 
-    // libhat's "Single" implementation uses std::find + std::equal
-    const auto sig = hat::parse_signature(test_pattern).value();
-    const auto context = hat::detail::scan_context::create<hat::detail::scan_mode::Single>(sig, hat::scan_alignment::X1, hat::scan_hint::none);
-    for (auto _ : state) {
-        benchmark::DoNotOptimize(context.scan(begin, end));
+        auto* bm = ::benchmark::RegisterBenchmark(
+            std::string{scanner.Name()},
+            [&scanner](benchmark::State& state) {
+                BenchmarkScanner(scanner, state);
+            }
+        );
+        bm->Threads(1);
+        bm->MinWarmUpTime(2);
+        bm->MinTime(4);
+        bm->RangeMultiplier(2);
+        bm->Range(4_MiB, 256_MiB);
+        bm->UseRealTime();
     }
-    state.SetBytesProcessed(static_cast<int64_t>(state.iterations() * size));
+    ::benchmark::Initialize(&argc, argv);
+    ::benchmark::RunSpecifiedBenchmarks();
+    ::benchmark::Shutdown();
+    return 0;
 }
-
-static void BM_Throughput_UC1(benchmark::State& state) {
-    const size_t size = state.range(0);
-    const auto buf = gen_random_buffer(size);
-    const auto begin = std::to_address(buf.begin());
-    const auto end = std::to_address(buf.end());
-
-    const auto sig = UC1::pattern_to_byte(test_pattern);
-    for (auto _ : state) {
-        benchmark::DoNotOptimize(UC1::PatternScan(begin, end, sig));
-    }
-    state.SetBytesProcessed(static_cast<int64_t>(state.iterations() * size));
-}
-
-static void BM_Throughput_UC2(benchmark::State& state) {
-    const size_t size = state.range(0);
-    const auto buf = gen_random_buffer(size);
-    const auto begin = std::to_address(buf.begin());
-    const auto end = std::to_address(buf.end());
-
-    for (auto _ : state) {
-        benchmark::DoNotOptimize(UC2::findPattern(begin, end, test_pattern.data()));
-    }
-    state.SetBytesProcessed(static_cast<int64_t>(state.iterations() * size));
-}
-
-static constexpr int64_t rangeStart = 1 << 22; // 4 MiB
-static constexpr int64_t rangeLimit = 1 << 28; // 256 MiB
-
-#define LIBHAT_BENCHMARK(...) BENCHMARK(__VA_ARGS__) \
-    ->Threads(1)                                     \
-    ->MinWarmUpTime(2)                               \
-    ->MinTime(4)                                     \
-    ->Range(rangeStart, rangeLimit)                  \
-    ->UseRealTime();
-
-LIBHAT_BENCHMARK(BM_Throughput_libhat);
-LIBHAT_BENCHMARK(BM_Throughput_std_search);
-LIBHAT_BENCHMARK(BM_Throughput_std_find_std_equal);
-LIBHAT_BENCHMARK(BM_Throughput_UC1);
-LIBHAT_BENCHMARK(BM_Throughput_UC2);
-
-BENCHMARK_MAIN();

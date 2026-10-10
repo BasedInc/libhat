@@ -6,23 +6,14 @@
 
 #include <format>
 
-#include "vendor/UC1.hpp"
-#include "vendor/UC2.hpp"
+#include "scanner/scanner.hpp"
 
 #define WIDE_STR_(x) L ## #x
 #define WIDE_STR(x) WIDE_STR_(x)
 
-#define DLL_MAIN_SIGNATURE "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ?? 49 8B F8"
+static constexpr hat::cstring_view DLL_MAIN_PATTERN = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ?? 49 8B F8 8B DA";
 
-static const hat::signature DllMainSignature = [] {
-    auto result = hat::parse_signature(DLL_MAIN_SIGNATURE);
-    if (!result.has_value()) {
-        std::terminate();
-    }
-    return result.value();
-}();
-
-static std::span<const std::byte> get_file_data() {
+static std::span<const std::byte> GetFileData() {
     static std::vector<std::byte> data = []{
         const std::filesystem::path path{WIDE_STR(CHROME_DLL_PATH)};
         std::ifstream file(path, std::ios::binary);
@@ -41,100 +32,40 @@ static std::span<const std::byte> get_file_data() {
     return data;
 }
 
-static void BM_find(benchmark::State& state) {
-    const auto buf = get_file_data();
+static void BenchmarkScanner(Scanner& scanner, benchmark::State& state) {
+    if (!scanner.Supported()) {
+        state.SkipWithMessage("Skipping (not natively supported by hardware or OS)");
+        return;
+    }
 
-    hat::const_scan_result result;
+    const auto buf = GetFileData();
+
+    const std::byte* result = nullptr;
+    scanner.Setup(DLL_MAIN_PATTERN);
     for (auto _ : state) {
-        benchmark::DoNotOptimize(result = hat::find_pattern(buf, DllMainSignature));
-    }
-    if (!result.has_result()) {
-        std::terminate();
-    }
-    state.SetBytesProcessed(state.iterations() * (result.get() - buf.data()));
-}
-
-static void BM_find_align(benchmark::State& state) {
-    const auto buf = get_file_data();
-
-    hat::const_scan_result result;
-    for (auto _ : state) {
-        benchmark::DoNotOptimize(result = hat::find_pattern(buf, DllMainSignature, hat::scan_alignment::X16));
-    }
-    if (!result.has_result()) {
-        std::terminate();
-    }
-    state.SetBytesProcessed(state.iterations() * (result.get() - buf.data()));
-}
-
-static void BM_find_hint(benchmark::State& state) {
-    const auto buf = get_file_data();
-
-    hat::const_scan_result result;
-    for (auto _ : state) {
-        benchmark::DoNotOptimize(result = hat::find_pattern(buf, DllMainSignature, hat::scan_alignment::X1, hat::scan_hint::x86_64));
-    }
-    if (!result.has_result()) {
-        std::terminate();
-    }
-    state.SetBytesProcessed(state.iterations() * (result.get() - buf.data()));
-}
-
-static void BM_find_align_hint(benchmark::State& state) {
-    const auto buf = get_file_data();
-
-    hat::const_scan_result result;
-    for (auto _ : state) {
-        benchmark::DoNotOptimize(result = hat::find_pattern(buf, DllMainSignature, hat::scan_alignment::X16, hat::scan_hint::x86_64));
-    }
-    if (!result.has_result()) {
-        std::terminate();
-    }
-    state.SetBytesProcessed(state.iterations() * (result.get() - buf.data()));
-}
-
-static void BM_UC1(benchmark::State& state) {
-    const auto buf = get_file_data();
-    const auto begin = std::to_address(buf.begin());
-    const auto end = std::to_address(buf.end());
-
-    const std::byte* result{};
-    const auto sig = UC1::pattern_to_byte(DLL_MAIN_SIGNATURE);
-    for (auto _ : state) {
-        benchmark::DoNotOptimize(result = UC1::PatternScan(begin, end, sig));
+        benchmark::DoNotOptimize(result = scanner.Find(buf));
     }
     if (!result) {
-        std::terminate();
+        state.SkipWithError("Scanner failed to find match in buffer");
     }
-    state.SetBytesProcessed(state.iterations() * (result - buf.data()));
+    state.SetBytesProcessed(static_cast<int64_t>(state.iterations() * (result - buf.data())));
 }
 
-static void BM_UC2(benchmark::State& state) {
-    const auto buf = get_file_data();
-    const auto begin = std::to_address(buf.begin());
-    const auto end = std::to_address(buf.end());
-
-    const std::byte* result{};
-    for (auto _ : state) {
-        benchmark::DoNotOptimize(result = UC2::findPattern(begin, end, DLL_MAIN_SIGNATURE));
+int main(int argc, char** argv) {
+    for (auto& scanner : Scanner::All()) {
+        auto* bm = ::benchmark::RegisterBenchmark(
+            std::string{scanner.Name()},
+            [&scanner](benchmark::State& state) {
+                BenchmarkScanner(scanner, state);
+            }
+        );
+        bm->Threads(1);
+        bm->MinWarmUpTime(2);
+        bm->MinTime(4);
+        bm->UseRealTime();
     }
-    if (!result) {
-        std::terminate();
-    }
-    state.SetBytesProcessed(state.iterations() * (result - buf.data()));
+    ::benchmark::Initialize(&argc, argv);
+    ::benchmark::RunSpecifiedBenchmarks();
+    ::benchmark::Shutdown();
+    return 0;
 }
-
-#define LIBHAT_BENCHMARK(...) BENCHMARK(__VA_ARGS__) \
-    ->Threads(1)                                     \
-    ->MinWarmUpTime(2)                               \
-    ->MinTime(4)                                     \
-    ->UseRealTime();
-
-LIBHAT_BENCHMARK(BM_find);
-LIBHAT_BENCHMARK(BM_find_align);
-LIBHAT_BENCHMARK(BM_find_hint);
-LIBHAT_BENCHMARK(BM_find_align_hint);
-LIBHAT_BENCHMARK(BM_UC1);
-LIBHAT_BENCHMARK(BM_UC2);
-
-BENCHMARK_MAIN();

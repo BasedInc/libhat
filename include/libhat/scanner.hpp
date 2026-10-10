@@ -141,12 +141,9 @@ namespace hat::detail {
 
     using scan_function_t = const_scan_result(*)(const std::byte* begin, const std::byte* end, const scan_context& context);
 
-    struct scanner_context {
-        std::size_t vectorSize{};
-    };
-
     enum class scan_mode {
         Auto,   // Picks a mode at runtime
+        Search, // std::search
         Single, // std::find + std::equal
         SSE,    // x86/x64 SSE 4.1
         AVX2,   // x86/x64 AVX2
@@ -154,29 +151,62 @@ namespace hat::detail {
         Neon,   // ARMv7+ Neon
     };
 
-    class scan_context {
-    public:
-        signature_view signature{};
-        scan_function_t scanner{};
-        scan_alignment alignment{};
-        scan_hint hints{};
-        std::size_t cmpIndex{};
-        std::optional<std::size_t> pairIndex{};
+    bool is_supported(scan_mode mode);
 
-        [[nodiscard]] constexpr const_scan_result scan(const std::byte* begin, const std::byte* end) const {
-            if (signature.size() > static_cast<std::size_t>(std::distance(begin, end))) LIBHAT_UNLIKELY {
-                return {};
+    class scan_context {
+        static constexpr size_t impl_buffer_size = 48;
+        static constexpr size_t impl_buffer_align = alignof(std::max_align_t);
+    public:
+        scan_context(const scan_context&) = delete;
+        scan_context(scan_context&&) = delete;
+        scan_context& operator=(const scan_context&) = delete;
+        scan_context& operator=(scan_context&&) = delete;
+
+        constexpr ~scan_context() {
+            if (impl_deleter_) {
+                impl_deleter_(impl_buffer_.data());
+                impl_deleter_ = nullptr;
             }
-            return this->scanner(begin, end, *this);
         }
 
-        void apply_hints(const scanner_context&);
+        [[nodiscard]] constexpr signature_view signature() const {
+            return signature_;
+        }
+
+        template<typename T, typename... Args>
+        void emplace(Args&&... args);
+
+        template<typename T>
+        [[nodiscard]] const T& get() const;
+
+        [[nodiscard]] constexpr const_scan_result scan(const std::byte* begin, const std::byte* end) const {
+            if (signature_.empty()) LIBHAT_UNLIKELY {
+                return begin;
+            }
+            if (signature_.size() > static_cast<std::size_t>(std::distance(begin, end))) LIBHAT_UNLIKELY {
+                return {};
+            }
+            return scanner_(begin, end, *this);
+        }
 
         template<scan_mode mode = scan_mode::Auto>
         static constexpr scan_context create(signature_view signature, scan_alignment alignment, scan_hint hints);
 
+        template<typename T, typename... Args>
+        scan_context(const signature_view signature, const scan_function_t scanner, std::type_identity<T>, Args&&... args)
+            : signature_(signature), scanner_(scanner)
+        {
+            emplace<T>(std::forward<Args>(args)...);
+        }
+
+        constexpr scan_context(const signature_view signature, const scan_function_t scanner)
+            : signature_(signature), scanner_(scanner) {}
+
     private:
-        scan_context() = default;
+        signature_view signature_{};
+        scan_function_t scanner_{};
+        void(*impl_deleter_)(void*){};
+        alignas(impl_buffer_align) std::array<std::byte, impl_buffer_size> impl_buffer_;
     };
 
     LIBHAT_FORCEINLINE constexpr auto to_stride(const scan_alignment alignment) {
@@ -202,77 +232,48 @@ namespace hat::detail {
         return std::assume_aligned<alignment>(ptr);
     }
 
+    struct scan_parameters {
+        signature_view signature{};
+        scan_alignment alignment{};
+        scan_hint      hints{};
+    };
+
     template<scan_mode>
-    scan_function_t resolve_scanner(scan_context&);
+    scan_context create_context(const scan_parameters&);
 
     template<>
-    scan_function_t resolve_scanner<scan_mode::Auto>(scan_context&);
+    scan_context create_context<scan_mode::Auto>(const scan_parameters&);
 
     template<scan_alignment alignment>
-    const_scan_result find_pattern_single(const std::byte* begin, const std::byte* end, const scan_context& context) {
+    const_scan_result find_pattern_search(const std::byte* begin, const std::byte* end, const scan_context& context) {
         static constexpr auto stride = alignment_stride<alignment>;
-        const auto signature = context.signature;
-        const auto cmpByte = *signature[context.cmpIndex];
 
-        const auto scanBegin = align_up<stride>(begin) + context.cmpIndex;
-        const auto scanEnd = align_up<stride>(end - signature.size() + 1) + context.cmpIndex;
+        const auto sig = context.signature();
+        const auto scanBegin = align_up<stride>(begin);
+        const auto scanEnd = align_up<stride>(end - sig.size() + 1);
 
-        if (scanBegin >= scanEnd) {
-            return nullptr;
-        }
-
+        // intentionally kept simple/inefficient since this will only be used for small buffers
         for (auto i = scanBegin; i != scanEnd; i += stride) {
-            if (*i == cmpByte) {
-                const auto start = i - context.cmpIndex;
-                const auto match = std::equal(signature.begin(), signature.end(), start);
-                if (match) LIBHAT_UNLIKELY {
-                    return start;
-                }
-            }
-        }
-
-        return nullptr;
-    }
-
-    template<>
-    constexpr const_scan_result find_pattern_single<scan_alignment::X1>(const std::byte* begin, const std::byte* end, const scan_context& context) {
-        const auto signature = context.signature;
-        const auto firstByte = *signature[context.cmpIndex];
-        const auto scanEnd = end - signature.size() + 1 + context.cmpIndex;
-
-        for (auto i = begin + context.cmpIndex; i != scanEnd; i++) {
-            // Use std::find to efficiently find the first byte
-            if LIBHAT_IF_CONSTEVAL {
-                i = std::find(i, scanEnd, firstByte);
-                if (i == scanEnd) LIBHAT_UNLIKELY break;
-            } else {
-                #ifndef _MSC_VER
-                    i = static_cast<const std::byte*>(
-                        std::memchr(i, static_cast<unsigned char>(firstByte), static_cast<std::size_t>(scanEnd - i)));
-                    if (!i) LIBHAT_UNLIKELY break;
-                #elif __cpp_lib_execution >= 201902L
-                    i = std::find(std::execution::unseq, i, scanEnd, firstByte);
-                    if (i == scanEnd) LIBHAT_UNLIKELY break;
-                #else
-                    i = std::find(i, scanEnd, firstByte);
-                    if (i == scanEnd) LIBHAT_UNLIKELY break;
-                #endif
-            }
-            const auto start = i - context.cmpIndex;
-            const auto match = std::equal(signature.begin(), signature.end(), start);
-            if (match) LIBHAT_UNLIKELY {
-                return start;
+            if (std::equal(sig.begin(), sig.end(), i)) {
+                return i;
             }
         }
         return nullptr;
     }
 
     template<>
-    constexpr scan_function_t resolve_scanner<scan_mode::Single>(scan_context& context) {
-        switch (context.alignment) {
-            case scan_alignment::X1: return &find_pattern_single<scan_alignment::X1>;
-            case scan_alignment::X4: return &find_pattern_single<scan_alignment::X4>;
-            case scan_alignment::X16: return &find_pattern_single<scan_alignment::X16>;
+    constexpr const_scan_result find_pattern_search<scan_alignment::X1>(const std::byte* begin, const std::byte* end, const scan_context& context) {
+        const auto sig = context.signature();
+        const auto it = std::search(begin, end, sig.begin(), sig.end());
+        return it != end ? it : nullptr;
+    }
+
+    template<>
+    inline scan_context create_context<scan_mode::Search>(const scan_parameters& params) {
+        switch (params.alignment) {
+            case scan_alignment::X1: return {params.signature, &find_pattern_search<scan_alignment::X1>};
+            case scan_alignment::X4: return {params.signature, &find_pattern_search<scan_alignment::X4>};
+            case scan_alignment::X16: return {params.signature, &find_pattern_search<scan_alignment::X16>};
         }
         LIBHAT_UNREACHABLE();
     }
@@ -283,25 +284,19 @@ namespace hat::detail {
 
     template<scan_mode mode>
     constexpr scan_context scan_context::create(const signature_view signature, const scan_alignment alignment, const scan_hint hints) {
-        std::size_t cmpIndex{};
-        for (const auto& elem : signature) {
-            if (elem.all()) {
-                break;
-            }
-            cmpIndex++;
-        }
-
-        scan_context ctx{};
-        ctx.signature = signature;
-        ctx.alignment = alignment;
-        ctx.hints = hints;
-        ctx.cmpIndex = cmpIndex;
+        const scan_parameters params{
+            .signature = signature,
+            .alignment = alignment,
+            .hints = hints,
+        };
         if LIBHAT_IF_CONSTEVAL {
-            ctx.scanner = resolve_scanner<scan_mode::Single>(ctx);
+            if (alignment != scan_alignment::X1) {
+                std::abort();
+            }
+            return {signature, &find_pattern_search<scan_alignment::X1>};
         } else {
-            ctx.scanner = resolve_scanner<mode>(ctx);
+            return create_context<mode>(params);
         }
-        return ctx;
     }
 }
 

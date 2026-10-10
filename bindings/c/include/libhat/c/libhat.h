@@ -30,9 +30,7 @@ extern "C" {
 typedef enum libhat_status {
     libhat_success,         // The operation was successful
     libhat_err_unknown,
-    libhat_err_sig_missing_masked_byte,
     libhat_err_sig_element_parse_error,
-    libhat_err_sig_empty_signature,
     libhat_err_sig_expected_wildcard,
     libhat_err_sig_invalid_token_length,
     libhat_err_invalid_argument_value,

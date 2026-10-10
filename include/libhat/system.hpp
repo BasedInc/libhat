@@ -142,5 +142,5 @@ LIBHAT_EXPORT namespace hat {
 
 LIBHAT_EXPORT namespace hat {
 
-    const system_info_impl& get_system();
+    LIBHAT_PURE const system_info_impl& get_system();
 }

@@ -3,9 +3,9 @@
 
 #include <libhat/memory_protector.hpp>
 #include <libhat/system.hpp>
-#include "../../Utils.hpp"
 
-#include "Common.hpp"
+#include "../utils.hpp"
+#include "../utils_linux.hpp"
 
 #include <sys/mman.h>
 
