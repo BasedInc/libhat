@@ -158,30 +158,37 @@ The full source code is available [here](test/benchmark/Compare.cpp).
 ---------------------------------------------------------------------------------------------------
 Benchmark                                        Time             CPU   Iterations bytes_per_second
 ---------------------------------------------------------------------------------------------------
-BM_Throughput_libhat/4MiB                    67015 ns        66389 ns        82139      58.2888Gi/s
-BM_Throughput_libhat/16MiB                  311783 ns       310116 ns        18088      50.1151Gi/s
-BM_Throughput_libhat/128MiB                5371248 ns      5355461 ns         1062      23.2721Gi/s
-BM_Throughput_libhat/256MiB               10871393 ns     10787260 ns          520      22.9961Gi/s
+libhat+AVX2/4MiB                             70877 ns        70998 ns        79007      55.1129Gi/s
+libhat+AVX2/8MiB                            142373 ns       141935 ns        38750      54.8734Gi/s
+libhat+AVX2/16MiB                           310238 ns       308405 ns        17783      50.3645Gi/s
+libhat+AVX2/32MiB                          1002988 ns       999485 ns         5581      31.1569Gi/s
+libhat+AVX2/64MiB                          2452875 ns      2449913 ns         2296      25.4803Gi/s
+libhat+AVX2/128MiB                         5223758 ns      5183858 ns         1064      23.9291Gi/s
+libhat+AVX2/256MiB                        10713488 ns     10637019 ns          520      23.3351Gi/s
 
-BM_Throughput_std_search/4MiB              1372621 ns      1366807 ns         4104      2.84583Gi/s
-BM_Throughput_std_search/16MiB             5412159 ns      5385316 ns         1030      2.88702Gi/s
-BM_Throughput_std_search/128MiB           43333000 ns     43120155 ns          129      2.88464Gi/s
-BM_Throughput_std_search/256MiB           86809503 ns     86181641 ns           64      2.87987Gi/s
+std::search/4MiB                           1348946 ns      1342598 ns         4178      2.89578Gi/s
+std::search/8MiB                           2690336 ns      2688011 ns         2081      2.90391Gi/s
+std::search/16MiB                          5383973 ns      5353287 ns         1042      2.90213Gi/s
+std::search/32MiB                         10807674 ns     10715996 ns          522      2.89146Gi/s
+std::search/64MiB                         21520222 ns     21454327 ns          260      2.90425Gi/s
+std::search/128MiB                        43072097 ns     42999031 ns          129      2.90211Gi/s
+std::search/256MiB                        86326666 ns     85817308 ns           65      2.89598Gi/s
 
-BM_Throughput_std_find_std_equal/4MiB       189240 ns       189051 ns        29506      20.6418Gi/s
-BM_Throughput_std_find_std_equal/16MiB      861429 ns       857686 ns         6613      18.1385Gi/s
-BM_Throughput_std_find_std_equal/128MiB    9384011 ns      9385575 ns          591      13.3205Gi/s
-BM_Throughput_std_find_std_equal/256MiB   18979502 ns     18939394 ns          297      13.1721Gi/s
+csgosimple/4MiB                            1704462 ns      1695994 ns         3289      2.29178Gi/s
+csgosimple/8MiB                            3437443 ns      3420064 ns         1631      2.27277Gi/s
+csgosimple/16MiB                           6867328 ns      6835938 ns          816      2.27527Gi/s
+csgosimple/32MiB                          13715049 ns     13686131 ns          411      2.27852Gi/s
+csgosimple/64MiB                          27225719 ns     27210366 ns          205      2.29562Gi/s
+csgosimple/128MiB                         54692310 ns     54227941 ns          102      2.28551Gi/s
+csgosimple/256MiB                        108922873 ns    108762255 ns           51      2.29520Gi/s
 
-BM_Throughput_UC1/4MiB                     1742814 ns      1732316 ns         3202      2.24135Gi/s
-BM_Throughput_UC1/16MiB                    6983502 ns      6909938 ns          805      2.23742Gi/s
-BM_Throughput_UC1/128MiB                  55866828 ns     55847772 ns          101      2.23746Gi/s
-BM_Throughput_UC1/256MiB                 111606018 ns    111250000 ns           50      2.24002Gi/s
-
-BM_Throughput_UC2/4MiB                     4080670 ns      4068654 ns         1371      980.231Mi/s
-BM_Throughput_UC2/16MiB                   16422699 ns     16314338 ns          340      974.261Mi/s
-BM_Throughput_UC2/128MiB                 132357452 ns    132440476 ns           42      967.078Mi/s
-BM_Throughput_UC2/256MiB                 265336400 ns    264880952 ns           21      964.813Mi/s
+learn_more/4MiB                            4091135 ns      4090909 ns         1375      977.724Mi/s
+learn_more/8MiB                            8160467 ns      8143248 ns          685      980.336Mi/s
+learn_more/16MiB                          16449846 ns     16403959 ns          341      972.653Mi/s
+learn_more/32MiB                          33114440 ns     33099112 ns          169      966.346Mi/s
+learn_more/64MiB                          66329900 ns     65848214 ns           84      964.874Mi/s
+learn_more/128MiB                        133070590 ns    132812500 ns           42      961.895Mi/s
+learn_more/256MiB                        265652538 ns    264880952 ns           21      963.665Mi/s
 ```
 
 Using the appropriate configuration, libhat is able to maintain its high throughput when searching 
@@ -245,10 +252,10 @@ subrange `s` for which all the following conditions are met:
 - `s[2] == 0x12`
 - `s[3] & 0x0F == 0x03`
 
-As a scanning optimization, all patterns are required to have at least one fully masked byte. Attempting to find a
-pattern that does not meet this requirement will result in undefined behavior. Additionally, it is recommended
-(but not required) that patterns contain at least 2 consecutive fully masked bytes, as this will greatly speed
-up the vectorized scanning algorithms.
+As a scanning optimization, all patterns are recommended to have at least one fully masked byte. Attempting to find a
+pattern that does not meet this requirement results in significant performance degredation. Additionally, it is
+recommended (but not required) that patterns contain at least 2 consecutive fully masked bytes, as this will greatly
+speed up the vectorized scanning algorithms.
 - `?1 02` is allowed
 - `?? 02` is allowed
 - `01 02` is allowed (*and recommended*)
