@@ -66,6 +66,7 @@ set(ALL_SCANNERS
 register_test(libhat_benchmark_compare benchmark/Compare.cpp ${ALL_SCANNERS})
 register_test(libhat_test_scanner tests/Scanner.cpp)
 register_test(libhat_test_process tests/Process.cpp)
+register_test(libhat_test_formatter tests/Formatter.cpp)
 
 if(LIBHAT_TESTING_SAMPLE_BIN)
     CPMAddPackage(

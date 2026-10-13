@@ -16,6 +16,7 @@ module;
     #include <cstdlib>
     #include <cstring>
     #include <execution>
+    #include <format>
     #include <functional>
     #include <iterator>
     #include <memory>

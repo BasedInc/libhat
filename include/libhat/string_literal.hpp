@@ -2,6 +2,7 @@
 
 #include "export.hpp"
 #include "fixed_string.hpp"
+#include "formatter.hpp"
 
 LIBHAT_EXPORT namespace hat {
 
@@ -26,6 +27,14 @@ LIBHAT_EXPORT namespace hat {
 
     template<hat::u32fixed_string str>
     using u32string_literal = basic_string_literal<str>;
+
+    template<auto str, template<typename...> class Formatter>
+    struct formatter<basic_string_literal<str>, typename decltype(str)::value_type, Formatter> : Formatter<decltype(str), typename decltype(str)::value_type> {
+        template<typename FormatContext>
+        constexpr auto format(const string_literal<str>&, FormatContext& ctx) const {
+            return Formatter<decltype(str), typename decltype(str)::value_type>::format(str, ctx);
+        }
+    };
 }
 
 LIBHAT_EXPORT namespace hat::inline literals::inline string_literals {
