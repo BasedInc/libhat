@@ -32,7 +32,7 @@ LIBHAT_EXPORT namespace hat {
 
         static constexpr auto npos = impl_t::npos;
 
-        constexpr basic_cstring_view() noexcept = default;
+        constexpr basic_cstring_view() noexcept : impl(empty_string, 0) {}
         constexpr basic_cstring_view(const CharT* const c_str) noexcept(noexcept(impl_t{c_str})) : impl(c_str) {}
         constexpr basic_cstring_view(null_terminated_t, const CharT* const c_str, std::size_t size)
             noexcept(noexcept(impl_t{c_str, size})) : impl(c_str, size) {}
@@ -297,6 +297,8 @@ LIBHAT_EXPORT namespace hat {
         }
 
     private:
+        static constexpr CharT empty_string[1]{};
+
         constexpr basic_cstring_view(impl_t impl) noexcept : impl(impl) {}
         impl_t impl{};
     };
